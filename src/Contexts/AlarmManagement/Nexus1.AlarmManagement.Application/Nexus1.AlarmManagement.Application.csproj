@@ -6,6 +6,10 @@
     <ProjectReference Include="..\..\ReactorFleet\Nexus1.Contracts.ReactorFleet\Nexus1.Contracts.ReactorFleet.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
