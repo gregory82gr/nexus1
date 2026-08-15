@@ -1,9 +1,10 @@
-﻿{
+{
   "$schema": "http://json.schemastore.org/launchsettings.json",
   "profiles": {
     "Nexus1.ModularRuntime": {
       "commandName": "Project",
       "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5101",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       }
