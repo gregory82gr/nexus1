@@ -196,4 +196,30 @@ public class DependencyLawTests
         var count = LoadSrcProjects().Count;
         Assert.True(count > 0, "No projects found under src/ — repository root detection is likely broken.");
     }
+
+    /// <summary>
+    /// ADR-001-amend's original "no Contracts.ReactorFleet needed, consumption is
+    /// in-process" claim was wrong (ADR-004) — this pins the fix so it can't
+    /// silently regress. Redundant with the general cross-context rules above
+    /// (AlarmManagement.Application/.Infrastructure already can't reference another
+    /// context's Domain/Application by the generic Application/Infrastructure
+    /// checks), but named explicitly for this specific pair since it's the one the
+    /// corrected ADR calls out by name.
+    /// </summary>
+    [Fact]
+    public void AlarmManagement_projects_reference_ReactorFleet_only_through_its_Contracts_project()
+    {
+        var violations = (
+            from project in LoadSrcProjects()
+            where project.Context == "AlarmManagement"
+            from reference in project.References
+            where reference is "Nexus1.ReactorFleet.Domain" or "Nexus1.ReactorFleet.Application" or "Nexus1.ReactorFleet.Infrastructure"
+            select $"{project.Name} -> {reference}").ToList();
+
+        Assert.True(violations.Count == 0,
+            "AlarmManagement projects must reference ReactorFleet only through Nexus1.Contracts.ReactorFleet, " +
+            "never Nexus1.ReactorFleet.Domain/.Application/.Infrastructure directly — regardless of same-host, " +
+            "in-process composition (ADR-001-amend correction, ADR-004). Violations:\n" +
+            string.Join('\n', violations));
+    }
 }

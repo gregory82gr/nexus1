@@ -37,6 +37,7 @@
     <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.Contracts.RootCause\Nexus1.Contracts.RootCause.csproj" />
     <ProjectReference Include="..\..\src\Hosts\Nexus1.ModularRuntime\Nexus1.ModularRuntime.csproj" />
     <ProjectReference Include="..\..\src\Hosts\Nexus1.RootCause.Host\Nexus1.RootCause.Host.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\ReactorFleet\Nexus1.Contracts.ReactorFleet\Nexus1.Contracts.ReactorFleet.csproj" />
   </ItemGroup>
 
 </Project>
