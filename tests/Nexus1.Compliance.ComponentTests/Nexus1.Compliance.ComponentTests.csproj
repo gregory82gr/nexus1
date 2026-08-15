@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Contexts\Compliance\Nexus1.Compliance.Infrastructure\Nexus1.Compliance.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\Compliance\Nexus1.Compliance.Domain\Nexus1.Compliance.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\Nexus1.BuildingBlocks.Messaging\Nexus1.BuildingBlocks.Messaging.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.Contracts.RootCause\Nexus1.Contracts.RootCause.csproj" />
+  </ItemGroup>
+
+</Project>
