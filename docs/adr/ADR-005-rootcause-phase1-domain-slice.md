@@ -170,6 +170,57 @@ the causal graph needs versioning/governance; evidence needs typed
 provenance for `RootCauseVerdictIssued.v1` to cite specific alarms/signals
 by FK rather than free text.
 
+## Amendment (2026-08-15, §5 step 7): `RootCauseVerdictIssuedV1` gets an adapted, not frozen, payload
+
+Same decision as ADR-004's `AlarmFloodDetectedV1` amendment, by direct
+analogy — recorded here rather than duplicated at length. `From_Services_
+To_Runtime` ch. 34 (Executable Asset 34-N) gives a frozen contract:
+
+```csharp
+public sealed record RootCauseVerdictIssuedV1(
+    string VerdictId, string RootCauseCaseId, string SourceAlarmFloodMessageId,
+    string SiteId, string LineId, string VerdictCode, decimal Confidence,
+    string PolicyIdentity, string VerdictIdentity, int EvidenceRevision,
+    int EvidenceCount, string EvidenceMembershipSha256,
+    DateTimeOffset IssuedAtUtc, ProducerStreamPositionV1 ProducerStream);
+```
+
+Every field beyond identity, verdict text, and a timestamp traces back to
+a concept this ADR's own Decision section already deferred:
+
+| Book field | Requires | Why it's still out of scope |
+|---|---|---|
+| `SiteId`, `LineId` | Organization-schema Site/Line | Same reasoning as ADR-004 — never built in any context |
+| `Confidence`, `PolicyIdentity`, `VerdictIdentity` | Scored, policy-tracked verdicts | This ADR deferred `AnalysisCandidate` scoring outright — `Close` takes a free-text `verdict` string, not a scored/policy-identified decision |
+| `EvidenceRevision`, `EvidenceCount`, `EvidenceMembershipSha256` | Typed, hashed evidence provenance | Already named in this ADR's own original Reversal condition ("evidence needs typed provenance... to cite specific alarms/signals by FK rather than free text") — this amendment doesn't add a new gap, it's the same one, now also visible on the wire |
+| `SourceAlarmFloodMessageId` | — | Not a missing domain concept, but redundant with the envelope's own `causationId` field (adopted book-exact) — carrying causation twice, once generically at the envelope level and once again as a domain-specific payload field, was rejected as duplication, not scope creep |
+| `ProducerStreamPositionV1` | Event-sourcing stream position | Not part of this project's design at any layer |
+
+**Decision:** adopt the book's transport/wire-level conventions exactly
+(routing key `root-cause.root-cause-verdict-issued.v1`, the JSON+JCS
+envelope, `eventType` `nexus1.root-cause.root-cause-verdict-issued.v1`).
+The payload carries only what `RootCauseAnalysis` actually has:
+`AnalysisId`, `UnitId`, `AlarmFloodId`, `Verdict` (free text, matching the
+aggregate's own field, not a coded `VerdictCode`), `IssuedAtUtc` (from
+`ClosedAtUtc`). Same rejection of placeholder data as ADR-004's amendment:
+populating `Confidence`/`PolicyIdentity`/etc. with invented values would
+violate CLAUDE.md's *"nothing claims to exist that does not."*
+
+This contract is defined now but has **no publisher wired to it yet** —
+Phase 1's end-to-end proof is AlarmManagement → RootCause only; nothing
+consumes `RootCauseVerdictIssuedV1` (Audit/Compliance/Reporting don't
+exist per CLAUDE.md §2's no-placeholder-projects rule), so there is
+nothing to prove it flows to yet. It exists so the type is ready and
+consistent with `AlarmFloodDetectedV1`'s treatment, not because it is
+published in this step.
+
+### Reversal condition (this amendment specifically)
+
+Same as ADR-004's: revisit once `AnalysisCandidate` scoring, evidence
+provenance, or a real policy/verdict-identity concept get built for some
+other reason this project needs them — not to satisfy this contract in
+isolation.
+
 ## Evidence required
 
 - `Nexus1.RootCause.UnitTests` passing: `Open` succeeds and raises
