@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.RootCause.Infrastructure\Nexus1.RootCause.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.RootCause.Application\Nexus1.RootCause.Application.csproj" />
   </ItemGroup>
 
 </Project>

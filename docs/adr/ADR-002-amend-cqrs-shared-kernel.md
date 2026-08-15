@@ -135,6 +135,23 @@ first be exercised in real code.
   context there), are **not** adopted as this repo's structure. Its content
   is used only for the interface/abstraction shapes above.
 
+### Topology addition (2026-08-15, §5 step 5): ComponentTests for all three contexts
+
+ADR-002's original reference tree only lists `Nexus1.RootCause.ComponentTests`
+— it mirrors the book's own framing, where RootCause is the one context the
+book proves with component-level (real-dependency) tests. That asymmetry
+was fine while ReactorFleet and AlarmManagement had no persistence or
+Application layer to test against. Once all three contexts had real EF Core
+persistence and Application-layer handlers (§5 steps 3 and 5), the
+asymmetry stopped being a book-fidelity choice and started being an
+accident of scope order. `Nexus1.ReactorFleet.ComponentTests` and
+`Nexus1.AlarmManagement.ComponentTests` were added at that point, each
+testing its context's handlers against a real, migrated LocalDB database
+(fresh per test) — not because a new decision was made, but because the
+original one-context asymmetry no longer had a reason to hold once all
+three contexts reached the same build-order step. See CLAUDE.md §4's tree
+for the updated project list.
+
 ## Rejected alternatives
 
 - **Adopt Blueprint_to_Core's single-project topology wholesale**, discarding
