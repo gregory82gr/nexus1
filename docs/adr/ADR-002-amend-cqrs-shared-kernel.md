@@ -72,6 +72,27 @@ MediatR (or a hand-rolled dispatcher) is deferred to §5 step 5 (Application
 layer / CQRS), and per this project's dependency discipline, any new NuGet
 package still needs an explicit ask before it's added.
 
+### MediatR decision (2026-08-15, §5 step 5): deferred, not rejected
+
+Asked explicitly per the dependency-discipline rule above. **Decision:
+hand-rolled direct dispatch, no MediatR, for now.** `ICommand`/`IQuery`/
+`ICommandHandler<TCommand>`/`ICommandHandler<TCommand,TResponse>`/
+`IQuery<TResponse>`/`IQueryHandler<TQuery,TResponse>` stay exactly as
+already defined in this ADR — they already give the CQRS shape
+`Blueprint_to_Core` describes. Handlers are invoked directly via
+constructor-injected DI (concrete handler resolved and its `Handle(...)`
+called directly), with no `IMediator.Send(command)` indirection layer and
+no NuGet package added.
+
+This is a deferral, not a rejection — MediatR's actual value proposition
+(Ch. 13's stated reason for keeping it: its pipeline-behavior feature,
+wrapping handlers with cross-cutting validation/logging) has no consumer
+yet at Phase-1 scale (a handful of handlers, no Host/DI composition root
+wired up). Adding it now would be paying for machinery nothing currently
+needs — the same restraint principle already applied to ReactorFleet's
+domain scope (ADR-003), AlarmManagement's flood threshold (ADR-004), and
+ReactorFleet's database (ADR-006).
+
 ### Domain-invariant style conflict (`Result<T>` vs. exceptions)
 
 The two gap books also disagree on invariant-enforcement style:
@@ -137,10 +158,20 @@ first be exercised in real code.
 ## Reversal condition
 
 Revisit if a later source-material update reconciles the two books
-explicitly (e.g. an addendum stating which lineage supersedes the other), or
-if MediatR is adopted at §5 step 5 and its pipeline-behavior needs push the
-abstractions project's shape in a direction incompatible with what's defined
-here.
+explicitly (e.g. an addendum stating which lineage supersedes the other).
+
+Revisit the MediatR decision specifically when pipeline behaviors
+(validation, logging, cross-cutting concerns wrapping every handler) become
+a real need rather than a hypothetical one — likely once Hosts (§5 step 6)
+and broker wiring (§5 step 7) are in play and there's a real composition
+root to register cross-cutting behavior into, not before. If that happens, introducing MediatR at that point should be a small,
+mechanical change: `Nexus1.BuildingBlocks.Application`'s interfaces are
+structured to mirror MediatR's `IRequest`/`IRequestHandler` shape (same
+generic parameters, same `Handle(TCommand, CancellationToken) -> Task<TResult>`
+signature) without taking a compile-time dependency on the MediatR package
+today. Adopting MediatR later means having `ICommand<TResponse>` etc.
+additionally implement `IRequest<Result<TResponse>>`, not redesigning the
+interfaces or the handlers that already implement them.
 
 ## Evidence required
 

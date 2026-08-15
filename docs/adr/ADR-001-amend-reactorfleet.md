@@ -92,13 +92,22 @@ Concretely:
 - `Nexus1.Contracts.ReactorFleet` is created alongside
   `Nexus1.Contracts.AlarmManagement` and `Nexus1.Contracts.RootCause`,
   exposing the minimal DTO shape ReactorFleet's Phase-1-minimal domain model
-  (ADR-003) already has to publish outward: `UnitPowerSnapshotRecorded`,
-  carrying `UnitPowerSnapshot`'s data. Unlike `AlarmFloodDetected.v1`/
-  `RootCauseVerdictIssued.v1` (broker-published, externally versioned per
-  the book), this contract has no `.v1` suffix — it is never published to a
-  broker in Phase 1, only referenced in-process, so the book's
-  external-versioning convention doesn't apply to it yet. Add versioning if
-  and when it ever crosses a broker.
+  (ADR-003) already has to publish outward: `UnitPowerSnapshotRecordedV1`,
+  carrying `UnitPowerSnapshot`'s data.
+
+  **Correction (2026-08-15, before Application-layer work):** this bullet
+  originally argued the contract needed no version suffix since it's never
+  broker-published in Phase 1, only referenced in-process. That reasoning
+  was itself corrected before anything came to depend on the unversioned
+  name: it is still a *public contract crossing a context boundary* — that
+  is the entire reason it lives in a `Contracts.*` project instead of
+  `ReactorFleet.Domain` — and every other public contract in this repo is
+  versioned regardless of transport. Renamed to `UnitPowerSnapshotRecordedV1`
+  (a `V1` suffix on the type name, since C# identifiers can't hold a
+  literal dot) for consistency with `AlarmFloodDetected.v1`/
+  `RootCauseVerdictIssued.v1` — which, note, aren't built as C# types yet
+  either (deferred to broker wiring, §5 step 7); when they are, they should
+  follow this same `EventNameV1` convention.
 - AlarmManagement remains in the modular runtime host per the book, and
   still publishes `AlarmFloodDetected.v1` externally, unchanged from ADR-001.
 - RootCause remains the one service independently extracted to its own host
@@ -141,14 +150,11 @@ Concretely:
 
 Revisit this ADR if:
 - `Nexus1.Contracts.ReactorFleet` needs a second public type or its
-  existing `UnitPowerSnapshotRecorded` shape needs to change — that's an
+  existing `UnitPowerSnapshotRecordedV1` shape needs to change — that's an
   ordinary contract change, not a re-litigation of this ADR.
 - ReactorFleet's data/update-frequency profile makes in-process composition
   impractical (triggers a new ADR proposing extraction, evaluated against
   the book's own extraction gates), or
-- ReactorFleet ever needs to publish over a broker (triggers adding `.v1`
-  versioning to its contract, matching `AlarmFloodDetected.v1`/
-  `RootCauseVerdictIssued.v1`), or
 - The book's ADR-001 is itself revised in a later source-material update.
 
 ## Evidence required
