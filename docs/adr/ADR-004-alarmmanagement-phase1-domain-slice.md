@@ -190,6 +190,59 @@ call — that step must explicitly decide the `Contracts.ReactorFleet`
 question flagged above, and should amend or supersede ADR-001-amend's
 "no Contracts needed" claim rather than silently working around it.
 
+## Amendment (2026-08-15, §5 step 7): `AlarmFloodDetectedV1` gets an adapted, not frozen, payload
+
+Building the messaging backbone required deciding `AlarmFloodDetectedV1`'s
+actual wire payload. `From_Services_To_Runtime` ch. 32 (Executable Asset
+32-A) gives a frozen, canonical contract:
+
+```csharp
+public sealed record AlarmFloodDetectedV1(
+    string DecisionId, string SiteId, string LineId,
+    DateTimeOffset WindowStartUtc, DateTimeOffset WindowEndUtc,
+    IReadOnlyList<AlarmReferenceV1> Alarms, string PolicyId,
+    DateTimeOffset DetectedAtUtc, ProducerStreamPositionV1 ProducerStream);
+```
+
+Every field beyond identity and a timestamp traces back to a domain
+concept this ADR already decided not to build in Phase 1:
+
+| Book field | Requires | Why it's still out of scope |
+|---|---|---|
+| `SiteId`, `LineId` | An Organization-schema Site/Line hierarchy | CLAUDE.md §2 names Organization "beyond what auth requires" as explicitly out of Phase 1 — never touched by any context built so far |
+| `PolicyId` | A persisted flood-detection Policy entity | This ADR's own Decision section explicitly refused to invent a stored policy — `AlarmFloodDetector.ShouldDetectFlood` takes `countThreshold`/`window` as **required caller parameters**, precisely to avoid presenting an invented default as source-derived |
+| `WindowEndUtc` | A flood window with a defined end | `AlarmFlood` only has `StartedAtUtc` — closing/ending a flood window was never modeled |
+| `Alarms` (`IReadOnlyList<AlarmReferenceV1>`) | Persisted flood membership | The atlas's `AlarmFloodMember` join table was explicitly deferred in this ADR's Decision section; `AlarmFlood.MemberAlarmEventIds` stays in-memory-only, `Ignore()`d by `AlarmFloodConfiguration` |
+| `ProducerStreamPositionV1` | An event-sourcing stream-position concept | Not part of this project's design at any layer |
+
+**Decision:** adopt the book's transport/wire-level conventions exactly —
+exchange/queue/routing-key naming, the JSON+JCS envelope, AMQP header
+mapping, the `eventType` string format (`nexus1.alarm-management.
+alarm-flood-detected.v1`) — since those are transport correctness with no
+domain-modeling cost and no reason to deviate. The **payload** carries only
+what `AlarmFlood` actually has today: `AlarmFloodId`, `UnitId`,
+`StartedAtUtc`. This is the same restraint already applied to
+ReactorFleet's Contracts (ADR-003: `UnitPowerSnapshotRecordedV1` carries
+only `Unit`/`UnitPowerSnapshot`'s real fields) and RootCause's aggregate
+naming (ADR-005: atlas naming with Phase-1-minimal behavior) — book gives
+more than Phase 1 needs, Phase 1 takes only what it has actually built,
+recorded explicitly rather than faked.
+
+Populating the book's full field list with placeholder values (a fake
+`SiteId`, an invented `PolicyId`) was rejected outright, not just deferred
+— it would violate this project's own standing rule from the top of
+CLAUDE.md: *"Nothing claims to exist that does not."* A field with no real
+data behind it is exactly that violation, regardless of how faithfully it
+matches the book's schema.
+
+### Reversal condition (this amendment specifically)
+
+Revisit — and only then adopt the book's full frozen field list — once
+Site/Line, a persisted flood-detection Policy entity, or persisted alarm
+membership actually get built for some **other** reason this project
+needs them for. Not to satisfy this contract in isolation; that would be
+building domain concepts backwards from a wire format.
+
 ## Evidence required
 
 - `Nexus1.AlarmManagement.UnitTests` passing: `AlarmDefinition.Evaluate`
