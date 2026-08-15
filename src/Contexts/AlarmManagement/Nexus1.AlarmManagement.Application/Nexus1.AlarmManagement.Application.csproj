@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Nexus1.AlarmManagement.Domain\Nexus1.AlarmManagement.Domain.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\Nexus1.BuildingBlocks.Application\Nexus1.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\ReactorFleet\Nexus1.Contracts.ReactorFleet\Nexus1.Contracts.ReactorFleet.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
