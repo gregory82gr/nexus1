@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.RootCause.Application;
 using Nexus1.RootCause.Domain;
+using Nexus1.RootCause.Infrastructure.Messaging;
 
 namespace Nexus1.RootCause.ComponentTests;
 
@@ -12,7 +13,7 @@ public sealed class OpenAnalysisCommandHandlerTests : RootCauseComponentTestData
     {
         await using var dbContext = CreateDbContext();
         var handler = new OpenAnalysisCommandHandler(
-            Repository(dbContext), UnitOfWork(dbContext), new SystemDateTimeProvider(), new SequentialIdGenerator());
+            Repository(dbContext), UnitOfWork(dbContext), new SystemDateTimeProvider(), new SequentialIdGenerator(), new EfOutboxWriter(dbContext));
 
         var result = await handler.Handle(new OpenAnalysisCommand(1, 100, "operator.1"), CancellationToken.None);
 
@@ -30,7 +31,7 @@ public sealed class OpenAnalysisCommandHandlerTests : RootCauseComponentTestData
     {
         await using var dbContext = CreateDbContext();
         var handler = new OpenAnalysisCommandHandler(
-            Repository(dbContext), UnitOfWork(dbContext), new SystemDateTimeProvider(), new SequentialIdGenerator());
+            Repository(dbContext), UnitOfWork(dbContext), new SystemDateTimeProvider(), new SequentialIdGenerator(), new EfOutboxWriter(dbContext));
 
         var result = await handler.Handle(new OpenAnalysisCommand(1, 100, ""), CancellationToken.None);
 

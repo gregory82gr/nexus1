@@ -19,7 +19,7 @@ public sealed class FullAnalysisWorkflowTests : RootCauseComponentTestDatabase
     {
         await using var dbContext = CreateDbContext();
         var result = await new OpenAnalysisCommandHandler(
-                Repository(dbContext), UnitOfWork(dbContext), new SystemDateTimeProvider(), new SequentialIdGenerator())
+                Repository(dbContext), UnitOfWork(dbContext), new SystemDateTimeProvider(), new SequentialIdGenerator(), new EfOutboxWriter(dbContext))
             .Handle(new OpenAnalysisCommand(1, 100, "operator.1"), CancellationToken.None);
         Assert.True(result.IsSuccess);
         return result.Value;
