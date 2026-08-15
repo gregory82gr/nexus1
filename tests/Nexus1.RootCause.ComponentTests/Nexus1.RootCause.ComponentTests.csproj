@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
@@ -23,6 +24,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.RootCause.Infrastructure\Nexus1.RootCause.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.RootCause.Application\Nexus1.RootCause.Application.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\Nexus1.BuildingBlocks.Messaging\Nexus1.BuildingBlocks.Messaging.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\AlarmManagement\Nexus1.Contracts.AlarmManagement\Nexus1.Contracts.AlarmManagement.csproj" />
   </ItemGroup>
 
 </Project>

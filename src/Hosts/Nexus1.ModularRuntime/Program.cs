@@ -3,6 +3,7 @@ using Nexus1.AlarmManagement.Application;
 using Nexus1.AlarmManagement.Infrastructure;
 using Nexus1.AlarmManagement.Infrastructure.Persistence;
 using Nexus1.BuildingBlocks.Application;
+using Nexus1.BuildingBlocks.Messaging;
 using Nexus1.ReactorFleet.Application;
 using Nexus1.ReactorFleet.Infrastructure;
 using Nexus1.ReactorFleet.Infrastructure.Persistence;
@@ -15,6 +16,14 @@ var alarmManagementConnectionString = builder.Configuration.GetConnectionString(
     ?? throw new InvalidOperationException("Missing ConnectionStrings:AlarmManagementDb configuration.");
 
 builder.Services.AddBuildingBlocksApplication();
+
+var rabbitMqOptions = new RabbitMqOptions(
+    builder.Configuration["RabbitMq:HostName"] ?? "localhost",
+    int.Parse(builder.Configuration["RabbitMq:Port"] ?? "5672"),
+    builder.Configuration["RabbitMq:UserName"] ?? "guest",
+    builder.Configuration["RabbitMq:Password"] ?? "guest",
+    builder.Configuration["RabbitMq:VirtualHost"] ?? "/");
+builder.Services.AddNexusMessaging(rabbitMqOptions);
 
 builder.Services.AddReactorFleetApplication();
 builder.Services.AddReactorFleetInfrastructure(alarmManagementConnectionString);

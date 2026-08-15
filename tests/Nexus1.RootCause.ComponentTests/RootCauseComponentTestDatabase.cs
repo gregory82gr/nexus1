@@ -8,7 +8,7 @@ namespace Nexus1.RootCause.ComponentTests;
 /// <summary>Real LocalDB, real migrations, no mocks — a fresh database per test.</summary>
 public abstract class RootCauseComponentTestDatabase : IAsyncLifetime
 {
-    private readonly string _connectionString =
+    protected readonly string ConnectionString =
         $"Server=(localdb)\\mssqllocaldb;Database=RootCauseComponentTests_{Guid.NewGuid():N};Trusted_Connection=True;";
 
     public async Task InitializeAsync()
@@ -24,7 +24,7 @@ public abstract class RootCauseComponentTestDatabase : IAsyncLifetime
     }
 
     protected RootCauseDbContext CreateDbContext() =>
-        new(new DbContextOptionsBuilder<RootCauseDbContext>().UseSqlServer(_connectionString).Options);
+        new(new DbContextOptionsBuilder<RootCauseDbContext>().UseSqlServer(ConnectionString).Options);
 
     protected static IUnitOfWork UnitOfWork(RootCauseDbContext dbContext) => new EfUnitOfWork(dbContext);
 

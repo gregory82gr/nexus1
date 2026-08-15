@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Nexus1.BuildingBlocks.Application;
+using Nexus1.BuildingBlocks.Messaging;
 using Nexus1.RootCause.Application;
 using Nexus1.RootCause.Infrastructure;
 using Nexus1.RootCause.Infrastructure.Persistence;
@@ -12,6 +13,14 @@ var rootCauseConnectionString = builder.Configuration.GetConnectionString("RootC
     ?? throw new InvalidOperationException("Missing ConnectionStrings:RootCauseDb configuration.");
 
 builder.Services.AddBuildingBlocksApplication();
+
+var rabbitMqOptions = new RabbitMqOptions(
+    builder.Configuration["RabbitMq:HostName"] ?? "localhost",
+    int.Parse(builder.Configuration["RabbitMq:Port"] ?? "5672"),
+    builder.Configuration["RabbitMq:UserName"] ?? "guest",
+    builder.Configuration["RabbitMq:Password"] ?? "guest",
+    builder.Configuration["RabbitMq:VirtualHost"] ?? "/");
+builder.Services.AddNexusMessaging(rabbitMqOptions);
 
 builder.Services.AddRootCauseApplication();
 builder.Services.AddRootCauseInfrastructure(rootCauseConnectionString);
