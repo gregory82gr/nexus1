@@ -1,0 +1,18 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+## Rider / VS Code
+.idea/
+.vscode/
+
+## Build artifacts
+artifacts/evidence/*
+!artifacts/evidence/.gitkeep
+
+## OS
+Thumbs.db
+.DS_Store
