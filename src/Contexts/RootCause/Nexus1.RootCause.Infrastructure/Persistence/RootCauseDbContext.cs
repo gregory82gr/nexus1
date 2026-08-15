@@ -19,6 +19,8 @@ public sealed class RootCauseDbContext(DbContextOptions<RootCauseDbContext> opti
 
     public DbSet<PoisonMessage> PoisonMessages => Set<PoisonMessage>();
 
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(RootCauseDbContext).Assembly);

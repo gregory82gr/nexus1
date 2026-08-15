@@ -4,6 +4,7 @@
     <ProjectReference Include="..\Nexus1.RootCause.Domain\Nexus1.RootCause.Domain.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\Nexus1.BuildingBlocks.Application\Nexus1.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\AlarmManagement\Nexus1.Contracts.AlarmManagement\Nexus1.Contracts.AlarmManagement.csproj" />
+    <ProjectReference Include="..\Nexus1.Contracts.RootCause\Nexus1.Contracts.RootCause.csproj" />
   </ItemGroup>
 
   <ItemGroup>
