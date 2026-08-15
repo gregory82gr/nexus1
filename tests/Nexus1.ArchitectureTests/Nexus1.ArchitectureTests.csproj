@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BuildingBlocks\Nexus1.BuildingBlocks.Domain\Nexus1.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\Nexus1.BuildingBlocks.Application\Nexus1.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\Nexus1.ServiceDefaults\Nexus1.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\ReactorFleet\Nexus1.ReactorFleet.Domain\Nexus1.ReactorFleet.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\ReactorFleet\Nexus1.ReactorFleet.Application\Nexus1.ReactorFleet.Application.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\ReactorFleet\Nexus1.ReactorFleet.Infrastructure\Nexus1.ReactorFleet.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\AlarmManagement\Nexus1.AlarmManagement.Domain\Nexus1.AlarmManagement.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\AlarmManagement\Nexus1.AlarmManagement.Application\Nexus1.AlarmManagement.Application.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\AlarmManagement\Nexus1.AlarmManagement.Infrastructure\Nexus1.AlarmManagement.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\AlarmManagement\Nexus1.Contracts.AlarmManagement\Nexus1.Contracts.AlarmManagement.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.RootCause.Domain\Nexus1.RootCause.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.RootCause.Application\Nexus1.RootCause.Application.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.RootCause.Infrastructure\Nexus1.RootCause.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.Contracts.RootCause\Nexus1.Contracts.RootCause.csproj" />
+    <ProjectReference Include="..\..\src\Hosts\Nexus1.ModularRuntime\Nexus1.ModularRuntime.csproj" />
+    <ProjectReference Include="..\..\src\Hosts\Nexus1.RootCause.Host\Nexus1.RootCause.Host.csproj" />
+  </ItemGroup>
+
+</Project>
