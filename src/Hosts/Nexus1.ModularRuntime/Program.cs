@@ -6,6 +6,8 @@ using Nexus1.Audit.Infrastructure;
 using Nexus1.Audit.Infrastructure.Persistence;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Messaging;
+using Nexus1.Compliance.Infrastructure;
+using Nexus1.Compliance.Infrastructure.Persistence;
 using Nexus1.ReactorFleet.Application;
 using Nexus1.ReactorFleet.Infrastructure;
 using Nexus1.ReactorFleet.Infrastructure.Persistence;
@@ -18,6 +20,8 @@ var alarmManagementConnectionString = builder.Configuration.GetConnectionString(
     ?? throw new InvalidOperationException("Missing ConnectionStrings:AlarmManagementDb configuration.");
 var auditConnectionString = builder.Configuration.GetConnectionString("AuditDb")
     ?? throw new InvalidOperationException("Missing ConnectionStrings:AuditDb configuration.");
+var complianceConnectionString = builder.Configuration.GetConnectionString("ComplianceDb")
+    ?? throw new InvalidOperationException("Missing ConnectionStrings:ComplianceDb configuration.");
 
 builder.Services.AddBuildingBlocksApplication();
 
@@ -37,11 +41,14 @@ builder.Services.AddAlarmManagementInfrastructure(alarmManagementConnectionStrin
 
 builder.Services.AddAuditInfrastructure(auditConnectionString);
 
+builder.Services.AddComplianceInfrastructure(complianceConnectionString);
+
 builder.Services
     .AddHealthChecks()
     .AddCheck<DbContextHealthCheck<ReactorFleetDbContext>>("reactorfleet-db")
     .AddCheck<DbContextHealthCheck<AlarmManagementDbContext>>("alarmmanagement-db")
-    .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db");
+    .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db")
+    .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db");
 
 var app = builder.Build();
 
