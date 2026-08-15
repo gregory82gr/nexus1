@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Messaging;
 using Nexus1.Contracts.AlarmManagement;
+using Nexus1.RootCause.Application;
 using Nexus1.RootCause.Infrastructure.Messaging;
 using Nexus1.RootCause.Infrastructure.Persistence;
 
@@ -25,6 +26,7 @@ public sealed class AlarmFloodMessageHandlerTests : RootCauseComponentTestDataba
         services.AddDbContext<RootCauseDbContext>(options => options.UseSqlServer(ConnectionString));
         services.AddSingleton<IIdGenerator, SequentialIdGenerator>();
         services.AddSingleton<IDateTimeProvider>(new FixedDateTimeProvider(NowUtc));
+        services.AddScoped<IOutboxWriter, EfOutboxWriter>();
         return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
     }
 

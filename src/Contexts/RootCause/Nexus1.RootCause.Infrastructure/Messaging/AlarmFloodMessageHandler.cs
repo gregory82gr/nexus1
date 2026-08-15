@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Messaging;
 using Nexus1.Contracts.AlarmManagement;
+using Nexus1.Contracts.RootCause;
+using Nexus1.RootCause.Application;
 using Nexus1.RootCause.Domain;
 using Nexus1.RootCause.Infrastructure.Persistence;
 
@@ -24,6 +26,10 @@ public sealed class AlarmFloodMessageHandler(IServiceScopeFactory scopeFactory, 
     private const string EventType = "nexus1.alarm-management.alarm-flood-detected.v1";
     private const string Producer = "alarm-management";
     private const int SchemaVersion = 1;
+
+    /// <summary>Same coordinates OpenAnalysisCommandHandler uses (ADR-012) — this is the auto-open production path, which inlines Open() rather than going through that handler (ADR-008), so it must publish CaseOpened itself.</summary>
+    private const string CaseOpenedRoutingKey = "root-cause.root-cause-case-opened.v1";
+    private const string CaseOpenedEventType = "nexus1.root-cause.root-cause-case-opened.v1";
 
     private static readonly JsonSerializerOptions PayloadOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
@@ -49,11 +55,21 @@ public sealed class AlarmFloodMessageHandler(IServiceScopeFactory scopeFactory, 
 
             var idGenerator = scope.ServiceProvider.GetRequiredService<IIdGenerator>();
             var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
+            var outboxWriter = scope.ServiceProvider.GetRequiredService<IOutboxWriter>();
 
             var analysis = RootCauseAnalysis.Open(
                 new RootCauseAnalysisId(idGenerator.NextLong()), new UnitId(payload.UnitId), new AlarmFloodId(payload.AlarmFloodId),
                 "system:alarm-flood-consumer", dateTimeProvider.UtcNow);
             await dbContext.RootCauseAnalyses.AddAsync(analysis, cancellationToken);
+
+            // Same transaction as the analysis' own commit — this is the
+            // real auto-open production path, which inlines Open() rather
+            // than going through OpenAnalysisCommandHandler (ADR-008), so it
+            // must publish CaseOpened itself for Reporting's projection to
+            // see every opened case, not just manually-opened ones (ADR-012).
+            outboxWriter.Enqueue(
+                CaseOpenedEventType, schemaVersion: 1, CaseOpenedRoutingKey, analysis.OpenedAtUtc,
+                new RootCauseCaseOpenedV1(analysis.Id.Value, analysis.UnitId.Value, analysis.AlarmFloodId.Value, analysis.OpenedAtUtc));
 
             var receipt = new InboxReceipt(
                 ConsumerName, messageId, Producer, EventType, SchemaVersion, payload.StartedAtUtc, dateTimeProvider.UtcNow);

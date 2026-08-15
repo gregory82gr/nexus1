@@ -52,7 +52,7 @@ public sealed class OutboxRelayTests : RootCauseComponentTestDatabase
         var idGenerator = new SequentialIdGenerator();
         var dateTimeProvider = new FixedDateTimeProvider(NowUtc);
 
-        var openHandler = new OpenAnalysisCommandHandler(repository, unitOfWork, dateTimeProvider, idGenerator);
+        var openHandler = new OpenAnalysisCommandHandler(repository, unitOfWork, dateTimeProvider, idGenerator, new EfOutboxWriter(dbContext));
         var openResult = await openHandler.Handle(new OpenAnalysisCommand(1, 500, "system:test"), CancellationToken.None);
         Assert.True(openResult.IsSuccess);
         var analysisId = openResult.Value;
@@ -84,10 +84,19 @@ public sealed class OutboxRelayTests : RootCauseComponentTestDatabase
         var analysis = await verifyContext.RootCauseAnalyses.SingleAsync();
         Assert.Equal(AnalysisStatus.Closed, analysis.Status);
 
-        var outboxMessage = await verifyContext.OutboxMessages.SingleAsync();
-        Assert.Equal("nexus1.root-cause.root-cause-verdict-issued.v1", outboxMessage.EventType);
-        Assert.Equal("root-cause.root-cause-verdict-issued.v1", outboxMessage.RoutingKey);
-        Assert.Null(outboxMessage.ProcessedAtUtc);
+        // Two rows now: CaseOpened (from Open) and VerdictIssued (from
+        // Close) — both went through RootCause's one outbox (ADR-012).
+        Assert.Equal(2, await verifyContext.OutboxMessages.CountAsync());
+
+        var verdictMessage = await verifyContext.OutboxMessages
+            .SingleAsync(m => m.RoutingKey == "root-cause.root-cause-verdict-issued.v1");
+        Assert.Equal("nexus1.root-cause.root-cause-verdict-issued.v1", verdictMessage.EventType);
+        Assert.Null(verdictMessage.ProcessedAtUtc);
+
+        var openedMessage = await verifyContext.OutboxMessages
+            .SingleAsync(m => m.RoutingKey == "root-cause.root-cause-case-opened.v1");
+        Assert.Equal("nexus1.root-cause.root-cause-case-opened.v1", openedMessage.EventType);
+        Assert.Null(openedMessage.ProcessedAtUtc);
     }
 
     [Fact]
@@ -103,12 +112,11 @@ public sealed class OutboxRelayTests : RootCauseComponentTestDatabase
             var publishedCount = await relay.RelayOnceAsync(batchSize: 64, CancellationToken.None);
 
             Assert.Equal(0, publishedCount);
-            Assert.Equal(1, failingPublisher.AttemptCount);
+            Assert.Equal(2, failingPublisher.AttemptCount); // CaseOpened + VerdictIssued, both attempted and both failed
         }
 
         await using var verifyContext = CreateDbContext();
-        var outboxMessage = await verifyContext.OutboxMessages.SingleAsync();
-        Assert.Null(outboxMessage.ProcessedAtUtc);
+        Assert.All(await verifyContext.OutboxMessages.ToListAsync(), m => Assert.Null(m.ProcessedAtUtc));
     }
 
     [Fact]
@@ -124,13 +132,12 @@ public sealed class OutboxRelayTests : RootCauseComponentTestDatabase
             var relay = new OutboxRelay(relayContext, succeedingPublisher, new FixedDateTimeProvider(NowUtc), NullLogger<OutboxRelay>.Instance);
             var publishedCount = await relay.RelayOnceAsync(batchSize: 64, CancellationToken.None);
 
-            Assert.Equal(1, publishedCount);
+            Assert.Equal(2, publishedCount); // CaseOpened + VerdictIssued
         }
 
-        Assert.Single(publishedMessages);
+        Assert.Equal(2, publishedMessages.Count);
 
         await using var verifyContext = CreateDbContext();
-        var outboxMessage = await verifyContext.OutboxMessages.SingleAsync();
-        Assert.NotNull(outboxMessage.ProcessedAtUtc);
+        Assert.All(await verifyContext.OutboxMessages.ToListAsync(), m => Assert.NotNull(m.ProcessedAtUtc));
     }
 }
