@@ -1,10 +1,14 @@
+using Nexus1.BuildingBlocks.Observability;
+
 namespace Nexus1.RootCause.Infrastructure.Messaging;
 
 /// <summary>
 /// Mirrors Nexus1.AlarmManagement.Infrastructure.Messaging.OutboxMessage
 /// exactly (ADR-008/ADR-010) — persistence-only, not a domain concept.
 /// ProcessedAtUtc is the reduced stand-in for the book's fuller State enum
-/// (null = pending, non-null = dispatched).
+/// (null = pending, non-null = dispatched). The four Trace* columns are
+/// ADR-013's ProducerTraceSnapshot (ch.51 51-I), captured beside the row at
+/// commit time — nullable so an absent listener never blocks the commit.
 /// </summary>
 public sealed class OutboxMessage
 {
@@ -20,7 +24,8 @@ public sealed class OutboxMessage
 
     public OutboxMessage(
         Guid messageId, string producer, string eventType, int schemaVersion, string routingKey,
-        string contentType, DateTime occurredAtUtc, DateTime storedAtUtc, byte[] envelopeBytes, byte[] envelopeSha256)
+        string contentType, DateTime occurredAtUtc, DateTime storedAtUtc, byte[] envelopeBytes, byte[] envelopeSha256,
+        ProducerTraceSnapshot? traceSnapshot = null)
     {
         MessageId = messageId;
         Producer = producer;
@@ -32,6 +37,10 @@ public sealed class OutboxMessage
         StoredAtUtc = storedAtUtc;
         EnvelopeBytes = envelopeBytes;
         EnvelopeSha256 = envelopeSha256;
+        TraceId = traceSnapshot?.TraceId;
+        SpanId = traceSnapshot?.SpanId;
+        TraceFlags = traceSnapshot?.TraceFlags;
+        TraceState = traceSnapshot?.TraceState;
     }
 
     public Guid MessageId { get; private set; }
@@ -56,5 +65,16 @@ public sealed class OutboxMessage
 
     public DateTime? ProcessedAtUtc { get; private set; }
 
+    public string? TraceId { get; private set; }
+
+    public string? SpanId { get; private set; }
+
+    public byte? TraceFlags { get; private set; }
+
+    public string? TraceState { get; private set; }
+
     public void MarkProcessed(DateTime processedAtUtc) => ProcessedAtUtc = processedAtUtc;
+
+    public ProducerTraceSnapshot? ToTraceSnapshot() =>
+        TraceId is null || SpanId is null || TraceFlags is null ? null : new ProducerTraceSnapshot(TraceId, SpanId, TraceFlags.Value, TraceState);
 }

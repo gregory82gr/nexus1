@@ -33,7 +33,8 @@ public sealed class OutboxRelay(
                 await publisher.PublishAsync(
                     new OutboundMessage(
                         message.MessageId, message.EventType, message.SchemaVersion, message.Producer,
-                        message.RoutingKey, message.EnvelopeBytes, message.EnvelopeSha256, null, null),
+                        message.RoutingKey, message.EnvelopeBytes, message.EnvelopeSha256, null, null,
+                        message.ToTraceSnapshot()),
                     cancellationToken);
 
                 message.MarkProcessed(dateTimeProvider.UtcNow);

@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nexus1.BuildingBlocks.Messaging;
+using Nexus1.BuildingBlocks.Observability;
 using RabbitMQ.Client.Events;
 
 namespace Nexus1.RootCause.Infrastructure.Messaging;
@@ -8,7 +10,10 @@ namespace Nexus1.RootCause.Infrastructure.Messaging;
 /// <summary>
 /// Thin hosting loop — the actual dedup/retry/poison-classification logic
 /// lives in AlarmFloodMessageHandler, testable without a live RabbitMQ
-/// delivery.
+/// delivery. Extracts the propagated trace carrier and wraps the handler
+/// call in a CONSUMER span (ch.51 51-L) — a malformed or absent carrier
+/// starts a new diagnostic root here, it never rewrites the accepted
+/// envelope's business identity (ch.51 "INDEPENDENCE RULE").
 /// </summary>
 public sealed class AlarmFloodConsumerBackgroundService(
     RabbitMqConnectionManager connectionManager,
@@ -43,7 +48,24 @@ public sealed class AlarmFloodConsumerBackgroundService(
                     throw new InvalidOperationException($"Message has no valid MessageId property: '{delivery.BasicProperties.MessageId}'.");
                 }
 
-                var outcome = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
+                var eventType = delivery.BasicProperties.Type ?? "unknown";
+                var parentContext = AmqpCarrier.Extract(delivery.BasicProperties.Headers);
+                using var activity = NexusActivitySources.MessagingSource.StartActivity(
+                    SpanNames.ForProcess(eventType),
+                    ActivityKind.Consumer,
+                    parentContext,
+                    tags: SafeTags.ForMessageProcess(messageId, eventType));
+
+                MessageHandlingOutcome outcome;
+                try
+                {
+                    outcome = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    SafeError.Record(activity, ex);
+                    throw;
+                }
                 switch (outcome)
                 {
                     case MessageHandlingOutcome.Ack:

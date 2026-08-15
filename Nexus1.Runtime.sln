@@ -103,6 +103,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.Reporting.Infrastruc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.Reporting.ComponentTests", "tests\Nexus1.Reporting.ComponentTests\Nexus1.Reporting.ComponentTests.csproj", "{D0556F97-924E-40DA-89CD-969E2A69C2CE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.BuildingBlocks.Observability", "src\BuildingBlocks\Nexus1.BuildingBlocks.Observability\Nexus1.BuildingBlocks.Observability.csproj", "{62DE8E8B-5335-4646-B281-3B25EFABE2B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.BuildingBlocks.Observability.UnitTests", "tests\Nexus1.BuildingBlocks.Observability.UnitTests\Nexus1.BuildingBlocks.Observability.UnitTests.csproj", "{70FF3D50-8FC8-43F9-AA55-9E22BAF6DEC1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -268,6 +272,14 @@ Global
 		{D0556F97-924E-40DA-89CD-969E2A69C2CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D0556F97-924E-40DA-89CD-969E2A69C2CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D0556F97-924E-40DA-89CD-969E2A69C2CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{62DE8E8B-5335-4646-B281-3B25EFABE2B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{62DE8E8B-5335-4646-B281-3B25EFABE2B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{62DE8E8B-5335-4646-B281-3B25EFABE2B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{62DE8E8B-5335-4646-B281-3B25EFABE2B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70FF3D50-8FC8-43F9-AA55-9E22BAF6DEC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70FF3D50-8FC8-43F9-AA55-9E22BAF6DEC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70FF3D50-8FC8-43F9-AA55-9E22BAF6DEC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70FF3D50-8FC8-43F9-AA55-9E22BAF6DEC1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{9ED154C6-C14E-4D15-850E-F3570AA45BD8} = {6D76DB58-A0F0-4E1E-8335-232DBE7CA890}
@@ -318,5 +330,7 @@ Global
 		{143DA713-FA79-4A62-A8AA-A22F109B7E5F} = {DFD64979-71D4-46B5-BF62-217FA110CF39}
 		{6C05375B-C319-4C00-9607-50BF071CC9A8} = {587695F8-2F89-4012-BFCA-3E175C9109D3}
 		{D0556F97-924E-40DA-89CD-969E2A69C2CE} = {DFD64979-71D4-46B5-BF62-217FA110CF39}
+		{62DE8E8B-5335-4646-B281-3B25EFABE2B8} = {9ED154C6-C14E-4D15-850E-F3570AA45BD8}
+		{70FF3D50-8FC8-43F9-AA55-9E22BAF6DEC1} = {DFD64979-71D4-46B5-BF62-217FA110CF39}
 	EndGlobalSection
 EndGlobal

@@ -1,3 +1,5 @@
+using Nexus1.BuildingBlocks.Observability;
+
 namespace Nexus1.BuildingBlocks.Messaging;
 
 public sealed record OutboundMessage(
@@ -9,4 +11,5 @@ public sealed record OutboundMessage(
     byte[] EnvelopeBytes,
     byte[] EnvelopeSha256,
     Guid? CorrelationId,
-    Guid? CausationId);
+    Guid? CausationId,
+    ProducerTraceSnapshot? TraceSnapshot = null);

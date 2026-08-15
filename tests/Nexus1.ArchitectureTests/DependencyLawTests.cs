@@ -32,7 +32,7 @@ public class DependencyLawTests
     private static (string Layer, string? Context) Classify(string projectName)
     {
         if (projectName is "Nexus1.BuildingBlocks.Domain" or "Nexus1.BuildingBlocks.Application"
-            or "Nexus1.BuildingBlocks.Messaging" or "Nexus1.ServiceDefaults")
+            or "Nexus1.BuildingBlocks.Messaging" or "Nexus1.BuildingBlocks.Observability" or "Nexus1.ServiceDefaults")
         {
             return ("SharedKernel", null);
         }
