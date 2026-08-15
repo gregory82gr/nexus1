@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Nexus1.BuildingBlocks.Application;
+using Nexus1.RootCause.Application;
 using Nexus1.RootCause.Domain;
 using Nexus1.RootCause.Infrastructure.Messaging;
 using Nexus1.RootCause.Infrastructure.Persistence;
@@ -16,6 +17,9 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IRepository<RootCauseAnalysis, RootCauseAnalysisId>, RootCauseAnalysisRepository>();
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddScoped<IOutboxWriter, EfOutboxWriter>();
+        services.AddScoped<OutboxRelay>();
+        services.AddHostedService<OutboxPublisherBackgroundService>();
 
         // Assumes AddNexusMessaging(...) was already called (Host composition
         // root registers messaging once per host, not once per context).

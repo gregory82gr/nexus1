@@ -12,6 +12,7 @@
     <ProjectReference Include="..\..\Contexts\ReactorFleet\Nexus1.ReactorFleet.Infrastructure\Nexus1.ReactorFleet.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Contexts\AlarmManagement\Nexus1.AlarmManagement.Application\Nexus1.AlarmManagement.Application.csproj" />
     <ProjectReference Include="..\..\Contexts\AlarmManagement\Nexus1.AlarmManagement.Infrastructure\Nexus1.AlarmManagement.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Contexts\Audit\Nexus1.Audit.Infrastructure\Nexus1.Audit.Infrastructure.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\Nexus1.BuildingBlocks.Application\Nexus1.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\Nexus1.ServiceDefaults\Nexus1.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\Nexus1.BuildingBlocks.Messaging\Nexus1.BuildingBlocks.Messaging.csproj" />

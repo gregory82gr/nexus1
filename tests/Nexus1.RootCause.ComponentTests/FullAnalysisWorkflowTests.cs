@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.RootCause.Application;
 using Nexus1.RootCause.Domain;
+using Nexus1.RootCause.Infrastructure.Messaging;
 
 namespace Nexus1.RootCause.ComponentTests;
 
@@ -40,7 +41,8 @@ public sealed class FullAnalysisWorkflowTests : RootCauseComponentTestDatabase
         await AddHypothesisAsync(analysisId, "Loose fitting on primary loop.");
 
         await using var dbContext = CreateDbContext();
-        var result = await new CloseAnalysisCommandHandler(Repository(dbContext), UnitOfWork(dbContext), new SystemDateTimeProvider())
+        var result = await new CloseAnalysisCommandHandler(
+                Repository(dbContext), UnitOfWork(dbContext), new SystemDateTimeProvider(), new EfOutboxWriter(dbContext))
             .Handle(new CloseAnalysisCommand(analysisId, "Confirmed", "operator.1"), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -73,7 +75,8 @@ public sealed class FullAnalysisWorkflowTests : RootCauseComponentTestDatabase
         }
 
         await using var closeContext = CreateDbContext();
-        var closeResult = await new CloseAnalysisCommandHandler(Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider())
+        var closeResult = await new CloseAnalysisCommandHandler(
+                Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider(), new EfOutboxWriter(closeContext))
             .Handle(new CloseAnalysisCommand(analysisId, "Confirmed", "operator.1"), CancellationToken.None);
 
         Assert.True(closeResult.IsFailure);
@@ -104,7 +107,8 @@ public sealed class FullAnalysisWorkflowTests : RootCauseComponentTestDatabase
 
         await using (var closeContext = CreateDbContext())
         {
-            var result = await new CloseAnalysisCommandHandler(Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider())
+            var result = await new CloseAnalysisCommandHandler(
+                    Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider(), new EfOutboxWriter(closeContext))
                 .Handle(new CloseAnalysisCommand(analysisId, "Loose fitting confirmed as cause.", "operator.2"), CancellationToken.None);
             Assert.True(result.IsSuccess);
         }
@@ -145,7 +149,8 @@ public sealed class FullAnalysisWorkflowTests : RootCauseComponentTestDatabase
 
         await using (var closeContext = CreateDbContext())
         {
-            var result = await new CloseAnalysisCommandHandler(Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider())
+            var result = await new CloseAnalysisCommandHandler(
+                    Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider(), new EfOutboxWriter(closeContext))
                 .Handle(new CloseAnalysisCommand(analysisId, "Confirmed", "operator.1"), CancellationToken.None);
             Assert.True(result.IsSuccess);
         }
