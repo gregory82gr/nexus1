@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nexus1.RootCause.Application\Nexus1.RootCause.Application.csproj" />
+    <ProjectReference Include="..\..\AlarmManagement\Nexus1.Contracts.AlarmManagement\Nexus1.Contracts.AlarmManagement.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Nexus1.BuildingBlocks.Messaging\Nexus1.BuildingBlocks.Messaging.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -10,6 +12,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
   </ItemGroup>
 
   <PropertyGroup>

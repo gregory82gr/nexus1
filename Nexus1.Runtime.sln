@@ -71,6 +71,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.ReactorFleet.Compone
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.AlarmManagement.ComponentTests", "tests\Nexus1.AlarmManagement.ComponentTests\Nexus1.AlarmManagement.ComponentTests.csproj", "{BD5BE22C-6D89-402F-B79B-3B9AB8DC74C9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.BuildingBlocks.Messaging", "src\BuildingBlocks\Nexus1.BuildingBlocks.Messaging\Nexus1.BuildingBlocks.Messaging.csproj", "{2B79B509-9398-4AF4-9A25-FD52FE6ABBD2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -184,6 +186,10 @@ Global
 		{BD5BE22C-6D89-402F-B79B-3B9AB8DC74C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD5BE22C-6D89-402F-B79B-3B9AB8DC74C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BD5BE22C-6D89-402F-B79B-3B9AB8DC74C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B79B509-9398-4AF4-9A25-FD52FE6ABBD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B79B509-9398-4AF4-9A25-FD52FE6ABBD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B79B509-9398-4AF4-9A25-FD52FE6ABBD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B79B509-9398-4AF4-9A25-FD52FE6ABBD2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{9ED154C6-C14E-4D15-850E-F3570AA45BD8} = {6D76DB58-A0F0-4E1E-8335-232DBE7CA890}
@@ -218,5 +224,6 @@ Global
 		{60C955FC-0E99-4A0C-9B72-32AB61580621} = {8678D007-7301-4C3B-A3C2-236ED3EB55C7}
 		{5CBD5AD2-B813-4E23-B7B0-17134171FE54} = {DFD64979-71D4-46B5-BF62-217FA110CF39}
 		{BD5BE22C-6D89-402F-B79B-3B9AB8DC74C9} = {DFD64979-71D4-46B5-BF62-217FA110CF39}
+		{2B79B509-9398-4AF4-9A25-FD52FE6ABBD2} = {9ED154C6-C14E-4D15-850E-F3570AA45BD8}
 	EndGlobalSection
 EndGlobal

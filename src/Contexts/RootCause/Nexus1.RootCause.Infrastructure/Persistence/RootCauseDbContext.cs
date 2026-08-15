@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Nexus1.RootCause.Domain;
+using Nexus1.RootCause.Infrastructure.Messaging;
 
 namespace Nexus1.RootCause.Infrastructure.Persistence;
 
@@ -11,6 +12,8 @@ namespace Nexus1.RootCause.Infrastructure.Persistence;
 public sealed class RootCauseDbContext(DbContextOptions<RootCauseDbContext> options) : DbContext(options)
 {
     public DbSet<RootCauseAnalysis> RootCauseAnalyses => Set<RootCauseAnalysis>();
+
+    public DbSet<InboxReceipt> InboxReceipts => Set<InboxReceipt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

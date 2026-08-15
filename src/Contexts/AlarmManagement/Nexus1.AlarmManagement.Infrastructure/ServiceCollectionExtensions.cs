@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Nexus1.AlarmManagement.Application;
 using Nexus1.AlarmManagement.Domain;
+using Nexus1.AlarmManagement.Infrastructure.Messaging;
 using Nexus1.AlarmManagement.Infrastructure.Persistence;
 using Nexus1.BuildingBlocks.Application;
 
@@ -20,6 +21,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAlarmDefinitionFinder, EfAlarmDefinitionFinder>();
         services.AddScoped<IAlarmEventFinder, EfAlarmEventFinder>();
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddScoped<IOutboxWriter, EfOutboxWriter>();
+        services.AddScoped<OutboxRelay>();
+        services.AddHostedService<OutboxPublisherBackgroundService>();
 
         return services;
     }

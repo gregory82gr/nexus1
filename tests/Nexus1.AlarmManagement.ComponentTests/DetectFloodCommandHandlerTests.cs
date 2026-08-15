@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Nexus1.AlarmManagement.Application;
 using Nexus1.AlarmManagement.Domain;
+using Nexus1.AlarmManagement.Infrastructure.Messaging;
+using Nexus1.AlarmManagement.Infrastructure.Persistence;
 using Nexus1.BuildingBlocks.Application;
 
 namespace Nexus1.AlarmManagement.ComponentTests;
@@ -13,6 +15,14 @@ public sealed class DetectFloodCommandHandlerTests : AlarmManagementComponentTes
     {
         public DateTime UtcNow { get; } = utcNow;
     }
+
+    private static DetectFloodCommandHandler CreateHandler(AlarmManagementDbContext dbContext) => new(
+        EventFinder(dbContext),
+        Repository<AlarmFlood, AlarmFloodId>(dbContext),
+        UnitOfWork(dbContext),
+        new FixedDateTimeProvider(NowUtc),
+        new SequentialIdGenerator(),
+        new EfOutboxWriter(dbContext));
 
     private async Task SeedAlarmEventsAsync(params DateTime[] raisedAtTimestamps)
     {
@@ -34,14 +44,8 @@ public sealed class DetectFloodCommandHandlerTests : AlarmManagementComponentTes
         await SeedAlarmEventsAsync(NowUtc.AddSeconds(-20), NowUtc.AddSeconds(-10), NowUtc.AddSeconds(-1));
 
         await using var dbContext = CreateDbContext();
-        var handler = new DetectFloodCommandHandler(
-            EventFinder(dbContext),
-            Repository<AlarmFlood, AlarmFloodId>(dbContext),
-            UnitOfWork(dbContext),
-            new FixedDateTimeProvider(NowUtc),
-            new SequentialIdGenerator());
-
-        var result = await handler.Handle(new DetectFloodCommand(1, CountThreshold: 3, WindowSeconds: 30), CancellationToken.None);
+        var result = await CreateHandler(dbContext).Handle(
+            new DetectFloodCommand(1, CountThreshold: 3, WindowSeconds: 30), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
@@ -58,14 +62,8 @@ public sealed class DetectFloodCommandHandlerTests : AlarmManagementComponentTes
         await SeedAlarmEventsAsync(NowUtc.AddSeconds(-10));
 
         await using var dbContext = CreateDbContext();
-        var handler = new DetectFloodCommandHandler(
-            EventFinder(dbContext),
-            Repository<AlarmFlood, AlarmFloodId>(dbContext),
-            UnitOfWork(dbContext),
-            new FixedDateTimeProvider(NowUtc),
-            new SequentialIdGenerator());
-
-        var result = await handler.Handle(new DetectFloodCommand(1, CountThreshold: 3, WindowSeconds: 30), CancellationToken.None);
+        var result = await CreateHandler(dbContext).Handle(
+            new DetectFloodCommand(1, CountThreshold: 3, WindowSeconds: 30), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Null(result.Value);
@@ -78,14 +76,8 @@ public sealed class DetectFloodCommandHandlerTests : AlarmManagementComponentTes
     public async Task Zero_count_threshold_fails()
     {
         await using var dbContext = CreateDbContext();
-        var handler = new DetectFloodCommandHandler(
-            EventFinder(dbContext),
-            Repository<AlarmFlood, AlarmFloodId>(dbContext),
-            UnitOfWork(dbContext),
-            new FixedDateTimeProvider(NowUtc),
-            new SequentialIdGenerator());
-
-        var result = await handler.Handle(new DetectFloodCommand(1, CountThreshold: 0, WindowSeconds: 30), CancellationToken.None);
+        var result = await CreateHandler(dbContext).Handle(
+            new DetectFloodCommand(1, CountThreshold: 0, WindowSeconds: 30), CancellationToken.None);
 
         Assert.True(result.IsFailure);
     }
