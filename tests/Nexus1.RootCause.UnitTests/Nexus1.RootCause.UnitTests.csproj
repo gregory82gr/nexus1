@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.RootCause.Domain\Nexus1.RootCause.Domain.csproj" />
     <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.RootCause.Application\Nexus1.RootCause.Application.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\Nexus1.BuildingBlocks.Messaging\Nexus1.BuildingBlocks.Messaging.csproj" />
   </ItemGroup>
 
 </Project>

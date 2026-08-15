@@ -15,6 +15,10 @@ public sealed class RootCauseDbContext(DbContextOptions<RootCauseDbContext> opti
 
     public DbSet<InboxReceipt> InboxReceipts => Set<InboxReceipt>();
 
+    public DbSet<RetryTicket> RetryTickets => Set<RetryTicket>();
+
+    public DbSet<PoisonMessage> PoisonMessages => Set<PoisonMessage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(RootCauseDbContext).Assembly);
