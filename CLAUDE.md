@@ -188,9 +188,12 @@ src/
 tests/
   Nexus1.ArchitectureTests/              # enforces the dependency rules below — build-breaking
   Nexus1.ReactorFleet.UnitTests/
+  Nexus1.ReactorFleet.ComponentTests/    # added §5 step 5 — see ADR-002-amend's topology-addition note
   Nexus1.AlarmManagement.UnitTests/
+  Nexus1.AlarmManagement.ComponentTests/ # added §5 step 5 — see ADR-002-amend's topology-addition note
   Nexus1.RootCause.UnitTests/
-  Nexus1.RootCause.ComponentTests/
+  Nexus1.RootCause.ComponentTests/       # in the original reference tree — RootCause was the only
+                                          # context the book proved with component tests
   Nexus1.Contracts.ContractTests/
   Nexus1.DistributedSlice.EndToEndTests/
 docs/
