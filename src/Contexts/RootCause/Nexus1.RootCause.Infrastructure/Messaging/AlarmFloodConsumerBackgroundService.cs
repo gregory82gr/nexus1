@@ -6,11 +6,13 @@ using RabbitMQ.Client.Events;
 namespace Nexus1.RootCause.Infrastructure.Messaging;
 
 /// <summary>
-/// Thin hosting loop — the actual dedup/domain-reaction logic lives in
-/// AlarmFloodMessageHandler, testable without a live RabbitMQ delivery.
+/// Thin hosting loop — the actual dedup/retry/poison-classification logic
+/// lives in AlarmFloodMessageHandler, testable without a live RabbitMQ
+/// delivery.
 /// </summary>
 public sealed class AlarmFloodConsumerBackgroundService(
     RabbitMqConnectionManager connectionManager,
+    RabbitMqOptions rabbitMqOptions,
     AlarmFloodMessageHandler messageHandler,
     ILogger<AlarmFloodConsumerBackgroundService> logger) : BackgroundService
 {
@@ -21,6 +23,14 @@ public sealed class AlarmFloodConsumerBackgroundService(
     {
         var channel = connectionManager.CreateChannel();
         NexusTopology.DeclareQuorumQueue(channel, QueueName, BindingRoutingKey);
+        NexusTopology.DeclareDeadQueue(channel, QueueName);
+
+        // Dead-lettering is broker policy, not a queue argument (Executable
+        // Asset 25-C, ADR-009) — applied once at consumer startup, idempotent
+        // (a PUT to an unchanged policy is a no-op).
+        await new RabbitMqDeadLetterPolicyProvisioner(rabbitMqOptions)
+            .EnsureAsync("nexus-live-queue-safety-" + QueueName, QueueName, stoppingToken);
+
         channel.BasicQos(0, prefetchCount: 10, global: false);
 
         var consumer = new AsyncEventingBasicConsumer(channel);
@@ -33,15 +43,23 @@ public sealed class AlarmFloodConsumerBackgroundService(
                     throw new InvalidOperationException($"Message has no valid MessageId property: '{delivery.BasicProperties.MessageId}'.");
                 }
 
-                var shouldAck = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
-                if (shouldAck)
+                var outcome = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
+                switch (outcome)
                 {
-                    channel.BasicAck(delivery.DeliveryTag, multiple: false);
-                }
-                else
-                {
-                    logger.LogWarning("Ambiguous inbox outcome for message {MessageId}; nacking for redelivery.", delivery.BasicProperties.MessageId);
-                    channel.BasicNack(delivery.DeliveryTag, multiple: false, requeue: true);
+                    case MessageHandlingOutcome.Ack:
+                        channel.BasicAck(delivery.DeliveryTag, multiple: false);
+                        break;
+                    case MessageHandlingOutcome.NackNoRequeue:
+                        logger.LogError(
+                            "Message {MessageId} quarantined after exhausting retries; routing to dead-letter.",
+                            delivery.BasicProperties.MessageId);
+                        channel.BasicNack(delivery.DeliveryTag, multiple: false, requeue: false);
+                        break;
+                    case MessageHandlingOutcome.NackRequeue:
+                    default:
+                        logger.LogWarning("Ambiguous inbox outcome for message {MessageId}; nacking for redelivery.", delivery.BasicProperties.MessageId);
+                        channel.BasicNack(delivery.DeliveryTag, multiple: false, requeue: true);
+                        break;
                 }
             }
             catch (Exception ex)

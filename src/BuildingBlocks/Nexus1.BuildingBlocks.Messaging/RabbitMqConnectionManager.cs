@@ -17,6 +17,14 @@ public sealed class RabbitMqConnectionManager : IDisposable
             Password = options.Password,
             VirtualHost = options.VirtualHost,
             DispatchConsumersAsync = true,
+            // Explicit, not relying on the client's implicit default (ADR-009):
+            // a broker outage must not take the whole host down with it —
+            // CreateChannel() throws while disconnected (caught by OutboxRelay/
+            // RetryDispatcher's broad catch, leaving rows unprocessed for
+            // redelivery) and the same IConnection reconnects on its own once
+            // the broker returns, without restarting the host process.
+            AutomaticRecoveryEnabled = true,
+            NetworkRecoveryInterval = TimeSpan.FromSeconds(5),
         };
 
         _connection = factory.CreateConnection("nexus1");

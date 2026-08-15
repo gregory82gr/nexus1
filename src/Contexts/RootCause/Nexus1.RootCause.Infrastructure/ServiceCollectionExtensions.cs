@@ -22,6 +22,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<AlarmFloodMessageHandler>();
         services.AddHostedService<AlarmFloodConsumerBackgroundService>();
 
+        services.AddScoped<RetryDispatcher>();
+        services.AddHostedService<RetryDispatcherBackgroundService>();
+
         return services;
     }
 }
