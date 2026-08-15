@@ -1,0 +1,4 @@
+we want using the cloude code to create .NET C# solution using EF and SQLServer. in books provided in this project 
+we have many of instructions related to this project. 
+The most closed book to our implementation is the book From_Services_To_Runtime. 
+  
