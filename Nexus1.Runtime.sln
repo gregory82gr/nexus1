@@ -65,6 +65,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.RootCause.ComponentT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.RootCause.UnitTests", "tests\Nexus1.RootCause.UnitTests\Nexus1.RootCause.UnitTests.csproj", "{574F9D1D-1B48-4DD0-A910-855E84DDCE35}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.Contracts.ReactorFleet", "src\Contexts\ReactorFleet\Nexus1.Contracts.ReactorFleet\Nexus1.Contracts.ReactorFleet.csproj", "{60C955FC-0E99-4A0C-9B72-32AB61580621}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -166,6 +168,10 @@ Global
 		{574F9D1D-1B48-4DD0-A910-855E84DDCE35}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{574F9D1D-1B48-4DD0-A910-855E84DDCE35}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{574F9D1D-1B48-4DD0-A910-855E84DDCE35}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60C955FC-0E99-4A0C-9B72-32AB61580621}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60C955FC-0E99-4A0C-9B72-32AB61580621}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60C955FC-0E99-4A0C-9B72-32AB61580621}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60C955FC-0E99-4A0C-9B72-32AB61580621}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{9ED154C6-C14E-4D15-850E-F3570AA45BD8} = {6D76DB58-A0F0-4E1E-8335-232DBE7CA890}
@@ -197,5 +203,6 @@ Global
 		{BC99BAC5-6453-4C89-8825-13CEE0B9167D} = {DFD64979-71D4-46B5-BF62-217FA110CF39}
 		{5AE8E4C2-158F-4A33-BEFB-C05A8E3435D7} = {DFD64979-71D4-46B5-BF62-217FA110CF39}
 		{574F9D1D-1B48-4DD0-A910-855E84DDCE35} = {DFD64979-71D4-46B5-BF62-217FA110CF39}
+		{60C955FC-0E99-4A0C-9B72-32AB61580621} = {8678D007-7301-4C3B-A3C2-236ED3EB55C7}
 	EndGlobalSection
 EndGlobal

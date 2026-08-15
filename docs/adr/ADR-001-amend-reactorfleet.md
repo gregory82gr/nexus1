@@ -40,6 +40,35 @@ hand-wave it as an untested stub. AlarmManagement needs *something* to
 produce the telemetry it floods-detects on; the book's own Phase 1 doesn't
 model that origin at all.
 
+### Correction (2026-08-15, per ADR-004)
+
+This ADR originally decided **no `Nexus1.Contracts.ReactorFleet` project is
+needed**, reasoning that ReactorFleet has no external consumers since
+AlarmManagement consumes its telemetry "in-process." That reasoning was
+wrong and is corrected here rather than left to mislead a future reader.
+
+ADR-002's dependency law (CLAUDE.md §4) is a **compile-time ownership**
+rule: *"Cross-context code references only producer-owned Contracts"* —
+it makes no exception for same-host or in-process composition, and
+`Nexus1.ArchitectureTests` enforces it structurally (parsing `.csproj`
+`ProjectReference` graphs), not by inspecting runtime transport. Whether
+`AlarmManagement.Application` calls into ReactorFleet over a broker, an
+HTTP client, or a plain in-process method call, it is still a cross-context
+reference the moment it takes a compile-time dependency on anything outside
+`Nexus1.Contracts.ReactorFleet`. "In-process" describes how data moves at
+runtime; it says nothing about which project is allowed to reference which
+at compile time. This was first caught while building AlarmManagement's
+domain model (ADR-004) and is fixed here at the source.
+
+**ReactorFleet publishes through `Nexus1.Contracts.ReactorFleet`, exactly
+like AlarmManagement (`Nexus1.Contracts.AlarmManagement`) and RootCause
+(`Nexus1.Contracts.RootCause`) already do — regardless of hosting.** This
+is not a new exception to the "no empty placeholder projects" anti-pattern
+this ADR originally invoked to justify skipping it: ReactorFleet has a real
+consumer today (AlarmManagement's future flood-detection wiring), so the
+Contracts project is not a placeholder, it was simply never created when it
+should have been.
+
 ## Decision
 
 ReactorFleet is included in this project's Phase 1, but **only as an
@@ -55,12 +84,21 @@ Concretely:
   `src/Contexts/ReactorFleet/`, composed only into `Nexus1.ModularRuntime`.
 - ReactorFleet produces simulated unit/reactor telemetry consumed
   **in-process** by AlarmManagement to detect floods. No broker traffic
-  between ReactorFleet and AlarmManagement in Phase 1.
-- No `Nexus1.Contracts.ReactorFleet` project is created yet — ReactorFleet
-  has no external consumers, so a public contracts project would be an empty
-  placeholder (the explicit anti-pattern this repo's instructions call out).
-  Create it only if/when something outside the modular runtime host needs to
-  consume ReactorFleet data directly.
+  between ReactorFleet and AlarmManagement in Phase 1 — but the reference
+  is still made through `Nexus1.Contracts.ReactorFleet` (see Correction
+  above), not directly against `Nexus1.ReactorFleet.Domain`/`.Application`.
+  "In-process" governs transport (both contexts run in one host, one
+  process, no broker), not which project may compile against which.
+- `Nexus1.Contracts.ReactorFleet` is created alongside
+  `Nexus1.Contracts.AlarmManagement` and `Nexus1.Contracts.RootCause`,
+  exposing the minimal DTO shape ReactorFleet's Phase-1-minimal domain model
+  (ADR-003) already has to publish outward: `UnitPowerSnapshotRecorded`,
+  carrying `UnitPowerSnapshot`'s data. Unlike `AlarmFloodDetected.v1`/
+  `RootCauseVerdictIssued.v1` (broker-published, externally versioned per
+  the book), this contract has no `.v1` suffix — it is never published to a
+  broker in Phase 1, only referenced in-process, so the book's
+  external-versioning convention doesn't apply to it yet. Add versioning if
+  and when it ever crosses a broker.
 - AlarmManagement remains in the modular runtime host per the book, and
   still publishes `AlarmFloodDetected.v1` externally, unchanged from ADR-001.
 - RootCause remains the one service independently extracted to its own host
@@ -102,19 +140,28 @@ Concretely:
 ## Reversal condition
 
 Revisit this ADR if:
-- ReactorFleet needs to publish events consumed outside the modular runtime
-  host (triggers creation of `Nexus1.Contracts.ReactorFleet`), or
+- `Nexus1.Contracts.ReactorFleet` needs a second public type or its
+  existing `UnitPowerSnapshotRecorded` shape needs to change — that's an
+  ordinary contract change, not a re-litigation of this ADR.
 - ReactorFleet's data/update-frequency profile makes in-process composition
   impractical (triggers a new ADR proposing extraction, evaluated against
   the book's own extraction gates), or
+- ReactorFleet ever needs to publish over a broker (triggers adding `.v1`
+  versioning to its contract, matching `AlarmFloodDetected.v1`/
+  `RootCauseVerdictIssued.v1`), or
 - The book's ADR-001 is itself revised in a later source-material update.
 
 ## Evidence required
 
 - `Nexus1.ArchitectureTests` passing, confirming ReactorFleet's
   Domain/Application/Infrastructure respect the same inward-dependency law
-  as AlarmManagement and RootCause, and that no `Contracts.ReactorFleet`
-  reference exists anywhere in the solution while this ADR stands.
-- At domain-model time (§5 step 2): a passing unit test demonstrating
+  as AlarmManagement and RootCause, **and** confirming
+  `Nexus1.AlarmManagement.*` never references `Nexus1.ReactorFleet.Domain`
+  or `Nexus1.ReactorFleet.Application` directly — only
+  `Nexus1.Contracts.ReactorFleet` — the same shape as the existing
+  AlarmManagement→RootCause cross-context check.
+- At domain-model time (§5 step 2, done): a passing unit test demonstrating
   AlarmManagement consuming ReactorFleet telemetry in-process (direct
-  method/interface call, not broker traffic).
+  method/interface call, not broker traffic) — still pending until
+  Application-layer wiring (§5 step 5); the Contracts project existing now
+  is what makes that wiring legal when it's built.
