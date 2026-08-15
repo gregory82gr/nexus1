@@ -36,8 +36,10 @@ of authority for implementation questions:
 | 1 | **`From_Services_To_Runtime` (Parts 1–4)** | The actual implementation blueprint: solution topology, service templates, databases, contracts, messaging, security, observability, migration. This is the primary spec for everything you build. |
 | 2 | **`From_Flow_to_Services`** | Why boundaries were drawn where they were (service candidate map, ownership, contracts, failure modes). Use this to understand *why*, not to override Part 1's *how*. |
 | 3 | **`From_Schema_to_System` (Schema Atlas)** | Canonical SQL Server DDL for all 17 sector schemas — table names, keys, constraints. Source of truth for anything persisted. |
-| 4 | **`From_Entity_to_Context` (EF Core Configuration Atlas)** | Canonical EF Core mapping discipline: one entity → one `IEntityTypeConfiguration` file, Fluent API only, explicit names, schema folders. |
-| 5 | `ProjectDescriptionOfNexus.txt` | High-level intent (.NET, C#, EF Core, SQL Server). |
+| 4 | **`From_Domain_to_Twin` (DDD domain model)** | Entity, aggregate-root, and value-object shape; invariant enforcement; domain events. Governs the domain layer that everything above the Schema Atlas and below the CQRS/Application layer sits on. |
+| 5 | **`From_Blueprint_to_Core` (Clean/Onion + CQRS shape)** | CQRS command/query/handler interfaces, repository/unit-of-work ports, `Result`/`Result<T>` handler contract, layered dependency rule. Sits on top of `From_Domain_to_Twin`'s entity shape, not the other way round — its topology argument (single-project-per-layer) does **not** apply; see ADR-002-amend below. |
+| 6 | **`From_Entity_to_Context` (EF Core Configuration Atlas)** | Canonical EF Core mapping discipline: one entity → one `IEntityTypeConfiguration` file, Fluent API only, explicit names, schema folders. |
+| 7 | `ProjectDescriptionOfNexus.txt` | High-level intent (.NET, C#, EF Core, SQL Server). |
 
 **Known gap (as originally written) — SUPERSEDED, see session amendment below:** two books
 referenced heavily inside the above (`From Blueprint to Core` — Clean/Onion + CQRS shape,
@@ -48,19 +50,40 @@ sensible C# shape consistent with what *is* provided.
 
 **Session amendment (2026-08-15):** both `From_Blueprint_to_Core.pdf` and
 `From_Domain_to_Twin_DDD_NEXUS1_FINAL.pdf` were found present in the source-material folder
-the user provided. Per user decision, both are now treated as **real, authoritative sources**
-for CQRS/Clean-Onion shape and DDD domain-model shape respectively — read them directly
-instead of inferring. The "known gap" language above is kept for history but no longer
-describes this repo's actual source set. `ProjectDescriptionOfNexus.txt` (priority 5) was not
-found in the original provided folder; it was supplied separately from
-`C:\Users\USER\Desktop\ProjectDescriptionOfNexus.txt` and copied into
-`docs/source-material/`. Eleven other books present in the original folder
-(`From_Certainty_to_Calibration`, `From_Context_to_Flow`, `From_Core_to_Contract`,
-`From_Flood_to_Cause`, `From_Flow_to_Proof` + its TLA/Petri-net chapter artifacts, three
-`From_Grid_to_Core` versions, `From_Queue_to_Core`, `From_Table_to_Twin`,
-`From_Trial_to_Policy`) were deliberately **left out** of `docs/source-material/` per user
-decision — out of the stated 5-source authority list and out of Phase-1 scope. Revisit only if
-a named, in-scope source explicitly references one of them.
+the user provided. Both are now **confirmed priority sources** (table above), not gap-fillers —
+read them directly instead of inferring. The "known gap" language above is kept for history but
+no longer describes this repo's actual source set.
+
+`From_Blueprint_to_Core`'s topology argument (a single `Nexus.Domain`/`Nexus.Application`
+project apiece) conflicted with `From_Services_To_Runtime`'s ADR-002
+(project-per-context-per-layer, which this repo follows). That conflict was resolved in
+`docs/adr/ADR-002-amend-cqrs-shared-kernel.md`: ADR-002's topology stands (priority-1 source),
+and `From_Blueprint_to_Core`'s actual contribution — the CQRS marker interfaces and ports —
+landed in the new `src/BuildingBlocks/Nexus1.BuildingBlocks.Application/` project. Consult that
+ADR before assuming anything from `From_Blueprint_to_Core` about project layout; consult it
+directly for anything about CQRS interface shape.
+
+`ProjectDescriptionOfNexus.txt` (priority 7) was not found in the original provided folder; it
+was supplied separately from `C:\Users\USER\Desktop\ProjectDescriptionOfNexus.txt` and copied
+into `docs/source-material/`.
+
+**Explicitly out of scope for now:** eleven other books were present in the original source
+folder but are deliberately **not** copied into `docs/source-material/` and are outside the
+7-source authority list above:
+
+- `From_Flow_to_Proof` (14MB, plus a `From_FLOW_TO_PROOF` folder of TLA/Petri-net chapter
+  artifacts) and the three `From_Grid_to_Core` versions (base, v3, v4.1) — **revisit if Phase 1
+  needs them**, not a flat exclusion. `From_Flow_to_Proof`'s TLA/Petri-net material could matter
+  if Phase 1 ever needs formal verification of AlarmManagement's flood-detection invariants or
+  RootCause's verdict logic; the `From_Grid_to_Core` versions could matter if ReactorFleet's
+  simulated telemetry shape turns out to need something none of the 7 confirmed sources cover.
+  Deliberate deferral — raise it explicitly if either need materializes, don't silently pull
+  them in.
+- `From_Certainty_to_Calibration`, `From_Context_to_Flow`, `From_Core_to_Contract`,
+  `From_Flood_to_Cause`, `From_Queue_to_Core`, `From_Table_to_Twin`, `From_Trial_to_Policy` —
+  plain exclusion, out of the stated authority list and out of Phase-1 scope.
+
+Revisit any of the above only if a named, in-scope source explicitly references it.
 
 If you are ever about to implement something and can't find it in the source material, **stop
 and ask** rather than inventing architecture. This project is explicitly against "vibe
