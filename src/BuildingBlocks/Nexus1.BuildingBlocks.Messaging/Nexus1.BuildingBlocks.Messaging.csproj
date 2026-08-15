@@ -11,4 +11,8 @@
     <PackageReference Include="RabbitMQ.Client" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Nexus1.BuildingBlocks.Observability\Nexus1.BuildingBlocks.Observability.csproj" />
+  </ItemGroup>
+
 </Project>

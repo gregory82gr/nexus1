@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -5,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Messaging;
+using Nexus1.BuildingBlocks.Observability;
 using Nexus1.Contracts.AlarmManagement;
 using Nexus1.Contracts.RootCause;
 using Nexus1.RootCause.Application;
@@ -57,6 +59,13 @@ public sealed class AlarmFloodMessageHandler(IServiceScopeFactory scopeFactory, 
             var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
             var outboxWriter = scope.ServiceProvider.GetRequiredService<IOutboxWriter>();
 
+            // Nested owner span, same shape as OpenAnalysisCommandHandler's —
+            // this is the same "root-cause case open" business operation,
+            // reached via the auto-open path instead of the manual command.
+            using var openActivity = NexusActivitySources.RootCauseSource.StartActivity(
+                SpanNames.RootCauseCaseOpen, ActivityKind.Internal, parentContext: default,
+                tags: SafeTags.ForOwnerOperation(messageId, "ATTEMPTED"));
+
             var analysis = RootCauseAnalysis.Open(
                 new RootCauseAnalysisId(idGenerator.NextLong()), new UnitId(payload.UnitId), new AlarmFloodId(payload.AlarmFloodId),
                 "system:alarm-flood-consumer", dateTimeProvider.UtcNow);
@@ -70,6 +79,8 @@ public sealed class AlarmFloodMessageHandler(IServiceScopeFactory scopeFactory, 
             outboxWriter.Enqueue(
                 CaseOpenedEventType, schemaVersion: 1, CaseOpenedRoutingKey, analysis.OpenedAtUtc,
                 new RootCauseCaseOpenedV1(analysis.Id.Value, analysis.UnitId.Value, analysis.AlarmFloodId.Value, analysis.OpenedAtUtc));
+
+            openActivity?.SetTag("nexus1.outcome.code", "COMMITTED");
 
             var receipt = new InboxReceipt(
                 ConsumerName, messageId, Producer, EventType, SchemaVersion, payload.StartedAtUtc, dateTimeProvider.UtcNow);

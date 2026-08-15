@@ -14,6 +14,9 @@ var rootCauseConnectionString = builder.Configuration.GetConnectionString("RootC
 
 builder.Services.AddBuildingBlocksApplication();
 
+var otlpEndpoint = new Uri(builder.Configuration["Otel:OtlpEndpoint"] ?? "http://localhost:4317");
+builder.Services.AddNexusObservability(new NexusObservabilityOptions("Nexus1.RootCause.Host", otlpEndpoint));
+
 var rabbitMqOptions = new RabbitMqOptions(
     builder.Configuration["RabbitMq:HostName"] ?? "localhost",
     int.Parse(builder.Configuration["RabbitMq:Port"] ?? "5672"),
