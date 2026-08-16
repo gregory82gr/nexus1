@@ -14,6 +14,8 @@
     <ProjectReference Include="..\..\Contexts\CorePlatform\Nexus1.CorePlatform.Infrastructure\Nexus1.CorePlatform.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Contexts\Instrumentation\Nexus1.Instrumentation.Application\Nexus1.Instrumentation.Application.csproj" />
     <ProjectReference Include="..\..\Contexts\Instrumentation\Nexus1.Instrumentation.Infrastructure\Nexus1.Instrumentation.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Contexts\DigitalTwin\Nexus1.DigitalTwin.Application\Nexus1.DigitalTwin.Application.csproj" />
+    <ProjectReference Include="..\..\Contexts\DigitalTwin\Nexus1.DigitalTwin.Infrastructure\Nexus1.DigitalTwin.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Contexts\Security\Nexus1.Security.Application\Nexus1.Security.Application.csproj" />
     <ProjectReference Include="..\..\Contexts\Security\Nexus1.Security.Infrastructure\Nexus1.Security.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Contexts\Organization\Nexus1.Organization.Application\Nexus1.Organization.Application.csproj" />

@@ -11,6 +11,9 @@ using Nexus1.Compliance.Infrastructure.Persistence;
 using Nexus1.CorePlatform.Application;
 using Nexus1.CorePlatform.Infrastructure;
 using Nexus1.CorePlatform.Infrastructure.Persistence;
+using Nexus1.DigitalTwin.Application;
+using Nexus1.DigitalTwin.Infrastructure;
+using Nexus1.DigitalTwin.Infrastructure.Persistence;
 using Nexus1.Instrumentation.Application;
 using Nexus1.Instrumentation.Infrastructure;
 using Nexus1.Instrumentation.Infrastructure.Persistence;
@@ -74,6 +77,14 @@ builder.Services.AddAlarmManagementInfrastructure(alarmManagementConnectionStrin
 builder.Services.AddInstrumentationApplication();
 builder.Services.AddInstrumentationInfrastructure(alarmManagementConnectionString);
 
+// Shares AlarmManagementDb (ADR-020) — DigitalTwin is the fifth registration sharing it,
+// after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation: every external reference in
+// DigitalTwin's twenty-table scope points at ReactorFleet.Unit, CorePlatform.EngineeringUnit or
+// Instrumentation.Signal, all three already co-located here; no PII/credential sensitivity pulls
+// toward isolation.
+builder.Services.AddDigitalTwinApplication();
+builder.Services.AddDigitalTwinInfrastructure(alarmManagementConnectionString);
+
 builder.Services.AddAuditInfrastructure(auditConnectionString);
 
 builder.Services.AddComplianceInfrastructure(complianceConnectionString);
@@ -99,6 +110,11 @@ builder.Services
     .AddCheck<DbContextHealthCheck<ReactorFleetDbContext>>("reactorfleet-db")
     .AddCheck<DbContextHealthCheck<CorePlatformDbContext>>("coreplatform-db")
     .AddCheck<DbContextHealthCheck<InstrumentationDbContext>>("instrumentation-db")
+    // ADR-020's persistence decision: DigitalTwin shares AlarmManagementDb: this check is the
+    // second real confirmation (after Instrumentation, ADR-019) that ADR-018's strengthened
+    // DbContextHealthCheck<T> correctly handles a new schema being added to an already-migrated
+    // shared database (reachable but missing this context's own migration surfaces as Unhealthy).
+    .AddCheck<DbContextHealthCheck<DigitalTwinDbContext>>("digitaltwin-db")
     .AddCheck<DbContextHealthCheck<AlarmManagementDbContext>>("alarmmanagement-db")
     .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db")
     .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db")
