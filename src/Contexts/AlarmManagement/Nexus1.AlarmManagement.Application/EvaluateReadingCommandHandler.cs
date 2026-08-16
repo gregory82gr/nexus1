@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using Nexus1.AlarmManagement.Domain;
 using Nexus1.BuildingBlocks.Application;
+using Nexus1.BuildingBlocks.Observability;
 
 namespace Nexus1.AlarmManagement.Application;
 
@@ -12,29 +14,42 @@ public sealed class EvaluateReadingCommandHandler(
 {
     public async Task<Result<int>> Handle(EvaluateReadingCommand command, CancellationToken cancellationToken)
     {
-        var unitId = new UnitId(command.Reading.UnitId);
-        var definitions = await definitionFinder.GetForUnitAsync(unitId, cancellationToken);
+        using var activity = NexusActivitySources.AlarmManagementSource.StartActivity(
+            SpanNames.AlarmEvaluateReading, ActivityKind.Internal, parentContext: default,
+            tags: SafeTags.ForOwnerOperation(messageId: null, "ATTEMPTED"));
 
-        var raisedCount = 0;
-        foreach (var definition in definitions)
+        try
         {
-            var alarmEvent = definition.Evaluate(
-                command.Reading.PowerPercent, new AlarmEventId(idGenerator.NextLong()), command.Reading.RecordedAtUtc);
+            var unitId = new UnitId(command.Reading.UnitId);
+            var definitions = await definitionFinder.GetForUnitAsync(unitId, cancellationToken);
 
-            if (alarmEvent is null)
+            var raisedCount = 0;
+            foreach (var definition in definitions)
             {
-                continue;
+                var alarmEvent = definition.Evaluate(
+                    command.Reading.PowerPercent, new AlarmEventId(idGenerator.NextLong()), command.Reading.RecordedAtUtc);
+
+                if (alarmEvent is null)
+                {
+                    continue;
+                }
+
+                await eventRepository.AddAsync(alarmEvent, cancellationToken);
+                raisedCount++;
             }
 
-            await eventRepository.AddAsync(alarmEvent, cancellationToken);
-            raisedCount++;
-        }
+            if (raisedCount > 0)
+            {
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+            }
 
-        if (raisedCount > 0)
+            activity?.SetTag("nexus1.outcome.code", raisedCount > 0 ? "COMMITTED" : "ABSTAINED");
+            return Result<int>.Success(raisedCount);
+        }
+        catch (Exception ex)
         {
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+            SafeError.Record(activity, ex);
+            throw;
         }
-
-        return Result<int>.Success(raisedCount);
     }
 }

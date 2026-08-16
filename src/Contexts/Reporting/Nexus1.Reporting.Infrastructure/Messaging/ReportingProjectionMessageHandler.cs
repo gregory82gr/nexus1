@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -5,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Messaging;
+using Nexus1.BuildingBlocks.Observability;
 using Nexus1.Contracts.RootCause;
 using Nexus1.Reporting.Domain;
 using Nexus1.Reporting.Infrastructure.Persistence;
@@ -62,14 +64,44 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
                 case CaseOpenedEventType:
                     var opened = JsonSerializer.Deserialize<RootCauseCaseOpenedV1>(payloadJson, PayloadOptions)
                         ?? throw new InvalidOperationException("RootCauseCaseOpenedV1 payload deserialized to null.");
-                    await ApplyOpenedAsync(dbContext, opened, messageId, nowUtc, cancellationToken);
+
+                    using (var activity = NexusActivitySources.ReportingSource.StartActivity(
+                        SpanNames.ReportingApplyOpened, ActivityKind.Internal, parentContext: default,
+                        tags: SafeTags.ForOwnerOperation(messageId, "ATTEMPTED")))
+                    {
+                        try
+                        {
+                            var openedOutcome = await ApplyOpenedAsync(dbContext, opened, messageId, nowUtc, cancellationToken);
+                            activity?.SetTag("nexus1.outcome.code", openedOutcome);
+                        }
+                        catch (Exception ex)
+                        {
+                            SafeError.Record(activity, ex);
+                            throw;
+                        }
+                    }
                     occurredAtUtc = opened.OpenedAtUtc;
                     break;
 
                 case VerdictIssuedEventType:
                     var verdictIssued = JsonSerializer.Deserialize<RootCauseVerdictIssuedV1>(payloadJson, PayloadOptions)
                         ?? throw new InvalidOperationException("RootCauseVerdictIssuedV1 payload deserialized to null.");
-                    await ApplyVerdictIssuedAsync(dbContext, verdictIssued, messageId, nowUtc, cancellationToken);
+
+                    using (var activity = NexusActivitySources.ReportingSource.StartActivity(
+                        SpanNames.ReportingApplyVerdictIssued, ActivityKind.Internal, parentContext: default,
+                        tags: SafeTags.ForOwnerOperation(messageId, "ATTEMPTED")))
+                    {
+                        try
+                        {
+                            var verdictOutcome = await ApplyVerdictIssuedAsync(dbContext, verdictIssued, messageId, nowUtc, cancellationToken);
+                            activity?.SetTag("nexus1.outcome.code", verdictOutcome);
+                        }
+                        catch (Exception ex)
+                        {
+                            SafeError.Record(activity, ex);
+                            throw;
+                        }
+                    }
                     occurredAtUtc = verdictIssued.IssuedAtUtc;
                     break;
 
@@ -104,14 +136,14 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
         }
     }
 
-    private static async Task ApplyOpenedAsync(
+    private static async Task<string> ApplyOpenedAsync(
         ReportingDbContext dbContext, RootCauseCaseOpenedV1 opened, Guid messageId, DateTime nowUtc, CancellationToken cancellationToken)
     {
         var id = new RootCauseCaseSummaryId(opened.AnalysisId);
         var alreadyOpened = await dbContext.CaseSummaries.AnyAsync(s => s.Id == id, cancellationToken);
         if (alreadyOpened)
         {
-            return; // Replayed CaseOpened for a case that already exists — idempotent no-op.
+            return "DUPLICATE_MATCH"; // Replayed CaseOpened for a case that already exists — idempotent no-op.
         }
 
         var summary = RootCauseCaseSummary.ApplyOpened(id, opened.UnitId, opened.AlarmFloodId, opened.OpenedAtUtc, nowUtc, messageId);
@@ -124,9 +156,11 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
             summary.ApplyVerdictIssued(pending.Verdict, pending.VerdictIssuedAtUtc, nowUtc, pending.MessageId);
             dbContext.PendingVerdicts.Remove(pending);
         }
+
+        return "COMMITTED";
     }
 
-    private static async Task ApplyVerdictIssuedAsync(
+    private static async Task<string> ApplyVerdictIssuedAsync(
         ReportingDbContext dbContext, RootCauseVerdictIssuedV1 verdictIssued, Guid messageId, DateTime nowUtc, CancellationToken cancellationToken)
     {
         var id = new RootCauseCaseSummaryId(verdictIssued.AnalysisId);
@@ -137,19 +171,23 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
             if (summary.Status == ReportingCaseStatus.Open)
             {
                 summary.ApplyVerdictIssued(verdictIssued.Verdict, verdictIssued.IssuedAtUtc, nowUtc, messageId);
+                return "COMMITTED";
             }
             // Already VerdictIssued — replayed delivery, idempotent no-op.
-            return;
+            return "DUPLICATE_MATCH";
         }
 
         // Out-of-order: the case-opened row doesn't exist yet. Buffer, don't lose it.
         var alreadyPending = await dbContext.PendingVerdicts.AnyAsync(p => p.AnalysisId == verdictIssued.AnalysisId, cancellationToken);
-        if (!alreadyPending)
+        if (alreadyPending)
         {
-            await dbContext.PendingVerdicts.AddAsync(
-                new PendingVerdict(verdictIssued.AnalysisId, messageId, verdictIssued.Verdict, verdictIssued.IssuedAtUtc, nowUtc),
-                cancellationToken);
+            return "DUPLICATE_MATCH";
         }
+
+        await dbContext.PendingVerdicts.AddAsync(
+            new PendingVerdict(verdictIssued.AnalysisId, messageId, verdictIssued.Verdict, verdictIssued.IssuedAtUtc, nowUtc),
+            cancellationToken);
+        return "ABSTAINED";
     }
 
     private async Task<MessageHandlingOutcome> QuarantineUnsupportedContractAsync(

@@ -1,8 +1,10 @@
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Nexus1.Audit.Infrastructure.Persistence;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Messaging;
+using Nexus1.BuildingBlocks.Observability;
 
 namespace Nexus1.Audit.Infrastructure.Messaging;
 
@@ -25,6 +27,10 @@ public sealed class RetryDispatcher(
         var dispatchedCount = 0;
         foreach (var ticket in due)
         {
+            using var activity = NexusActivitySources.AuditSource.StartActivity(
+                SpanNames.RetryDispatch, ActivityKind.Internal, parentContext: default,
+                tags: SafeTags.ForOwnerOperation(ticket.MessageId, "ATTEMPTED"));
+
             try
             {
                 await publisher.PublishAsync(
@@ -36,9 +42,11 @@ public sealed class RetryDispatcher(
                 ticket.MarkPublished(dateTimeProvider.UtcNow);
                 await dbContext.SaveChangesAsync(cancellationToken);
                 dispatchedCount++;
+                activity?.SetTag("nexus1.outcome.code", "COMMITTED");
             }
             catch (Exception ex)
             {
+                SafeError.Record(activity, ex);
                 logger.LogWarning(ex, "Failed to dispatch retry ticket {RetryTicketId}; left unpublished for redelivery.", ticket.RetryTicketId);
             }
         }

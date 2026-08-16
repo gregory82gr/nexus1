@@ -1,15 +1,18 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nexus1.BuildingBlocks.Messaging;
+using Nexus1.BuildingBlocks.Observability;
 using RabbitMQ.Client.Events;
 
 namespace Nexus1.Compliance.Infrastructure.Messaging;
 
 /// <summary>
-/// Thin hosting loop — mirrors AuditConsumerBackgroundService exactly
-/// (ADR-011). Queue name and binding routing key are ch.34's frozen shape
-/// (Executable Asset 34-U) — an independent binding from the same exchange
-/// and routing key Audit is bound to, not a shared queue.
+/// Thin hosting loop — mirrors AuditConsumerBackgroundService exactly,
+/// including the CONSUMER span/carrier extraction (ADR-011/ADR-013). Queue
+/// name and binding routing key are ch.34's frozen shape (Executable Asset
+/// 34-U) — an independent binding from the same exchange and routing key
+/// Audit is bound to, not a shared queue.
 /// </summary>
 public sealed class ComplianceConsumerBackgroundService(
     RabbitMqConnectionManager connectionManager,
@@ -41,7 +44,24 @@ public sealed class ComplianceConsumerBackgroundService(
                     throw new InvalidOperationException($"Message has no valid MessageId property: '{delivery.BasicProperties.MessageId}'.");
                 }
 
-                var outcome = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
+                var eventType = delivery.BasicProperties.Type ?? "unknown";
+                var parentContext = AmqpCarrier.Extract(delivery.BasicProperties.Headers);
+                using var activity = NexusActivitySources.MessagingSource.StartActivity(
+                    SpanNames.ForProcess(eventType),
+                    ActivityKind.Consumer,
+                    parentContext,
+                    tags: SafeTags.ForMessageProcess(messageId, eventType));
+
+                MessageHandlingOutcome outcome;
+                try
+                {
+                    outcome = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    SafeError.Record(activity, ex);
+                    throw;
+                }
                 switch (outcome)
                 {
                     case MessageHandlingOutcome.Ack:

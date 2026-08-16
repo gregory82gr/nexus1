@@ -23,6 +23,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Hosts\Nexus1.ModularRuntime\Nexus1.ModularRuntime.csproj" />
     <ProjectReference Include="..\..\src\Hosts\Nexus1.RootCause.Host\Nexus1.RootCause.Host.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\Audit\Nexus1.Audit.Infrastructure\Nexus1.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\Compliance\Nexus1.Compliance.Infrastructure\Nexus1.Compliance.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\Reporting\Nexus1.Reporting.Infrastructure\Nexus1.Reporting.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -13,9 +13,30 @@ public static class SpanNames
     public const string AddEvidence = "root-cause add evidence";
     public const string RootCauseVerdictCommit = "root-cause verdict commit";
 
-    // Background work (INTERNAL spans).
+    // AlarmManagement owner operations (INTERNAL spans).
+    public const string AlarmAcknowledge = "alarm acknowledge";
+    public const string AlarmDefine = "alarm define";
+    public const string AlarmFloodCommit = "alarm flood commit"; // matches ch.51's own illustrative name (51-B)
+    public const string AlarmEvaluateReading = "alarm evaluate reading";
+
+    // Audit owner operation (INTERNAL span).
+    public const string AuditEvidenceRecord = "audit evidence record";
+
+    // Compliance owner operation (INTERNAL span).
+    public const string ComplianceReviewOpen = "compliance review open";
+
+    // Reporting owner operations — one per reducer (INTERNAL spans).
+    public const string ReportingApplyOpened = "reporting apply case-opened";
+    public const string ReportingApplyVerdictIssued = "reporting apply verdict-issued";
+
+    /// <summary>
+    /// Background work (INTERNAL spans). RetryDispatch is intentionally
+    /// reused across every context's retry dispatcher — same conceptual
+    /// operation, disambiguated by each context's own ActivitySource/
+    /// resource identity, not by inventing four names for one operation
+    /// type (cardinality invariant, ch.51).
+    /// </summary>
     public const string RetryDispatch = "retry dispatch attempt";
-    public const string OutboxDispatch = "outbox dispatch attempt";
 
     /// <summary>
     /// Messaging spans are named from the message's own reviewed EventType
