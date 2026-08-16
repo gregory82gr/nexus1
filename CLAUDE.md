@@ -328,3 +328,55 @@ ledger habit.
 
 If anything in this file conflicts with what you find in the actual PDFs when you read them
 directly, the PDFs win — flag the conflict and we'll fix this file.
+
+---
+
+## 9. Phase 2 — full monolithic coverage of the remaining Schema Atlas sectors
+
+Phase 1 (the AlarmManagement → RootCause distributed slice, §2, plus its Audit/Compliance/
+Reporting fan-out subscribers and full observability) is complete: built, tested, and observed
+end to end, closed 2026-08-16. Phase 2 is a **new, distinct phase** — not a continuation of
+Phase 1's distributed-slice reasoning — with its own scope, order, and depth, recorded here
+before any Phase 2 code is written.
+
+### Scope
+
+The eleven Schema Atlas sectors not yet touched by Phase 1: **CorePlatform, Security,
+Organization, Instrumentation, DigitalTwin, EventManagement, Maintenance, Robotics,
+RadiationMonitoring, EmergencyPreparedness** — plus **ReinforcementLearning last**, per its
+own book-stated status. `From_Services_To_Runtime` Part 4's final boundary decision
+(ADR-060, Table 60-AN, "FINAL DECISION ON SERVICE EXTRACTION") records it explicitly:
+
+> RL Advisory | KEEP optional module | no activated public contract or extraction economics
+
+— i.e. the book's own architects, not this project, classify RL Advisory as a "KEEP optional
+module," distinct from every other capability's boundary decision in that table. ReinforcementLearning
+is sequenced last in Phase 2 for the same reason: it is the one sector the source material itself
+never resolves into a firm service or foundation commitment, so it should not gate anything else.
+
+### Order
+
+1. CorePlatform → Security → Organization
+2. Instrumentation → DigitalTwin
+3. Maintenance → EventManagement
+4. Robotics → RadiationMonitoring → EmergencyPreparedness
+5. ReinforcementLearning (last, per its own conditional status above)
+
+### Depth per sector
+
+Domain + Application (core commands/queries) + Infrastructure/EF Core persistence, with real
+LocalDB-backed unit and component tests. Explicitly **no** messaging (outbox/inbox), **no**
+tracing/metrics, **no** HTTP surface for any of these eleven sectors. They stay inside
+`Nexus1.ModularRuntime` as **protected foundation**, the same status Ch. 3's own "what is
+deliberately not in the first slice" box (quoted in ADR-001-amend) already gave most of them —
+there is no broker boundary or external HTTP consumer for any of them yet, so building
+messaging/observability/HTTP infrastructure now would be provisioning for a boundary that
+doesn't exist, the same restraint principle ADR-006 already applied to ReactorFleet's
+persistence and ADR-007 applied to deferring the Query BFF.
+
+### Checkpoint discipline
+
+One sector at a time, full checkpoint per sector — ADR + evidence report + commit — same
+rigor as the Phase 1 fan-out subscribers (Audit/Compliance/Reporting each got their own ADR,
+evidence report, and commit before the next one started). Not batched. Stop and report back
+after each sector before starting the next.
