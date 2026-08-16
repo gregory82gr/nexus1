@@ -8,6 +8,9 @@ using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Messaging;
 using Nexus1.Compliance.Infrastructure;
 using Nexus1.Compliance.Infrastructure.Persistence;
+using Nexus1.CorePlatform.Application;
+using Nexus1.CorePlatform.Infrastructure;
+using Nexus1.CorePlatform.Infrastructure.Persistence;
 using Nexus1.ReactorFleet.Application;
 using Nexus1.ReactorFleet.Infrastructure;
 using Nexus1.ReactorFleet.Infrastructure.Persistence;
@@ -43,6 +46,11 @@ builder.Services.AddNexusMessaging(rabbitMqOptions);
 builder.Services.AddReactorFleetApplication();
 builder.Services.AddReactorFleetInfrastructure(alarmManagementConnectionString);
 
+// Shares AlarmManagementDb (ADR-015, following ADR-006's precedent) — CorePlatform
+// is protected foundation composed in-process here, not independently deployed.
+builder.Services.AddCorePlatformApplication();
+builder.Services.AddCorePlatformInfrastructure(alarmManagementConnectionString);
+
 builder.Services.AddAlarmManagementApplication();
 builder.Services.AddAlarmManagementInfrastructure(alarmManagementConnectionString);
 
@@ -55,6 +63,7 @@ builder.Services.AddReportingInfrastructure(reportingConnectionString);
 builder.Services
     .AddHealthChecks()
     .AddCheck<DbContextHealthCheck<ReactorFleetDbContext>>("reactorfleet-db")
+    .AddCheck<DbContextHealthCheck<CorePlatformDbContext>>("coreplatform-db")
     .AddCheck<DbContextHealthCheck<AlarmManagementDbContext>>("alarmmanagement-db")
     .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db")
     .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db")
