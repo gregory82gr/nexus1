@@ -98,7 +98,7 @@ public sealed class TracingTests : RootCauseComponentTestDatabase
 
             await using var closeContext = CreateDbContext();
             var closeResult = await new CloseAnalysisCommandHandler(
-                    Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider(), new EfOutboxWriter(closeContext))
+                    Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider(), new EfOutboxWriter(closeContext), NewMetrics())
                 .Handle(new CloseAnalysisCommand(analysisId, "Loose fitting confirmed as cause.", "operator.2"), CancellationToken.None);
             Assert.True(closeResult.IsSuccess);
         });

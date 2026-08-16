@@ -31,7 +31,7 @@ public sealed class AlarmFloodMessageHandlerTests : RootCauseComponentTestDataba
     }
 
     private AlarmFloodMessageHandler BuildHandler() =>
-        new(BuildScopeFactory(), NullLogger<AlarmFloodMessageHandler>.Instance);
+        new(BuildScopeFactory(), NewMetrics(), NullLogger<AlarmFloodMessageHandler>.Instance);
 
     private static byte[] BuildEnvelope(Guid messageId, long alarmFloodId, int unitId)
     {

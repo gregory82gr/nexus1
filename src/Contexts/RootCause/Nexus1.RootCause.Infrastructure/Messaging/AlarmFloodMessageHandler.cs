@@ -21,7 +21,7 @@ namespace Nexus1.RootCause.Infrastructure.Messaging;
 /// delivery and calls this. Returns a MessageHandlingOutcome telling the
 /// caller which broker action to take (ADR-009).
 /// </summary>
-public sealed class AlarmFloodMessageHandler(IServiceScopeFactory scopeFactory, ILogger<AlarmFloodMessageHandler> logger)
+public sealed class AlarmFloodMessageHandler(IServiceScopeFactory scopeFactory, NexusRuntimeMetrics metrics, ILogger<AlarmFloodMessageHandler> logger)
 {
     public const string ConsumerName = "rootcause.alarm-events.v1";
     private const string OriginalRoutingKey = "alarm-management.alarm-flood-detected.v1";
@@ -45,6 +45,7 @@ public sealed class AlarmFloodMessageHandler(IServiceScopeFactory scopeFactory, 
             .AnyAsync(r => r.ConsumerName == ConsumerName && r.MessageId == messageId, cancellationToken);
         if (alreadyProcessed)
         {
+            RecordInboxOutcome("DUPLICATE_MATCH");
             return MessageHandlingOutcome.Ack;
         }
 
@@ -68,7 +69,7 @@ public sealed class AlarmFloodMessageHandler(IServiceScopeFactory scopeFactory, 
 
             var analysis = RootCauseAnalysis.Open(
                 new RootCauseAnalysisId(idGenerator.NextLong()), new UnitId(payload.UnitId), new AlarmFloodId(payload.AlarmFloodId),
-                "system:alarm-flood-consumer", dateTimeProvider.UtcNow);
+                "system:alarm-flood-consumer", dateTimeProvider.UtcNow, payload.StartedAtUtc);
             await dbContext.RootCauseAnalyses.AddAsync(analysis, cancellationToken);
 
             // Same transaction as the analysis' own commit — this is the
@@ -89,6 +90,7 @@ public sealed class AlarmFloodMessageHandler(IServiceScopeFactory scopeFactory, 
             try
             {
                 await dbContext.SaveChangesAsync(cancellationToken);
+                RecordInboxOutcome("COMMITTED");
                 return MessageHandlingOutcome.Ack;
             }
             catch (DbUpdateException)
@@ -105,12 +107,28 @@ public sealed class AlarmFloodMessageHandler(IServiceScopeFactory scopeFactory, 
                 // "stop without acknowledgement" case (ch.29 29-A) — closest
                 // available action with this client is requeue, not a
                 // classified retry/poison decision.
+                RecordInboxOutcome(stillMissing ? "ABSTAINED" : "DUPLICATE_MATCH");
                 return stillMissing ? MessageHandlingOutcome.NackRequeue : MessageHandlingOutcome.Ack;
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            RecordInboxOutcome("FAILED", ErrorClassifier.Classify(ex));
             return await RecordFailureAsync(messageId, envelopeBytes, ex, cancellationToken);
+        }
+    }
+
+    /// <summary>ch.52 52-O's "one terminal observation" rule — exactly one InboxOutcomes measurement per admission decision, never both a duplicate and a failed count for the same delivery.</summary>
+    private void RecordInboxOutcome(string outcome, string? errorType = null)
+    {
+        if (MetricLabelPolicy.TryFor("process", outcome, NexusActivitySources.RootCause, out var labels))
+        {
+            var tags = errorType is null ? labels.ToTagList() : (labels with { ErrorType = errorType }).ToTagList();
+            metrics.InboxOutcomes.Add(1, tags);
+        }
+        else
+        {
+            metrics.TelemetryRejected.Add(1);
         }
     }
 

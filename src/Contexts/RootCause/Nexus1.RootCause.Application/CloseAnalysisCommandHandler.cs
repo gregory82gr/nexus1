@@ -10,7 +10,8 @@ public sealed class CloseAnalysisCommandHandler(
     IRepository<RootCauseAnalysis, RootCauseAnalysisId> repository,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
-    IOutboxWriter outboxWriter)
+    IOutboxWriter outboxWriter,
+    NexusRuntimeMetrics metrics)
     : ICommandHandler<CloseAnalysisCommand>
 {
     /// <summary>Routing key and eventType per ADR-008's naming convention, frozen coordinates from ch.34 (Executable Asset 34-P).</summary>
@@ -60,6 +61,33 @@ public sealed class CloseAnalysisCommandHandler(
         }
 
         activity?.SetTag("nexus1.outcome.code", "COMMITTED");
+        RecordWorkflowDuration(analysis, nowUtc);
         return Result.Success();
+    }
+
+    /// <summary>
+    /// ch.52 52-T's terminal-duration rule — reconstructed from durable
+    /// milestones (AlarmFloodStartedAtUtc through the verdict-commit
+    /// timestamp being recorded in this same transaction), never an ambient
+    /// stopwatch. Recorded only when AlarmFloodStartedAtUtc is present —
+    /// analyses opened through the manual command path never fabricate a
+    /// workflow duration from a substitute timestamp.
+    /// </summary>
+    private void RecordWorkflowDuration(RootCauseAnalysis analysis, DateTime closedAtUtc)
+    {
+        if (analysis.AlarmFloodStartedAtUtc is not { } startedAtUtc)
+        {
+            return;
+        }
+
+        var seconds = Math.Max(0, (closedAtUtc - startedAtUtc).TotalSeconds);
+        if (MetricLabelPolicy.TryFor("alarm-to-verdict", "COMMITTED", NexusActivitySources.RootCause, out var labels))
+        {
+            metrics.WorkflowDuration.Record(seconds, labels.ToTagList());
+        }
+        else
+        {
+            metrics.TelemetryRejected.Add(1);
+        }
     }
 }

@@ -42,7 +42,7 @@ public sealed class FullAnalysisWorkflowTests : RootCauseComponentTestDatabase
 
         await using var dbContext = CreateDbContext();
         var result = await new CloseAnalysisCommandHandler(
-                Repository(dbContext), UnitOfWork(dbContext), new SystemDateTimeProvider(), new EfOutboxWriter(dbContext))
+                Repository(dbContext), UnitOfWork(dbContext), new SystemDateTimeProvider(), new EfOutboxWriter(dbContext), NewMetrics())
             .Handle(new CloseAnalysisCommand(analysisId, "Confirmed", "operator.1"), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -76,7 +76,7 @@ public sealed class FullAnalysisWorkflowTests : RootCauseComponentTestDatabase
 
         await using var closeContext = CreateDbContext();
         var closeResult = await new CloseAnalysisCommandHandler(
-                Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider(), new EfOutboxWriter(closeContext))
+                Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider(), new EfOutboxWriter(closeContext), NewMetrics())
             .Handle(new CloseAnalysisCommand(analysisId, "Confirmed", "operator.1"), CancellationToken.None);
 
         Assert.True(closeResult.IsFailure);
@@ -108,7 +108,7 @@ public sealed class FullAnalysisWorkflowTests : RootCauseComponentTestDatabase
         await using (var closeContext = CreateDbContext())
         {
             var result = await new CloseAnalysisCommandHandler(
-                    Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider(), new EfOutboxWriter(closeContext))
+                    Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider(), new EfOutboxWriter(closeContext), NewMetrics())
                 .Handle(new CloseAnalysisCommand(analysisId, "Loose fitting confirmed as cause.", "operator.2"), CancellationToken.None);
             Assert.True(result.IsSuccess);
         }
@@ -150,7 +150,7 @@ public sealed class FullAnalysisWorkflowTests : RootCauseComponentTestDatabase
         await using (var closeContext = CreateDbContext())
         {
             var result = await new CloseAnalysisCommandHandler(
-                    Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider(), new EfOutboxWriter(closeContext))
+                    Repository(closeContext), UnitOfWork(closeContext), new SystemDateTimeProvider(), new EfOutboxWriter(closeContext), NewMetrics())
                 .Handle(new CloseAnalysisCommand(analysisId, "Confirmed", "operator.1"), CancellationToken.None);
             Assert.True(result.IsSuccess);
         }

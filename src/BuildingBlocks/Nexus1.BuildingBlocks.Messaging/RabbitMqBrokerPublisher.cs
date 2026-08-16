@@ -10,8 +10,12 @@ namespace Nexus1.BuildingBlocks.Messaging;
 /// linked to the caller's optional ProducerTraceSnapshot, never parented to
 /// it (delayed dispatch is a new attempt, not a continuation), with the W3C
 /// trace carrier injected into AMQP headers for the consumer to extract.
+/// Also records the "publish" message.attempts/duration measurement
+/// (ch.52 52-K) — every context's outbox dispatch goes through this one
+/// class, so this is the transport-level attempt count regardless of which
+/// context or retry ticket triggered it.
 /// </summary>
-public sealed class RabbitMqBrokerPublisher(RabbitMqConnectionManager connectionManager) : IBrokerPublisher
+public sealed class RabbitMqBrokerPublisher(RabbitMqConnectionManager connectionManager, NexusRuntimeMetrics metrics) : IBrokerPublisher
 {
     public Task PublishAsync(OutboundMessage message, CancellationToken cancellationToken)
     {
@@ -25,6 +29,10 @@ public sealed class RabbitMqBrokerPublisher(RabbitMqConnectionManager connection
             parentContext: default,
             tags: SafeTags.ForMessagePublish(message.MessageId, message.EventType, message.RoutingKey),
             links: links);
+
+        var startedAt = Stopwatch.GetTimestamp();
+        var outcome = "COMMITTED";
+        string? errorType = null;
 
         try
         {
@@ -74,7 +82,23 @@ public sealed class RabbitMqBrokerPublisher(RabbitMqConnectionManager connection
         catch (Exception ex)
         {
             SafeError.Record(activity, ex);
+            outcome = "FAILED";
+            errorType = ErrorClassifier.Classify(ex);
             throw;
+        }
+        finally
+        {
+            var seconds = Stopwatch.GetElapsedTime(startedAt).TotalSeconds;
+            if (MetricLabelPolicy.TryFor("publish", outcome, NexusActivitySources.Messaging, out var labels))
+            {
+                var tags = errorType is null ? labels.ToTagList() : (labels with { ErrorType = errorType }).ToTagList();
+                metrics.MessageAttempts.Add(1, tags);
+                metrics.MessageDuration.Record(seconds, tags);
+            }
+            else
+            {
+                metrics.TelemetryRejected.Add(1);
+            }
         }
     }
 }

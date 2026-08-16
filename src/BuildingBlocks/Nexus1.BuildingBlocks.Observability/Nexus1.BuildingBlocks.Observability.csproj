@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Diagnostics.DiagnosticSource" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.Abstractions" />
   </ItemGroup>
 
 </Project>

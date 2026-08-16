@@ -23,7 +23,7 @@ contrib-only. One collector binary serves both phases rather than two.
   (structural JSON trace corpus — this file, not a screenshot, is the
   executable evidence for the complete/broken trace campaigns).
 
-## Configuration (Ch.51 Configuration Asset 51-A, adapted)
+## Configuration (Ch.51 Configuration Asset 51-A + Ch.52 Executable Asset 52-S, adapted)
 
 ```yaml
 receivers:
@@ -46,6 +46,8 @@ processors:
 exporters:
   file/traces:
     path: C:/Users/USER/AppData/Local/otelcol-contrib/evidence/traces.json
+  prometheus:
+    endpoint: "0.0.0.0:9464"
 
 extensions:
   health_check:
@@ -58,12 +60,24 @@ service:
       receivers: [otlp]
       processors: [memory_limiter, batch]
       exporters: [file/traces]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
 ```
 
 The `health_check` extension is an addition beyond the book's reference
 profile — it gives a pollable `/` endpoint on port 13133 so a startup
 sequence can wait for genuine readiness instead of a fixed sleep, matching
 this project's existing pattern for RabbitMQ/LocalDB/host readiness checks.
+
+Metrics use a **different exporter shape than traces** — Ch.52's own
+reference profile (52-S) exports metrics to a scrapable `prometheus`
+endpoint (`:9464`) rather than a retained file, since Prometheus's
+pull/scrape model is the evidence mechanism (`curl http://localhost:9464/metrics`
+or an HTTP GET, read back as Prometheus text exposition format), not a
+newline-delimited JSON corpus. Traces keep the `file/traces` exporter
+unchanged — the two signals do not share a pipeline or an exporter.
 
 ## Start
 
@@ -83,6 +97,13 @@ Invoke-RestMethod http://localhost:13133/
 
 `{"status":"Server available", ...}` means it's up. OTLP gRPC listens on
 `4317`, OTLP HTTP on `4318` (both `[::]` and `0.0.0.0`).
+
+```powershell
+Invoke-WebRequest http://localhost:9464/metrics -UseBasicParsing
+```
+
+A `200` with a Prometheus text-exposition body (even an empty one before
+any host has exported yet) means the metrics pipeline is up.
 
 ## Stop
 
@@ -104,6 +125,23 @@ stop — this is a plain process, same as RabbitMQ.
   here, not as an exception the business code sees (ch.51 "EXPORTER
   INVARIANTS": exporter unavailable -> business continues, evidence
   degrades).
+
+## Metrics endpoint behavior
+
+- `http://localhost:9464/metrics` reflects the collector's **current**
+  aggregation state — there is no retained historical corpus the way
+  `traces.json` retains every batch. A campaign that needs a clean series
+  set restarts the collector (same as clearing `traces.json`), not just
+  re-scrapes.
+- Counters/histograms accumulate across the collector's process lifetime
+  (OTel's cumulative temporality, ch.52 52-Z) — a metric's current value is
+  a running total since the last collector restart, not since the last
+  scrape. Evidence campaigns read the delta they care about by scraping
+  before and after a stimulus, or by restarting the collector for a clean
+  baseline.
+- A restarted host re-registers its instruments and starts new series from
+  zero; the Prometheus exporter does not persist state across a collector
+  restart either — both sides starting fresh is expected, not a bug.
 
 ## What this does and does not prove
 
