@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using Nexus1.AlarmManagement.Domain;
 using Nexus1.BuildingBlocks.Application;
+using Nexus1.BuildingBlocks.Observability;
 using Nexus1.Contracts.AlarmManagement;
 
 namespace Nexus1.AlarmManagement.Application;
@@ -19,8 +21,13 @@ public sealed class DetectFloodCommandHandler(
 
     public async Task<Result<long?>> Handle(DetectFloodCommand command, CancellationToken cancellationToken)
     {
+        using var activity = NexusActivitySources.AlarmManagementSource.StartActivity(
+            SpanNames.AlarmFloodCommit, ActivityKind.Internal, parentContext: default,
+            tags: SafeTags.ForOwnerOperation(messageId: null, "ATTEMPTED"));
+
         if (command.CountThreshold < 1)
         {
+            activity?.SetTag("nexus1.outcome.code", "REJECTED");
             return Result<long?>.Failure("Count threshold must be at least 1.");
         }
 
@@ -35,21 +42,31 @@ public sealed class DetectFloodCommandHandler(
 
         if (!shouldDetect)
         {
+            activity?.SetTag("nexus1.outcome.code", "ABSTAINED");
             return Result<long?>.Success(null);
         }
 
-        var flood = AlarmFlood.Detect(new AlarmFloodId(idGenerator.NextLong()), unitId, nowUtc);
-        await floodRepository.AddAsync(flood, cancellationToken);
+        try
+        {
+            var flood = AlarmFlood.Detect(new AlarmFloodId(idGenerator.NextLong()), unitId, nowUtc);
+            await floodRepository.AddAsync(flood, cancellationToken);
 
-        // Same transaction as the AlarmFlood commit — outbox row and aggregate
-        // write land together in the single SaveChangesAsync below, or neither
-        // does (ADR-008: transactional outbox, not fire-and-forget).
-        outboxWriter.Enqueue(
-            EventType, schemaVersion: 1, RoutingKey, nowUtc,
-            new AlarmFloodDetectedV1(flood.Id.Value, flood.UnitId.Value, flood.StartedAtUtc));
+            // Same transaction as the AlarmFlood commit — outbox row and aggregate
+            // write land together in the single SaveChangesAsync below, or neither
+            // does (ADR-008: transactional outbox, not fire-and-forget).
+            outboxWriter.Enqueue(
+                EventType, schemaVersion: 1, RoutingKey, nowUtc,
+                new AlarmFloodDetectedV1(flood.Id.Value, flood.UnitId.Value, flood.StartedAtUtc));
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result<long?>.Success(flood.Id.Value);
+            activity?.SetTag("nexus1.outcome.code", "COMMITTED");
+            return Result<long?>.Success(flood.Id.Value);
+        }
+        catch (Exception ex)
+        {
+            SafeError.Record(activity, ex);
+            throw;
+        }
     }
 }

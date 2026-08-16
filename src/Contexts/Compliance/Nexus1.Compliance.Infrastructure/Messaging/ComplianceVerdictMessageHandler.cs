@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -5,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Messaging;
+using Nexus1.BuildingBlocks.Observability;
 using Nexus1.Compliance.Domain;
 using Nexus1.Compliance.Infrastructure.Persistence;
 using Nexus1.Contracts.RootCause;
@@ -51,20 +53,40 @@ public sealed class ComplianceVerdictMessageHandler(IServiceScopeFactory scopeFa
             var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
             var nowUtc = dateTimeProvider.UtcNow;
 
-            // Semantic half of the two-key oracle: this verdict may already
-            // have an open review under a different (replayed) MessageId.
-            var alreadyReviewed = await dbContext.Reviews
-                .AnyAsync(r => r.SourceAnalysisId == payload.AnalysisId, cancellationToken);
+            // Nested owner span — the actual business operation this
+            // consumer exists to perform, distinct from the CONSUMER
+            // transport span the background service already wraps
+            // HandleAsync in.
+            using var activity = NexusActivitySources.ComplianceSource.StartActivity(
+                SpanNames.ComplianceReviewOpen, ActivityKind.Internal, parentContext: default,
+                tags: SafeTags.ForOwnerOperation(messageId, "ATTEMPTED"));
 
-            if (!alreadyReviewed)
+            bool alreadyReviewed;
+            try
             {
-                var review = ComplianceReview.Open(
-                    new ComplianceReviewId(Guid.NewGuid()), messageId, payload.AnalysisId, payload.Verdict, nowUtc);
-                await dbContext.Reviews.AddAsync(review, cancellationToken);
+                // Semantic half of the two-key oracle: this verdict may
+                // already have an open review under a different (replayed)
+                // MessageId.
+                alreadyReviewed = await dbContext.Reviews
+                    .AnyAsync(r => r.SourceAnalysisId == payload.AnalysisId, cancellationToken);
+
+                if (!alreadyReviewed)
+                {
+                    var review = ComplianceReview.Open(
+                        new ComplianceReviewId(Guid.NewGuid()), messageId, payload.AnalysisId, payload.Verdict, nowUtc);
+                    await dbContext.Reviews.AddAsync(review, cancellationToken);
+                }
+
+                var receipt = new InboxReceipt(ConsumerName, messageId, Producer, eventType, schemaVersion, payload.IssuedAtUtc, nowUtc);
+                dbContext.InboxReceipts.Add(receipt);
+            }
+            catch (Exception ex)
+            {
+                SafeError.Record(activity, ex);
+                throw;
             }
 
-            var receipt = new InboxReceipt(ConsumerName, messageId, Producer, eventType, schemaVersion, payload.IssuedAtUtc, nowUtc);
-            dbContext.InboxReceipts.Add(receipt);
+            activity?.SetTag("nexus1.outcome.code", alreadyReviewed ? "DUPLICATE_MATCH" : "COMMITTED");
 
             try
             {

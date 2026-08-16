@@ -22,6 +22,11 @@ public sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outbox
         builder.Property(x => x.EnvelopeSha256).HasColumnType("binary(32)").IsRequired();
         builder.Property(x => x.ProcessedAtUtc);
 
+        builder.Property(x => x.TraceId).HasMaxLength(32);
+        builder.Property(x => x.SpanId).HasMaxLength(16);
+        builder.Property(x => x.TraceFlags);
+        builder.Property(x => x.TraceState).HasMaxLength(512);
+
         builder.HasIndex(x => x.ProcessedAtUtc).HasDatabaseName("IX_messaging_OutboxMessage_ProcessedAtUtc");
     }
 }
