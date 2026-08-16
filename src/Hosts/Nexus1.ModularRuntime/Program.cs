@@ -16,6 +16,9 @@ using Nexus1.ReactorFleet.Infrastructure;
 using Nexus1.ReactorFleet.Infrastructure.Persistence;
 using Nexus1.Reporting.Infrastructure;
 using Nexus1.Reporting.Infrastructure.Persistence;
+using Nexus1.Security.Application;
+using Nexus1.Security.Infrastructure;
+using Nexus1.Security.Infrastructure.Persistence;
 using Nexus1.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +32,8 @@ var complianceConnectionString = builder.Configuration.GetConnectionString("Comp
     ?? throw new InvalidOperationException("Missing ConnectionStrings:ComplianceDb configuration.");
 var reportingConnectionString = builder.Configuration.GetConnectionString("ReportingDb")
     ?? throw new InvalidOperationException("Missing ConnectionStrings:ReportingDb configuration.");
+var securityConnectionString = builder.Configuration.GetConnectionString("SecurityDb")
+    ?? throw new InvalidOperationException("Missing ConnectionStrings:SecurityDb configuration.");
 
 builder.Services.AddBuildingBlocksApplication();
 
@@ -60,6 +65,13 @@ builder.Services.AddComplianceInfrastructure(complianceConnectionString);
 
 builder.Services.AddReportingInfrastructure(reportingConnectionString);
 
+// Own physical database, SecurityDb (ADR-016) — not shared with the other
+// contexts above, unlike CorePlatform/ReactorFleet: ApplicationUser holds
+// credential-adjacent columns, a data-sensitivity reason to isolate
+// independent of deployment topology.
+builder.Services.AddSecurityApplication();
+builder.Services.AddSecurityInfrastructure(securityConnectionString);
+
 builder.Services
     .AddHealthChecks()
     .AddCheck<DbContextHealthCheck<ReactorFleetDbContext>>("reactorfleet-db")
@@ -67,7 +79,8 @@ builder.Services
     .AddCheck<DbContextHealthCheck<AlarmManagementDbContext>>("alarmmanagement-db")
     .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db")
     .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db")
-    .AddCheck<DbContextHealthCheck<ReportingDbContext>>("reporting-db");
+    .AddCheck<DbContextHealthCheck<ReportingDbContext>>("reporting-db")
+    .AddCheck<DbContextHealthCheck<SecurityDbContext>>("security-db");
 
 var app = builder.Build();
 
