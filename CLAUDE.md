@@ -263,6 +263,20 @@ silently:
 Do not silently skip a step's tests "to save time" — the whole point of this source material is
 that untested claims of completeness are the failure mode being designed against.
 
+**Observability (Ch. 51–52, ADR-013/ADR-014) is done, closed 2026-08-16.** Not one of the
+numbered steps above (it was added later, once the Phase 1 slice above was itself complete) —
+recorded here so a future session doesn't read this build order and conclude it's still
+outstanding. All six contexts (ReactorFleet excluded — it has no messaging or workflow surface
+to instrument) have full tracing (Ch. 51: owner spans, PRODUCER/CONSUMER messaging spans,
+carrier propagation) and metrics (Ch. 52: message attempts/duration, inbox outcomes, the outbox
+gauge trio, workflow duration) parity, proven per-context, as a verdict fan-out, and as one
+continuous six-context chain (complete and deliberately broken at two independent hops at
+once). See ADR-013/ADR-014's own closing notes and
+`artifacts/evidence/2026-08-16-observability-final-chain-proof.md` for the full proof chain.
+Named residuals genuinely not built (not silently declared done): `nexus1.edge.requests` (no
+BFF), `nexus1.projection.lag`, Prometheus recording rules, the educational-objective evaluator,
+a provisioned Grafana dashboard.
+
 ---
 
 ## 6. Architecture Decision Records (ADRs)

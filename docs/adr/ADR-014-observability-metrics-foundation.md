@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted.
+Accepted. Closed 2026-08-16 — see "Closing note" at the end of this ADR.
 
 ## Context
 
@@ -212,3 +212,21 @@ and Reporting.
   endpoint, and a deliberately-broken campaign proving the admission gate
   rejects an out-of-vocabulary label rather than admitting a new series —
   both documented in `artifacts/evidence/`.
+
+## Closing note (2026-08-16)
+
+Metrics are done, across all six contexts, proven at three levels:
+RootCause alone (`2026-08-16-observability-metrics-foundation.md`), the
+four remaining contexts plus the AlarmManagement outbox-trio and
+Audit/Compliance/Reporting fan-out campaigns
+(`2026-08-16-observability-metrics-extension.md`), and every declared
+instrument family in one real scrape spanning the whole chain
+(`2026-08-16-observability-final-chain-proof.md`). Named residuals from
+this ADR's original scope remain genuinely unbuilt, not silently declared
+done: `nexus1.edge.requests` (no BFF, ADR-007), `nexus1.projection.lag`
+(Reporting owns the one real projection in this project and still lacks
+this instrument), Prometheus recording rules, the educational-objective
+evaluator, and a provisioned Grafana dashboard. No further metrics work is
+planned under this ADR absent a new decision to pick one of those up. See
+ADR-013 for the tracing half's own closing note — both close together as
+one observability workstream.
