@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted.
+Accepted. Closed 2026-08-16 — see "Closing note" at the end of this ADR.
 
 ## Context
 
@@ -175,3 +175,15 @@ Reporting.
   "compromised or missing telemetry may impair detection, but it must not
   manufacture a business or repair outcome" directly, not just by
   assertion.
+
+## Closing note (2026-08-16)
+
+Tracing is done, across all six contexts, proven at three levels: RootCause
+alone (`2026-08-15-observability-tracing-foundation.md`), the four
+remaining contexts plus the verdict fan-out
+(`2026-08-16-observability-tracing-extension.md`), and the whole chain in
+one continuous run, complete and deliberately broken at two independent
+hops at once
+(`2026-08-16-observability-final-chain-proof.md`). No further tracing work
+is planned under this ADR. See ADR-014 for the metrics half's own closing
+note — both close together as one observability workstream.
