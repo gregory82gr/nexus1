@@ -25,7 +25,7 @@ namespace Nexus1.Reporting.Infrastructure.Messaging;
 /// spent, since an unsupported contract is a permanent classification, not
 /// a transient one.
 /// </summary>
-public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scopeFactory, ILogger<ReportingProjectionMessageHandler> logger)
+public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scopeFactory, NexusRuntimeMetrics metrics, ILogger<ReportingProjectionMessageHandler> logger)
 {
     public const string ConsumerName = "reporting.integration-events.v1";
     private const string Producer = "root-cause";
@@ -44,6 +44,7 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
             .AnyAsync(r => r.ConsumerName == ConsumerName && r.MessageId == messageId, cancellationToken);
         if (alreadyProcessed)
         {
+            RecordInboxOutcome("DUPLICATE_MATCH");
             return MessageHandlingOutcome.Ack;
         }
 
@@ -59,6 +60,7 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
             var nowUtc = dateTimeProvider.UtcNow;
 
             DateTime occurredAtUtc;
+            string reducerOutcome;
             switch (eventType)
             {
                 case CaseOpenedEventType:
@@ -71,8 +73,8 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
                     {
                         try
                         {
-                            var openedOutcome = await ApplyOpenedAsync(dbContext, opened, messageId, nowUtc, cancellationToken);
-                            activity?.SetTag("nexus1.outcome.code", openedOutcome);
+                            reducerOutcome = await ApplyOpenedAsync(dbContext, opened, messageId, nowUtc, cancellationToken);
+                            activity?.SetTag("nexus1.outcome.code", reducerOutcome);
                         }
                         catch (Exception ex)
                         {
@@ -93,8 +95,8 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
                     {
                         try
                         {
-                            var verdictOutcome = await ApplyVerdictIssuedAsync(dbContext, verdictIssued, messageId, nowUtc, cancellationToken);
-                            activity?.SetTag("nexus1.outcome.code", verdictOutcome);
+                            reducerOutcome = await ApplyVerdictIssuedAsync(dbContext, verdictIssued, messageId, nowUtc, cancellationToken);
+                            activity?.SetTag("nexus1.outcome.code", reducerOutcome);
                         }
                         catch (Exception ex)
                         {
@@ -109,6 +111,7 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
                     // A wildcard binding is not a wildcard reducer (ch.35) —
                     // an unrecognized RootCause event type is a permanent
                     // classification, quarantined immediately, no retry spent.
+                    RecordInboxOutcome("REJECTED");
                     return await QuarantineUnsupportedContractAsync(dbContext, messageId, envelopeBytes, eventType, schemaVersion, nowUtc, cancellationToken);
             }
 
@@ -118,6 +121,7 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
             try
             {
                 await dbContext.SaveChangesAsync(cancellationToken);
+                RecordInboxOutcome(reducerOutcome);
                 return MessageHandlingOutcome.Ack;
             }
             catch (DbUpdateException)
@@ -127,12 +131,28 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
                 var stillMissing = !await freshDbContext.InboxReceipts
                     .AnyAsync(r => r.ConsumerName == ConsumerName && r.MessageId == messageId, cancellationToken);
 
+                RecordInboxOutcome(stillMissing ? "ABSTAINED" : "DUPLICATE_MATCH");
                 return stillMissing ? MessageHandlingOutcome.NackRequeue : MessageHandlingOutcome.Ack;
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            RecordInboxOutcome("FAILED", ErrorClassifier.Classify(ex));
             return await RecordFailureAsync(messageId, envelopeBytes, ex, cancellationToken);
+        }
+    }
+
+    /// <summary>ch.52 52-O's "one terminal observation" rule — mirrors AlarmFloodMessageHandler's helper exactly (ADR-014). Reuses each reducer's own COMMITTED/DUPLICATE_MATCH/ABSTAINED classification directly rather than re-deriving it.</summary>
+    private void RecordInboxOutcome(string outcome, string? errorType = null)
+    {
+        if (MetricLabelPolicy.TryFor("process", outcome, NexusActivitySources.Reporting, out var labels))
+        {
+            var tags = errorType is null ? labels.ToTagList() : (labels with { ErrorType = errorType }).ToTagList();
+            metrics.InboxOutcomes.Add(1, tags);
+        }
+        else
+        {
+            metrics.TelemetryRejected.Add(1);
         }
     }
 

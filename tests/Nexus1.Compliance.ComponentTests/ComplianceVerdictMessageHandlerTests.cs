@@ -34,7 +34,7 @@ public sealed class ComplianceVerdictMessageHandlerTests : ComplianceComponentTe
     }
 
     private ComplianceVerdictMessageHandler BuildHandler() =>
-        new(BuildScopeFactory(), NullLogger<ComplianceVerdictMessageHandler>.Instance);
+        new(BuildScopeFactory(), NewMetrics(), NullLogger<ComplianceVerdictMessageHandler>.Instance);
 
     private static byte[] BuildEnvelope(Guid messageId, long analysisId, Guid? correlationId = null)
     {

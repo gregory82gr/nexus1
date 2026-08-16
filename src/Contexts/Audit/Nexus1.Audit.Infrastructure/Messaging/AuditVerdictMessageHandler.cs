@@ -21,7 +21,7 @@ namespace Nexus1.Audit.Infrastructure.Messaging;
 /// inbox receipt but skips the AuditEvidenceRecord insert (semantic truth) —
 /// a replay under a new MessageId for the same verdict must not double-audit.
 /// </summary>
-public sealed class AuditVerdictMessageHandler(IServiceScopeFactory scopeFactory, ILogger<AuditVerdictMessageHandler> logger)
+public sealed class AuditVerdictMessageHandler(IServiceScopeFactory scopeFactory, NexusRuntimeMetrics metrics, ILogger<AuditVerdictMessageHandler> logger)
 {
     public const string ConsumerName = "audit.root-cause-verdicts.v1";
     private const string Producer = "root-cause";
@@ -38,6 +38,7 @@ public sealed class AuditVerdictMessageHandler(IServiceScopeFactory scopeFactory
             .AnyAsync(r => r.ConsumerName == ConsumerName && r.MessageId == messageId, cancellationToken);
         if (alreadyProcessed)
         {
+            RecordInboxOutcome("DUPLICATE_MATCH");
             return MessageHandlingOutcome.Ack;
         }
 
@@ -96,6 +97,7 @@ public sealed class AuditVerdictMessageHandler(IServiceScopeFactory scopeFactory
             try
             {
                 await dbContext.SaveChangesAsync(cancellationToken);
+                RecordInboxOutcome(alreadyAudited ? "DUPLICATE_MATCH" : "COMMITTED");
                 return MessageHandlingOutcome.Ack;
             }
             catch (DbUpdateException)
@@ -109,12 +111,28 @@ public sealed class AuditVerdictMessageHandler(IServiceScopeFactory scopeFactory
                 var stillMissing = !await freshDbContext.InboxReceipts
                     .AnyAsync(r => r.ConsumerName == ConsumerName && r.MessageId == messageId, cancellationToken);
 
+                RecordInboxOutcome(stillMissing ? "ABSTAINED" : "DUPLICATE_MATCH");
                 return stillMissing ? MessageHandlingOutcome.NackRequeue : MessageHandlingOutcome.Ack;
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            RecordInboxOutcome("FAILED", ErrorClassifier.Classify(ex));
             return await RecordFailureAsync(messageId, envelopeBytes, ex, cancellationToken);
+        }
+    }
+
+    /// <summary>ch.52 52-O's "one terminal observation" rule — mirrors AlarmFloodMessageHandler's helper exactly (ADR-014).</summary>
+    private void RecordInboxOutcome(string outcome, string? errorType = null)
+    {
+        if (MetricLabelPolicy.TryFor("process", outcome, NexusActivitySources.Audit, out var labels))
+        {
+            var tags = errorType is null ? labels.ToTagList() : (labels with { ErrorType = errorType }).ToTagList();
+            metrics.InboxOutcomes.Add(1, tags);
+        }
+        else
+        {
+            metrics.TelemetryRejected.Add(1);
         }
     }
 

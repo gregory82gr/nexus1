@@ -18,6 +18,7 @@ public sealed class ReportingConsumerBackgroundService(
     RabbitMqConnectionManager connectionManager,
     RabbitMqOptions rabbitMqOptions,
     ReportingProjectionMessageHandler messageHandler,
+    NexusRuntimeMetrics metrics,
     ILogger<ReportingConsumerBackgroundService> logger) : BackgroundService
 {
     private const string QueueName = "reporting.integration-events.v1";
@@ -52,14 +53,17 @@ public sealed class ReportingConsumerBackgroundService(
                     parentContext,
                     tags: SafeTags.ForMessageProcess(messageId, eventType));
 
+                var startedAt = Stopwatch.GetTimestamp();
                 MessageHandlingOutcome outcome;
                 try
                 {
                     outcome = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
+                    RecordProcessAttempt(metrics, startedAt, ToMetricOutcome(outcome), errorType: null);
                 }
                 catch (Exception ex)
                 {
                     SafeError.Record(activity, ex);
+                    RecordProcessAttempt(metrics, startedAt, "FAILED", ErrorClassifier.Classify(ex));
                     throw;
                 }
                 switch (outcome)
@@ -95,6 +99,29 @@ public sealed class ReportingConsumerBackgroundService(
         await using (stoppingToken.Register(() => stopped.TrySetResult()))
         {
             await stopped.Task;
+        }
+    }
+
+    private static string ToMetricOutcome(MessageHandlingOutcome outcome) => outcome switch
+    {
+        MessageHandlingOutcome.Ack => "COMMITTED",
+        MessageHandlingOutcome.NackNoRequeue => "REJECTED",
+        _ => "ABSTAINED",
+    };
+
+    /// <summary>ch.52 52-K's "process" messaging operation — mirrors AlarmFloodConsumerBackgroundService's helper exactly (ADR-014).</summary>
+    private static void RecordProcessAttempt(NexusRuntimeMetrics metrics, long startedAt, string outcome, string? errorType)
+    {
+        var seconds = Stopwatch.GetElapsedTime(startedAt).TotalSeconds;
+        if (MetricLabelPolicy.TryFor("process", outcome, NexusActivitySources.Messaging, out var labels))
+        {
+            var tags = errorType is null ? labels.ToTagList() : (labels with { ErrorType = errorType }).ToTagList();
+            metrics.MessageAttempts.Add(1, tags);
+            metrics.MessageDuration.Record(seconds, tags);
+        }
+        else
+        {
+            metrics.TelemetryRejected.Add(1);
         }
     }
 }
