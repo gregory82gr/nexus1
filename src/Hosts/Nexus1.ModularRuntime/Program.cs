@@ -11,6 +11,9 @@ using Nexus1.Compliance.Infrastructure.Persistence;
 using Nexus1.CorePlatform.Application;
 using Nexus1.CorePlatform.Infrastructure;
 using Nexus1.CorePlatform.Infrastructure.Persistence;
+using Nexus1.Instrumentation.Application;
+using Nexus1.Instrumentation.Infrastructure;
+using Nexus1.Instrumentation.Infrastructure.Persistence;
 using Nexus1.Organization.Application;
 using Nexus1.Organization.Infrastructure;
 using Nexus1.Organization.Infrastructure.Persistence;
@@ -64,6 +67,13 @@ builder.Services.AddCorePlatformInfrastructure(alarmManagementConnectionString);
 builder.Services.AddAlarmManagementApplication();
 builder.Services.AddAlarmManagementInfrastructure(alarmManagementConnectionString);
 
+// Shares AlarmManagementDb (ADR-019) — every external reference in Instrumentation's
+// fifteen-table scope points at ReactorFleet.Unit or CorePlatform.EngineeringUnit, both
+// already in this same physical database; no PII/credential sensitivity pulls toward
+// isolation, so it is composed here alongside them rather than getting its own database.
+builder.Services.AddInstrumentationApplication();
+builder.Services.AddInstrumentationInfrastructure(alarmManagementConnectionString);
+
 builder.Services.AddAuditInfrastructure(auditConnectionString);
 
 builder.Services.AddComplianceInfrastructure(complianceConnectionString);
@@ -88,6 +98,7 @@ builder.Services
     .AddHealthChecks()
     .AddCheck<DbContextHealthCheck<ReactorFleetDbContext>>("reactorfleet-db")
     .AddCheck<DbContextHealthCheck<CorePlatformDbContext>>("coreplatform-db")
+    .AddCheck<DbContextHealthCheck<InstrumentationDbContext>>("instrumentation-db")
     .AddCheck<DbContextHealthCheck<AlarmManagementDbContext>>("alarmmanagement-db")
     .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db")
     .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db")

@@ -12,6 +12,8 @@
     <ProjectReference Include="..\..\Contexts\ReactorFleet\Nexus1.ReactorFleet.Infrastructure\Nexus1.ReactorFleet.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Contexts\CorePlatform\Nexus1.CorePlatform.Application\Nexus1.CorePlatform.Application.csproj" />
     <ProjectReference Include="..\..\Contexts\CorePlatform\Nexus1.CorePlatform.Infrastructure\Nexus1.CorePlatform.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Contexts\Instrumentation\Nexus1.Instrumentation.Application\Nexus1.Instrumentation.Application.csproj" />
+    <ProjectReference Include="..\..\Contexts\Instrumentation\Nexus1.Instrumentation.Infrastructure\Nexus1.Instrumentation.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Contexts\Security\Nexus1.Security.Application\Nexus1.Security.Application.csproj" />
     <ProjectReference Include="..\..\Contexts\Security\Nexus1.Security.Infrastructure\Nexus1.Security.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Contexts\Organization\Nexus1.Organization.Application\Nexus1.Organization.Application.csproj" />
