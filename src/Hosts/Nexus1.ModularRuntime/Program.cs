@@ -11,6 +11,9 @@ using Nexus1.Compliance.Infrastructure.Persistence;
 using Nexus1.CorePlatform.Application;
 using Nexus1.CorePlatform.Infrastructure;
 using Nexus1.CorePlatform.Infrastructure.Persistence;
+using Nexus1.Organization.Application;
+using Nexus1.Organization.Infrastructure;
+using Nexus1.Organization.Infrastructure.Persistence;
 using Nexus1.ReactorFleet.Application;
 using Nexus1.ReactorFleet.Infrastructure;
 using Nexus1.ReactorFleet.Infrastructure.Persistence;
@@ -34,6 +37,8 @@ var reportingConnectionString = builder.Configuration.GetConnectionString("Repor
     ?? throw new InvalidOperationException("Missing ConnectionStrings:ReportingDb configuration.");
 var securityConnectionString = builder.Configuration.GetConnectionString("SecurityDb")
     ?? throw new InvalidOperationException("Missing ConnectionStrings:SecurityDb configuration.");
+var organizationConnectionString = builder.Configuration.GetConnectionString("OrganizationDb")
+    ?? throw new InvalidOperationException("Missing ConnectionStrings:OrganizationDb configuration.");
 
 builder.Services.AddBuildingBlocksApplication();
 
@@ -72,6 +77,13 @@ builder.Services.AddReportingInfrastructure(reportingConnectionString);
 builder.Services.AddSecurityApplication();
 builder.Services.AddSecurityInfrastructure(securityConnectionString);
 
+// Own physical database, OrganizationDb (ADR-017) — not shared with the other
+// contexts above: Person holds real PII (GivenName, FamilyName, DisplayName,
+// WorkEmail, WorkPhone), the same class of data-sensitivity reason ADR-016
+// used to isolate Security, independent of deployment topology.
+builder.Services.AddOrganizationApplication();
+builder.Services.AddOrganizationInfrastructure(organizationConnectionString);
+
 builder.Services
     .AddHealthChecks()
     .AddCheck<DbContextHealthCheck<ReactorFleetDbContext>>("reactorfleet-db")
@@ -80,7 +92,8 @@ builder.Services
     .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db")
     .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db")
     .AddCheck<DbContextHealthCheck<ReportingDbContext>>("reporting-db")
-    .AddCheck<DbContextHealthCheck<SecurityDbContext>>("security-db");
+    .AddCheck<DbContextHealthCheck<SecurityDbContext>>("security-db")
+    .AddCheck<DbContextHealthCheck<OrganizationDbContext>>("organization-db");
 
 var app = builder.Build();
 
