@@ -34,7 +34,7 @@ public sealed class ReportingProjectionMessageHandlerTests : ReportingComponentT
     }
 
     private ReportingProjectionMessageHandler BuildHandler() =>
-        new(BuildScopeFactory(), NullLogger<ReportingProjectionMessageHandler>.Instance);
+        new(BuildScopeFactory(), NewMetrics(), NullLogger<ReportingProjectionMessageHandler>.Instance);
 
     private static byte[] BuildOpenedEnvelope(Guid messageId, long analysisId)
     {

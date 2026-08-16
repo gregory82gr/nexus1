@@ -54,7 +54,7 @@ public sealed class TracingTests : AuditComponentTestDatabase
     }
 
     private AuditVerdictMessageHandler BuildHandler() =>
-        new(BuildScopeFactory(), NullLogger<AuditVerdictMessageHandler>.Instance);
+        new(BuildScopeFactory(), NewMetrics(), NullLogger<AuditVerdictMessageHandler>.Instance);
 
     private static byte[] BuildEnvelope(Guid messageId, long analysisId)
     {

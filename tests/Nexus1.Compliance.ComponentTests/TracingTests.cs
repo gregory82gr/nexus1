@@ -52,7 +52,7 @@ public sealed class TracingTests : ComplianceComponentTestDatabase
     }
 
     private ComplianceVerdictMessageHandler BuildHandler() =>
-        new(BuildScopeFactory(), NullLogger<ComplianceVerdictMessageHandler>.Instance);
+        new(BuildScopeFactory(), NewMetrics(), NullLogger<ComplianceVerdictMessageHandler>.Instance);
 
     private static byte[] BuildEnvelope(Guid messageId, long analysisId)
     {

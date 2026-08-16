@@ -21,7 +21,7 @@ namespace Nexus1.Compliance.Infrastructure.Messaging;
 /// (semantic truth) — a replay under a new MessageId for the same verdict
 /// must not open a second review.
 /// </summary>
-public sealed class ComplianceVerdictMessageHandler(IServiceScopeFactory scopeFactory, ILogger<ComplianceVerdictMessageHandler> logger)
+public sealed class ComplianceVerdictMessageHandler(IServiceScopeFactory scopeFactory, NexusRuntimeMetrics metrics, ILogger<ComplianceVerdictMessageHandler> logger)
 {
     public const string ConsumerName = "compliance.root-cause-verdicts.v1";
     private const string Producer = "root-cause";
@@ -37,6 +37,7 @@ public sealed class ComplianceVerdictMessageHandler(IServiceScopeFactory scopeFa
             .AnyAsync(r => r.ConsumerName == ConsumerName && r.MessageId == messageId, cancellationToken);
         if (alreadyProcessed)
         {
+            RecordInboxOutcome("DUPLICATE_MATCH");
             return MessageHandlingOutcome.Ack;
         }
 
@@ -91,6 +92,7 @@ public sealed class ComplianceVerdictMessageHandler(IServiceScopeFactory scopeFa
             try
             {
                 await dbContext.SaveChangesAsync(cancellationToken);
+                RecordInboxOutcome(alreadyReviewed ? "DUPLICATE_MATCH" : "COMMITTED");
                 return MessageHandlingOutcome.Ack;
             }
             catch (DbUpdateException)
@@ -100,12 +102,28 @@ public sealed class ComplianceVerdictMessageHandler(IServiceScopeFactory scopeFa
                 var stillMissing = !await freshDbContext.InboxReceipts
                     .AnyAsync(r => r.ConsumerName == ConsumerName && r.MessageId == messageId, cancellationToken);
 
+                RecordInboxOutcome(stillMissing ? "ABSTAINED" : "DUPLICATE_MATCH");
                 return stillMissing ? MessageHandlingOutcome.NackRequeue : MessageHandlingOutcome.Ack;
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            RecordInboxOutcome("FAILED", ErrorClassifier.Classify(ex));
             return await RecordFailureAsync(messageId, envelopeBytes, ex, cancellationToken);
+        }
+    }
+
+    /// <summary>ch.52 52-O's "one terminal observation" rule — mirrors AuditVerdictMessageHandler's helper exactly (ADR-014).</summary>
+    private void RecordInboxOutcome(string outcome, string? errorType = null)
+    {
+        if (MetricLabelPolicy.TryFor("process", outcome, NexusActivitySources.Compliance, out var labels))
+        {
+            var tags = errorType is null ? labels.ToTagList() : (labels with { ErrorType = errorType }).ToTagList();
+            metrics.InboxOutcomes.Add(1, tags);
+        }
+        else
+        {
+            metrics.TelemetryRejected.Add(1);
         }
     }
 
