@@ -44,7 +44,7 @@ public sealed class SafeTagsTests
     }
 
     [Fact]
-    public void SafeError_records_only_the_exception_type_name_and_sets_error_status()
+    public void SafeError_records_only_the_classified_error_type_and_sets_error_status()
     {
         using var source = new ActivitySource("test-source-safe-error");
         using var listener = new ActivityListener
@@ -59,7 +59,8 @@ public sealed class SafeTagsTests
 
         Assert.NotNull(activity);
         Assert.Equal(ActivityStatusCode.Error, activity!.Status);
-        Assert.Equal(nameof(InvalidOperationException), activity.GetTagItem("error.type"));
+        Assert.Equal("contract_invalid", activity.GetTagItem("error.type"));
         Assert.DoesNotContain(activity.Tags, t => t.Value != null && t.Value.Contains("secret exception message"));
+        Assert.DoesNotContain(activity.Tags, t => t.Value != null && t.Value.Contains(nameof(InvalidOperationException)));
     }
 }

@@ -34,6 +34,7 @@ public sealed class RootCauseAnalysisConfiguration : IEntityTypeConfiguration<Ro
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.Property(x => x.OpenedBy).HasMaxLength(100).IsRequired();
         builder.Property(x => x.OpenedAtUtc).IsRequired();
+        builder.Property(x => x.AlarmFloodStartedAtUtc);
         builder.Property(x => x.Verdict).HasMaxLength(1000);
         builder.Property(x => x.ClosedBy).HasMaxLength(100);
         builder.Property(x => x.ClosedAtUtc);

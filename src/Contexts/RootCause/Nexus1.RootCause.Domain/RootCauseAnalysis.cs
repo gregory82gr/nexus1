@@ -13,7 +13,9 @@ public sealed class RootCauseAnalysis : Entity<RootCauseAnalysisId>, IAggregateR
 {
     private readonly List<AnalysisHypothesis> _hypotheses = [];
 
-    private RootCauseAnalysis(RootCauseAnalysisId id, UnitId unitId, AlarmFloodId alarmFloodId, string openedBy, DateTime openedAtUtc)
+    private RootCauseAnalysis(
+        RootCauseAnalysisId id, UnitId unitId, AlarmFloodId alarmFloodId, string openedBy, DateTime openedAtUtc,
+        DateTime? alarmFloodStartedAtUtc)
         : base(id)
     {
         UnitId = unitId;
@@ -21,6 +23,7 @@ public sealed class RootCauseAnalysis : Entity<RootCauseAnalysisId>, IAggregateR
         Status = AnalysisStatus.Open;
         OpenedBy = openedBy;
         OpenedAtUtc = openedAtUtc;
+        AlarmFloodStartedAtUtc = alarmFloodStartedAtUtc;
     }
 
     public UnitId UnitId { get; }
@@ -33,6 +36,19 @@ public sealed class RootCauseAnalysis : Entity<RootCauseAnalysisId>, IAggregateR
 
     public DateTime OpenedAtUtc { get; }
 
+    /// <summary>
+    /// The originating AlarmFlood's own StartedAtUtc (ch.52 52-T's "flood
+    /// detected" milestone) — null when this analysis was opened through the
+    /// manual OpenAnalysisCommand path, which receives only an AlarmFloodId,
+    /// not the flood's timestamp (no cross-context read back to
+    /// AlarmManagementDb exists to backfill it). Populated on the real
+    /// auto-open production path (AlarmFloodMessageHandler), which already
+    /// has it from the AlarmFloodDetectedV1 payload it is processing.
+    /// Workflow-duration metrics are recorded only when this is present —
+    /// never fabricated from OpenedAtUtc as a stand-in.
+    /// </summary>
+    public DateTime? AlarmFloodStartedAtUtc { get; }
+
     public string? Verdict { get; private set; }
 
     public string? ClosedBy { get; private set; }
@@ -42,14 +58,15 @@ public sealed class RootCauseAnalysis : Entity<RootCauseAnalysisId>, IAggregateR
     public IReadOnlyCollection<AnalysisHypothesis> Hypotheses => _hypotheses.AsReadOnly();
 
     public static RootCauseAnalysis Open(
-        RootCauseAnalysisId id, UnitId unitId, AlarmFloodId alarmFloodId, string openedBy, DateTime openedAtUtc)
+        RootCauseAnalysisId id, UnitId unitId, AlarmFloodId alarmFloodId, string openedBy, DateTime openedAtUtc,
+        DateTime? alarmFloodStartedAtUtc = null)
     {
         if (string.IsNullOrWhiteSpace(openedBy))
         {
             throw new ArgumentException("OpenedBy must not be empty.", nameof(openedBy));
         }
 
-        var analysis = new RootCauseAnalysis(id, unitId, alarmFloodId, openedBy, openedAtUtc);
+        var analysis = new RootCauseAnalysis(id, unitId, alarmFloodId, openedBy, openedAtUtc, alarmFloodStartedAtUtc);
         analysis.AddDomainEvent(new RootCauseAnalysisOpened(id, unitId, alarmFloodId, openedAtUtc));
         return analysis;
     }

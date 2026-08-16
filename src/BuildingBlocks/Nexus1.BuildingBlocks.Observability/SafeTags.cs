@@ -51,8 +51,10 @@ public static class SafeTags
 /// <summary>
 /// Safe, bounded error recording (ch.51 51-O). Exception.Message, stack
 /// traces and provider text are omitted from the default trace profile —
-/// only the CLR exception type name is admitted, itself a closed, reviewed
-/// .NET vocabulary rather than arbitrary caller-controlled text.
+/// only the classified error type is admitted (<see cref="ErrorClassifier"/>,
+/// shared with metrics rather than duplicated, ch.52 52-Q), a closed,
+/// reviewed five-value vocabulary rather than the raw CLR type name, which
+/// is unbounded across every exception type any dependency could throw.
 /// </summary>
 public static class SafeError
 {
@@ -63,7 +65,7 @@ public static class SafeError
             return;
         }
 
-        activity.SetTag("error.type", exception.GetType().Name);
+        activity.SetTag("error.type", ErrorClassifier.Classify(exception));
         activity.SetStatus(ActivityStatusCode.Error);
     }
 }

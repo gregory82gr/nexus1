@@ -19,6 +19,7 @@ public sealed class AlarmFloodConsumerBackgroundService(
     RabbitMqConnectionManager connectionManager,
     RabbitMqOptions rabbitMqOptions,
     AlarmFloodMessageHandler messageHandler,
+    NexusRuntimeMetrics metrics,
     ILogger<AlarmFloodConsumerBackgroundService> logger) : BackgroundService
 {
     private const string QueueName = "rootcause.alarm-events.v1";
@@ -56,14 +57,17 @@ public sealed class AlarmFloodConsumerBackgroundService(
                     parentContext,
                     tags: SafeTags.ForMessageProcess(messageId, eventType));
 
+                var startedAt = Stopwatch.GetTimestamp();
                 MessageHandlingOutcome outcome;
                 try
                 {
                     outcome = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
+                    RecordProcessAttempt(metrics, startedAt, ToMetricOutcome(outcome), errorType: null);
                 }
                 catch (Exception ex)
                 {
                     SafeError.Record(activity, ex);
+                    RecordProcessAttempt(metrics, startedAt, "FAILED", ErrorClassifier.Classify(ex));
                     throw;
                 }
                 switch (outcome)
@@ -99,6 +103,29 @@ public sealed class AlarmFloodConsumerBackgroundService(
         await using (stoppingToken.Register(() => stopped.TrySetResult()))
         {
             await stopped.Task;
+        }
+    }
+
+    private static string ToMetricOutcome(MessageHandlingOutcome outcome) => outcome switch
+    {
+        MessageHandlingOutcome.Ack => "COMMITTED",
+        MessageHandlingOutcome.NackNoRequeue => "REJECTED",
+        _ => "ABSTAINED",
+    };
+
+    /// <summary>ch.52 52-K's "process" messaging operation — one measurement per delivery attempt, whatever the outcome, matching 52-F's placement rule ("record when disposition chosen"), not just on success.</summary>
+    private static void RecordProcessAttempt(NexusRuntimeMetrics metrics, long startedAt, string outcome, string? errorType)
+    {
+        var seconds = Stopwatch.GetElapsedTime(startedAt).TotalSeconds;
+        if (MetricLabelPolicy.TryFor("process", outcome, NexusActivitySources.Messaging, out var labels))
+        {
+            var tags = errorType is null ? labels.ToTagList() : (labels with { ErrorType = errorType }).ToTagList();
+            metrics.MessageAttempts.Add(1, tags);
+            metrics.MessageDuration.Record(seconds, tags);
+        }
+        else
+        {
+            metrics.TelemetryRejected.Add(1);
         }
     }
 }

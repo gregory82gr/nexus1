@@ -1,5 +1,8 @@
+using System.Diagnostics.Metrics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.Metrics;
 using Nexus1.BuildingBlocks.Application;
+using Nexus1.BuildingBlocks.Observability;
 using Nexus1.RootCause.Domain;
 using Nexus1.RootCause.Infrastructure.Persistence;
 
@@ -30,4 +33,16 @@ public abstract class RootCauseComponentTestDatabase : IAsyncLifetime
 
     protected static IRepository<RootCauseAnalysis, RootCauseAnalysisId> Repository(RootCauseDbContext dbContext) =>
         new RootCauseAnalysisRepository(dbContext);
+
+    /// <summary>A fresh, uncaptured instrument set per call — tests that need to assert on recorded measurements build their own MeterListener against this, mirroring Nexus1.BuildingBlocks.Observability.UnitTests' TestMeterFactory (duplicated, not shared, per this project's own convention for test-only doubles).</summary>
+    protected static NexusRuntimeMetrics NewMetrics() => new(new TestMeterFactory());
+
+    private sealed class TestMeterFactory : IMeterFactory
+    {
+        public Meter Create(MeterOptions options) => new(options);
+
+        public void Dispose()
+        {
+        }
+    }
 }

@@ -67,7 +67,7 @@ public sealed class OutboxRelayTests : RootCauseComponentTestDatabase
             new AddEvidenceCommand(analysisId, hypothesisResult.Value, "Golden evidence."), CancellationToken.None);
         Assert.True(evidenceResult.IsSuccess);
 
-        var closeHandler = new CloseAnalysisCommandHandler(repository, unitOfWork, dateTimeProvider, new EfOutboxWriter(dbContext));
+        var closeHandler = new CloseAnalysisCommandHandler(repository, unitOfWork, dateTimeProvider, new EfOutboxWriter(dbContext), NewMetrics());
         var closeResult = await closeHandler.Handle(
             new CloseAnalysisCommand(analysisId, "COMMON_POWER_SUPPLY_INSTABILITY", "system:test"), CancellationToken.None);
         Assert.True(closeResult.IsSuccess);
