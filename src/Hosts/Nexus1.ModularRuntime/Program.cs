@@ -31,6 +31,9 @@ using Nexus1.ReactorFleet.Infrastructure;
 using Nexus1.ReactorFleet.Infrastructure.Persistence;
 using Nexus1.Reporting.Infrastructure;
 using Nexus1.Reporting.Infrastructure.Persistence;
+using Nexus1.Robotics.Application;
+using Nexus1.Robotics.Infrastructure;
+using Nexus1.Robotics.Infrastructure.Persistence;
 using Nexus1.Security.Application;
 using Nexus1.Security.Infrastructure;
 using Nexus1.Security.Infrastructure.Persistence;
@@ -112,6 +115,15 @@ builder.Services.AddMaintenanceInfrastructure(alarmManagementConnectionString);
 builder.Services.AddEventManagementApplication();
 builder.Services.AddEventManagementInfrastructure(alarmManagementConnectionString);
 
+// Shares AlarmManagementDb (ADR-023) — Robotics is the ninth registration sharing it,
+// after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation/DigitalTwin/Maintenance/
+// EventManagement: the only real cross-context FK in this sector's fifteen-table scope
+// (Robot.HomeUnitId / Mission.UnitId -> ReactorFleet.Unit) already lives here, and no
+// PII/credential sensitivity pulls toward isolation — the first Phase 2 sector with a
+// clean (zero-gap) whole-sector FK audit result.
+builder.Services.AddRoboticsApplication();
+builder.Services.AddRoboticsInfrastructure(alarmManagementConnectionString);
+
 builder.Services.AddAuditInfrastructure(auditConnectionString);
 
 builder.Services.AddComplianceInfrastructure(complianceConnectionString);
@@ -145,6 +157,8 @@ builder.Services
     .AddCheck<DbContextHealthCheck<MaintenanceDbContext>>("maintenance-db")
     // ADR-022's persistence decision: EventManagement shares AlarmManagementDb.
     .AddCheck<DbContextHealthCheck<EventManagementDbContext>>("eventmanagement-db")
+    // ADR-023's persistence decision: Robotics shares AlarmManagementDb.
+    .AddCheck<DbContextHealthCheck<RoboticsDbContext>>("robotics-db")
     .AddCheck<DbContextHealthCheck<AlarmManagementDbContext>>("alarmmanagement-db")
     .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db")
     .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db")
