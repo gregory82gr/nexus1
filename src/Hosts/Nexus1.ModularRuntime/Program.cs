@@ -14,6 +14,9 @@ using Nexus1.CorePlatform.Infrastructure.Persistence;
 using Nexus1.DigitalTwin.Application;
 using Nexus1.DigitalTwin.Infrastructure;
 using Nexus1.DigitalTwin.Infrastructure.Persistence;
+using Nexus1.EventManagement.Application;
+using Nexus1.EventManagement.Infrastructure;
+using Nexus1.EventManagement.Infrastructure.Persistence;
 using Nexus1.Instrumentation.Application;
 using Nexus1.Instrumentation.Infrastructure;
 using Nexus1.Instrumentation.Infrastructure.Persistence;
@@ -99,6 +102,16 @@ builder.Services.AddDigitalTwinInfrastructure(alarmManagementConnectionString);
 builder.Services.AddMaintenanceApplication();
 builder.Services.AddMaintenanceInfrastructure(alarmManagementConnectionString);
 
+// Shares AlarmManagementDb (ADR-022) — EventManagement is the seventh registration sharing it,
+// after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation/DigitalTwin/Maintenance: a
+// clear-cut case (unlike Maintenance's genuine tradeoff) since every real internal FK
+// (OperationalEvent.UnitId -> ReactorFleet.Unit, EventAlarmLink.AlarmEventId ->
+// AlarmManagement.AlarmEvent, EventFloodLink.AlarmFloodId -> AlarmManagement.AlarmFlood) already
+// lives here, and OperationalEvent.PlantId is the sector's only Organization-side reference — a
+// single nullable passport column, not enough to create a genuine tradeoff.
+builder.Services.AddEventManagementApplication();
+builder.Services.AddEventManagementInfrastructure(alarmManagementConnectionString);
+
 builder.Services.AddAuditInfrastructure(auditConnectionString);
 
 builder.Services.AddComplianceInfrastructure(complianceConnectionString);
@@ -130,6 +143,8 @@ builder.Services
     // shared database (reachable but missing this context's own migration surfaces as Unhealthy).
     .AddCheck<DbContextHealthCheck<DigitalTwinDbContext>>("digitaltwin-db")
     .AddCheck<DbContextHealthCheck<MaintenanceDbContext>>("maintenance-db")
+    // ADR-022's persistence decision: EventManagement shares AlarmManagementDb.
+    .AddCheck<DbContextHealthCheck<EventManagementDbContext>>("eventmanagement-db")
     .AddCheck<DbContextHealthCheck<AlarmManagementDbContext>>("alarmmanagement-db")
     .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db")
     .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db")
