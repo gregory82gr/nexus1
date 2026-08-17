@@ -17,6 +17,9 @@ using Nexus1.DigitalTwin.Infrastructure.Persistence;
 using Nexus1.Instrumentation.Application;
 using Nexus1.Instrumentation.Infrastructure;
 using Nexus1.Instrumentation.Infrastructure.Persistence;
+using Nexus1.Maintenance.Application;
+using Nexus1.Maintenance.Infrastructure;
+using Nexus1.Maintenance.Infrastructure.Persistence;
 using Nexus1.Organization.Application;
 using Nexus1.Organization.Infrastructure;
 using Nexus1.Organization.Infrastructure.Persistence;
@@ -85,6 +88,17 @@ builder.Services.AddInstrumentationInfrastructure(alarmManagementConnectionStrin
 builder.Services.AddDigitalTwinApplication();
 builder.Services.AddDigitalTwinInfrastructure(alarmManagementConnectionString);
 
+// Shares AlarmManagementDb (ADR-021) — Maintenance is the sixth registration sharing it,
+// after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation/DigitalTwin: this is the
+// first Phase 2 sector where the FK-locality argument doesn't point cleanly one direction
+// (Asset.UnitId/AssetConditionMeasurement/DegradationTrendPoint's signal and
+// engineering-unit references point here; WorkOrder.AssignedTeamId/AssignedPersonId would
+// point at OrganizationDb instead). ADR-021's Option A keeps the sector's own anchor
+// relationship and its condition/degradation evidence as real FKs, at the cost of
+// WorkOrder's two assignment columns becoming passport-only.
+builder.Services.AddMaintenanceApplication();
+builder.Services.AddMaintenanceInfrastructure(alarmManagementConnectionString);
+
 builder.Services.AddAuditInfrastructure(auditConnectionString);
 
 builder.Services.AddComplianceInfrastructure(complianceConnectionString);
@@ -115,6 +129,7 @@ builder.Services
     // DbContextHealthCheck<T> correctly handles a new schema being added to an already-migrated
     // shared database (reachable but missing this context's own migration surfaces as Unhealthy).
     .AddCheck<DbContextHealthCheck<DigitalTwinDbContext>>("digitaltwin-db")
+    .AddCheck<DbContextHealthCheck<MaintenanceDbContext>>("maintenance-db")
     .AddCheck<DbContextHealthCheck<AlarmManagementDbContext>>("alarmmanagement-db")
     .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db")
     .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db")
