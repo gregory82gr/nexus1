@@ -20,8 +20,9 @@ public sealed class OpenWorkOrderCommandHandlerTests : MaintenanceComponentTestD
         await using var reactorFleetContext = CreateReactorFleetDbContext();
         await using var corePlatformContext = CreateCorePlatformDbContext();
         await using var instrumentationContext = CreateInstrumentationDbContext();
+        await using var eventManagementContext = CreateEventManagementDbContext();
         await using var seedContext = CreateDbContext();
-        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, seedContext, NowUtc);
+        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, eventManagementContext, seedContext, NowUtc);
 
         await using var dbContext = CreateDbContext();
         var result = await CreateHandler(dbContext).Handle(
@@ -41,19 +42,21 @@ public sealed class OpenWorkOrderCommandHandlerTests : MaintenanceComponentTestD
     }
 
     [Fact]
-    public async Task Opens_a_work_order_with_no_asset_and_passport_only_origin_ids()
+    public async Task Opens_a_work_order_with_no_asset_and_real_origin_ids()
     {
         await using var reactorFleetContext = CreateReactorFleetDbContext();
         await using var corePlatformContext = CreateCorePlatformDbContext();
         await using var instrumentationContext = CreateInstrumentationDbContext();
+        await using var eventManagementContext = CreateEventManagementDbContext();
         await using var seedContext = CreateDbContext();
-        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, seedContext, NowUtc);
+        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, eventManagementContext, seedContext, NowUtc);
 
         await using var dbContext = CreateDbContext();
         var result = await CreateHandler(dbContext).Handle(
             new OpenWorkOrderCommand(
                 seed.UnitId, seed.WorkOrderTypeId, seed.WorkOrderStatusId, seed.WorkPriorityId, "WO-2026-0002",
-                "Investigate alarm flood", NowUtc, OriginOperationalEventId: 555L, OriginIncidentActionId: 777L),
+                "Investigate alarm flood", NowUtc, OriginOperationalEventId: seed.OperationalEventId,
+                OriginIncidentActionId: seed.IncidentActionId),
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -62,8 +65,8 @@ public sealed class OpenWorkOrderCommandHandlerTests : MaintenanceComponentTestD
         var storedWorkOrder = await verifyContext.WorkOrders.FindAsync(new WorkOrderId(result.Value));
         Assert.NotNull(storedWorkOrder);
         Assert.Null(storedWorkOrder!.AssetId);
-        Assert.Equal(555L, storedWorkOrder.OriginOperationalEventId);
-        Assert.Equal(777L, storedWorkOrder.OriginIncidentActionId);
+        Assert.Equal(seed.OperationalEventId, storedWorkOrder.OriginOperationalEventId);
+        Assert.Equal(seed.IncidentActionId, storedWorkOrder.OriginIncidentActionId);
     }
 
     [Fact]
@@ -72,8 +75,9 @@ public sealed class OpenWorkOrderCommandHandlerTests : MaintenanceComponentTestD
         await using var reactorFleetContext = CreateReactorFleetDbContext();
         await using var corePlatformContext = CreateCorePlatformDbContext();
         await using var instrumentationContext = CreateInstrumentationDbContext();
+        await using var eventManagementContext = CreateEventManagementDbContext();
         await using var seedContext = CreateDbContext();
-        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, seedContext, NowUtc);
+        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, eventManagementContext, seedContext, NowUtc);
 
         await using var dbContext = CreateDbContext();
         var result = await CreateHandler(dbContext).Handle(

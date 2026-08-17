@@ -21,8 +21,9 @@ public sealed class RecordDegradationCommandHandlerTests : MaintenanceComponentT
         await using var reactorFleetContext = CreateReactorFleetDbContext();
         await using var corePlatformContext = CreateCorePlatformDbContext();
         await using var instrumentationContext = CreateInstrumentationDbContext();
+        await using var eventManagementContext = CreateEventManagementDbContext();
         await using var seedContext = CreateDbContext();
-        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, seedContext, NowUtc);
+        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, eventManagementContext, seedContext, NowUtc);
 
         await using var dbContext = CreateDbContext();
         var result = await CreateHandler(dbContext).Handle(
@@ -52,8 +53,9 @@ public sealed class RecordDegradationCommandHandlerTests : MaintenanceComponentT
         await using var reactorFleetContext = CreateReactorFleetDbContext();
         await using var corePlatformContext = CreateCorePlatformDbContext();
         await using var instrumentationContext = CreateInstrumentationDbContext();
+        await using var eventManagementContext = CreateEventManagementDbContext();
         await using var seedContext = CreateDbContext();
-        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, seedContext, NowUtc);
+        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, eventManagementContext, seedContext, NowUtc);
 
         await using var dbContext = CreateDbContext();
         var result = await CreateHandler(dbContext).Handle(
@@ -69,8 +71,9 @@ public sealed class RecordDegradationCommandHandlerTests : MaintenanceComponentT
         await using var reactorFleetContext = CreateReactorFleetDbContext();
         await using var corePlatformContext = CreateCorePlatformDbContext();
         await using var instrumentationContext = CreateInstrumentationDbContext();
+        await using var eventManagementContext = CreateEventManagementDbContext();
         await using var seedContext = CreateDbContext();
-        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, seedContext, NowUtc);
+        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, eventManagementContext, seedContext, NowUtc);
 
         await using var dbContext = CreateDbContext();
         var result = await CreateHandler(dbContext).Handle(

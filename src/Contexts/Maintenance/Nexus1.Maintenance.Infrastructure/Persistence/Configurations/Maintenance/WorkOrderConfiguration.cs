@@ -12,10 +12,16 @@ namespace Nexus1.Maintenance.Infrastructure.Persistence.Configurations.Maintenan
 /// mapped as a shadow column only. IsDeleted IS domain-modeled — needed by
 /// GetOpenWorkOrdersByUnitQuery's own "IsDeleted = 0" filter.
 ///
-/// MaintenancePlanId, MaintenanceWindowId, RequestedByUserId, AssignedTeamId,
-/// AssignedPersonId, OriginOperationalEventId and OriginIncidentActionId are
-/// all passport-only plain columns with NO HasOne/FK declared at all — see
-/// WorkOrder.cs's own XML doc for why each one is out of scope (ADR-021).
+/// MaintenancePlanId, MaintenanceWindowId, RequestedByUserId, AssignedTeamId
+/// and AssignedPersonId are passport-only plain columns with NO HasOne/FK
+/// declared at all — see WorkOrder.cs's own XML doc for why each one is out
+/// of scope (ADR-021).
+///
+/// OriginOperationalEventId/OriginIncidentActionId are REAL foreign keys as
+/// of ADR-022's own reconnection decision (EventManagement now exists and
+/// shares this same physical database) — see
+/// EventManagementOperationalEventReference/
+/// EventManagementIncidentActionReference in ExternalReferences/.
 /// </summary>
 public sealed class WorkOrderConfiguration : IEntityTypeConfiguration<WorkOrder>
 {
@@ -106,6 +112,18 @@ public sealed class WorkOrderConfiguration : IEntityTypeConfiguration<WorkOrder>
             .WithMany()
             .HasForeignKey(x => x.WorkPriorityId)
             .HasConstraintName("FK_Maintenance_WorkOrder_Priority")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<EventManagementOperationalEventReference>()
+            .WithMany()
+            .HasForeignKey(x => x.OriginOperationalEventId)
+            .HasConstraintName("FK_Maintenance_WorkOrder_OriginOperationalEvent")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<EventManagementIncidentActionReference>()
+            .WithMany()
+            .HasForeignKey(x => x.OriginIncidentActionId)
+            .HasConstraintName("FK_Maintenance_WorkOrder_OriginIncidentAction")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Ignore(x => x.DomainEvents);

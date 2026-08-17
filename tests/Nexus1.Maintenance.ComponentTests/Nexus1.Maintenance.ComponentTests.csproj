@@ -26,6 +26,8 @@
     <ProjectReference Include="..\..\src\Contexts\ReactorFleet\Nexus1.ReactorFleet.Infrastructure\Nexus1.ReactorFleet.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Contexts\CorePlatform\Nexus1.CorePlatform.Infrastructure\Nexus1.CorePlatform.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Contexts\Instrumentation\Nexus1.Instrumentation.Infrastructure\Nexus1.Instrumentation.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\EventManagement\Nexus1.EventManagement.Infrastructure\Nexus1.EventManagement.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\AlarmManagement\Nexus1.AlarmManagement.Infrastructure\Nexus1.AlarmManagement.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -13,8 +13,9 @@ public sealed class GetAssetsByUnitQueryHandlerTests : MaintenanceComponentTestD
         await using var reactorFleetContext = CreateReactorFleetDbContext();
         await using var corePlatformContext = CreateCorePlatformDbContext();
         await using var instrumentationContext = CreateInstrumentationDbContext();
+        await using var eventManagementContext = CreateEventManagementDbContext();
         await using var seedContext = CreateDbContext();
-        await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, seedContext, NowUtc);
+        await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, eventManagementContext, seedContext, NowUtc);
 
         await using var dbContext = CreateDbContext();
         var handler = new GetAssetsByUnitQueryHandler(new EfAssetsByUnitFinder(dbContext));
