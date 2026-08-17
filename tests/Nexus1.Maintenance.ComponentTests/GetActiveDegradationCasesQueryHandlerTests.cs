@@ -15,8 +15,9 @@ public sealed class GetActiveDegradationCasesQueryHandlerTests : MaintenanceComp
         await using var reactorFleetContext = CreateReactorFleetDbContext();
         await using var corePlatformContext = CreateCorePlatformDbContext();
         await using var instrumentationContext = CreateInstrumentationDbContext();
+        await using var eventManagementContext = CreateEventManagementDbContext();
         await using var seedContext = CreateDbContext();
-        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, seedContext, NowUtc);
+        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, eventManagementContext, seedContext, NowUtc);
 
         var activeRecord = DegradationRecord.Create(
             new DegradationRecordId(1), new AssetId(seed.AssetId), new DegradationMechanismId(seed.DegradationMechanismId),

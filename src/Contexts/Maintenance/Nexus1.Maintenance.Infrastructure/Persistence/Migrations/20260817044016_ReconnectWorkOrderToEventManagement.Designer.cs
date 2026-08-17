@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Nexus1.Maintenance.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Nexus1.Maintenance.Infrastructure.Persistence;
 namespace Nexus1.Maintenance.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(MaintenanceDbContext))]
-    partial class MaintenanceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260817044016_ReconnectWorkOrderToEventManagement")]
+    partial class ReconnectWorkOrderToEventManagement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

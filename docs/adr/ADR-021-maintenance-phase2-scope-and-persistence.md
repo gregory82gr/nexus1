@@ -2,7 +2,16 @@
 
 ## Status
 
-Accepted.
+Accepted. **Amended by ADR-022** (EventManagement, Phase 2 sector 7):
+`WorkOrder.OriginOperationalEventId`/`OriginIncidentActionId`, originally
+built here as passport-only bigints with no enforced FK at all (because
+`EventManagement` did not exist anywhere in this project yet), are now
+real foreign keys to `EventManagement.OperationalEvent`/`IncidentAction`.
+See ADR-022's own "Maintenance reconnection" section for the full
+reasoning; this ADR's own text below is left as originally written except
+for this note and the two inline call-outs marked "amended by ADR-022,"
+so the historical record of what was actually decided at each point in
+time stays intact rather than being silently rewritten.
 
 ## Context
 
@@ -41,6 +50,10 @@ here so a future session doesn't have to re-derive it).
   - `Maintenance.WorkOrderEventLink`'s entire reason to exist is linking
     a `WorkOrder` to an `EventManagement.OperationalEvent` — excluded
     entirely, same treatment as DigitalTwin's `TwinModelComponent`.
+  - **Amended by ADR-022**: `WorkOrder.OriginOperationalEventId`/
+    `OriginIncidentActionId` are now real FKs — see the Status note above.
+    The reasoning immediately below describes the original, since-amended
+    decision, kept for the historical record.
   - `WorkOrder.OriginOperationalEventId`/`OriginIncidentActionId` are
     both nullable — `WorkOrder` keeps a valid identity without them, so
     they become plain nullable `long`s with no enforced FK (there is no
@@ -268,6 +281,9 @@ fix commit preceding this ADR).
   future step, distinct from the Organization/Instrumentation/DigitalTwin
   reversal notes (those involve Phase 1 contexts that exist but were
   never wired; this one involves a sector that doesn't exist at all yet).
+  **This prediction came true**: ADR-022 built `EventManagement` next as
+  planned and performed exactly this reconnection — see the Status note
+  at the top of this ADR.
 
 ## Rejected alternatives
 

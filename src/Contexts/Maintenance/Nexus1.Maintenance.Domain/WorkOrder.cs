@@ -20,11 +20,15 @@ namespace Nexus1.Maintenance.Domain;
 /// OrganizationDb, a different physical database than this sector's chosen
 /// home, AlarmManagementDb).
 ///
-/// OriginOperationalEventId/OriginIncidentActionId are passport-only
-/// bigints with NO enforced FK at all — unlike the EquipmentId/SystemId
-/// downgrade (which at least references a genuinely-absent-from-this-
-/// codebase table), EventManagement (atlas C.8) is a sector that does not
-/// exist anywhere in this project yet (ADR-021).
+/// OriginOperationalEventId/OriginIncidentActionId are REAL foreign keys
+/// to EventManagement.OperationalEvent/IncidentAction as of ADR-022's own
+/// reconnection decision. ADR-021 originally built them as passport-only
+/// bigints with no enforced FK at all, because EventManagement (atlas
+/// C.8) did not exist anywhere in this project at the time; once it was
+/// built and confirmed to share this same physical database
+/// (AlarmManagementDb), the reference was upgraded to a real FK via the
+/// EventManagementOperationalEventReference/
+/// EventManagementIncidentActionReference shadow entities.
 ///
 /// RequestedAtUtc is the real business timestamp ("when was this work
 /// requested") and is domain-modeled; CreatedAtUtc (present in the DDL
@@ -110,10 +114,10 @@ public sealed class WorkOrder : Entity<WorkOrderId>, IAggregateRoot
     /// <summary>Passport-only — Organization.Person lives in OrganizationDb, a different physical database (ADR-021).</summary>
     public int? AssignedPersonId { get; }
 
-    /// <summary>Passport-only, no enforced FK at all — EventManagement (atlas C.8) does not exist anywhere in this project yet (ADR-021).</summary>
+    /// <summary>Real FK to EventManagement.OperationalEvent, via a shadow entity (ADR-022's reconnection decision; originally passport-only under ADR-021).</summary>
     public long? OriginOperationalEventId { get; }
 
-    /// <summary>Passport-only, no enforced FK at all — EventManagement (atlas C.8) does not exist anywhere in this project yet (ADR-021).</summary>
+    /// <summary>Real FK to EventManagement.IncidentAction, via a shadow entity (ADR-022's reconnection decision; originally passport-only under ADR-021).</summary>
     public long? OriginIncidentActionId { get; }
 
     public bool IsDeleted { get; }

@@ -14,8 +14,9 @@ public sealed class GetLatestConditionPerAssetQueryHandlerTests : MaintenanceCom
         await using var reactorFleetContext = CreateReactorFleetDbContext();
         await using var corePlatformContext = CreateCorePlatformDbContext();
         await using var instrumentationContext = CreateInstrumentationDbContext();
+        await using var eventManagementContext = CreateEventManagementDbContext();
         await using var seedContext = CreateDbContext();
-        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, seedContext, NowUtc);
+        var seed = await MaintenanceSeedHelper.SeedCoreAsync(reactorFleetContext, corePlatformContext, instrumentationContext, eventManagementContext, seedContext, NowUtc);
 
         var olderCondition = AssetCondition.Create(
             new AssetConditionId(1), new AssetId(seed.AssetId), new ConditionGradeId(seed.ConditionGradeId),
