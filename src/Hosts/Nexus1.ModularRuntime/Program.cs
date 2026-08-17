@@ -26,6 +26,9 @@ using Nexus1.Maintenance.Infrastructure.Persistence;
 using Nexus1.Organization.Application;
 using Nexus1.Organization.Infrastructure;
 using Nexus1.Organization.Infrastructure.Persistence;
+using Nexus1.RadiationMonitoring.Application;
+using Nexus1.RadiationMonitoring.Infrastructure;
+using Nexus1.RadiationMonitoring.Infrastructure.Persistence;
 using Nexus1.ReactorFleet.Application;
 using Nexus1.ReactorFleet.Infrastructure;
 using Nexus1.ReactorFleet.Infrastructure.Persistence;
@@ -124,6 +127,17 @@ builder.Services.AddEventManagementInfrastructure(alarmManagementConnectionStrin
 builder.Services.AddRoboticsApplication();
 builder.Services.AddRoboticsInfrastructure(alarmManagementConnectionString);
 
+// Shares AlarmManagementDb (ADR-024) — RadiationMonitoring is the tenth registration sharing it,
+// after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation/DigitalTwin/Maintenance/
+// EventManagement/Robotics: the real cross-context FKs in this sector's twenty-table scope
+// (RadiationZone.UnitId/RadiationMonitor.UnitId -> ReactorFleet.Unit,
+// RadiationReading.EngineeringUnitId/DoseLimit.EngineeringUnitId/
+// PersonDoseReading.EngineeringUnitId -> CorePlatform.EngineeringUnit) already live here — the
+// second consecutive Phase 2 sector (after Robotics) with a clean (zero-gap) whole-sector FK
+// audit result.
+builder.Services.AddRadiationMonitoringApplication();
+builder.Services.AddRadiationMonitoringInfrastructure(alarmManagementConnectionString);
+
 builder.Services.AddAuditInfrastructure(auditConnectionString);
 
 builder.Services.AddComplianceInfrastructure(complianceConnectionString);
@@ -159,6 +173,8 @@ builder.Services
     .AddCheck<DbContextHealthCheck<EventManagementDbContext>>("eventmanagement-db")
     // ADR-023's persistence decision: Robotics shares AlarmManagementDb.
     .AddCheck<DbContextHealthCheck<RoboticsDbContext>>("robotics-db")
+    // ADR-024's persistence decision: RadiationMonitoring shares AlarmManagementDb.
+    .AddCheck<DbContextHealthCheck<RadiationMonitoringDbContext>>("radiationmonitoring-db")
     .AddCheck<DbContextHealthCheck<AlarmManagementDbContext>>("alarmmanagement-db")
     .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db")
     .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db")
