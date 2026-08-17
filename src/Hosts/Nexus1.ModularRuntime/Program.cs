@@ -14,6 +14,9 @@ using Nexus1.CorePlatform.Infrastructure.Persistence;
 using Nexus1.DigitalTwin.Application;
 using Nexus1.DigitalTwin.Infrastructure;
 using Nexus1.DigitalTwin.Infrastructure.Persistence;
+using Nexus1.EmergencyPreparedness.Application;
+using Nexus1.EmergencyPreparedness.Infrastructure;
+using Nexus1.EmergencyPreparedness.Infrastructure.Persistence;
 using Nexus1.EventManagement.Application;
 using Nexus1.EventManagement.Infrastructure;
 using Nexus1.EventManagement.Infrastructure.Persistence;
@@ -138,6 +141,18 @@ builder.Services.AddRoboticsInfrastructure(alarmManagementConnectionString);
 builder.Services.AddRadiationMonitoringApplication();
 builder.Services.AddRadiationMonitoringInfrastructure(alarmManagementConnectionString);
 
+// Shares AlarmManagementDb (ADR-025) — EmergencyPreparedness is the eleventh registration sharing
+// it, after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation/DigitalTwin/Maintenance/
+// EventManagement/Robotics/RadiationMonitoring: real cross-context FKs to both
+// CorePlatform.EngineeringUnit (EmergencyResource.EngineeringUnitId) and
+// RadiationMonitoring.RadiationZone (AssemblyPoint.RadiationZoneId/EvacuationRouteZone.RadiationZoneId)
+// already live here — the first FK in this codebase targeting a table from a sector built within
+// this same Phase 2 sequence (RadiationMonitoring, sector 9) rather than a V1 or early-Phase-2
+// context, and the third consecutive Phase 2 sector with a clean (zero-gap) whole-sector FK audit
+// result.
+builder.Services.AddEmergencyPreparednessApplication();
+builder.Services.AddEmergencyPreparednessInfrastructure(alarmManagementConnectionString);
+
 builder.Services.AddAuditInfrastructure(auditConnectionString);
 
 builder.Services.AddComplianceInfrastructure(complianceConnectionString);
@@ -175,6 +190,8 @@ builder.Services
     .AddCheck<DbContextHealthCheck<RoboticsDbContext>>("robotics-db")
     // ADR-024's persistence decision: RadiationMonitoring shares AlarmManagementDb.
     .AddCheck<DbContextHealthCheck<RadiationMonitoringDbContext>>("radiationmonitoring-db")
+    // ADR-025's persistence decision: EmergencyPreparedness shares AlarmManagementDb.
+    .AddCheck<DbContextHealthCheck<EmergencyPreparednessDbContext>>("emergencypreparedness-db")
     .AddCheck<DbContextHealthCheck<AlarmManagementDbContext>>("alarmmanagement-db")
     .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db")
     .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db")

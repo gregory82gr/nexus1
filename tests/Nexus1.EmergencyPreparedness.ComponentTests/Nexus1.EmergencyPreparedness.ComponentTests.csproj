@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Contexts\EmergencyPreparedness\Nexus1.EmergencyPreparedness.Infrastructure\Nexus1.EmergencyPreparedness.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\EmergencyPreparedness\Nexus1.EmergencyPreparedness.Application\Nexus1.EmergencyPreparedness.Application.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\ReactorFleet\Nexus1.ReactorFleet.Infrastructure\Nexus1.ReactorFleet.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\CorePlatform\Nexus1.CorePlatform.Infrastructure\Nexus1.CorePlatform.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Contexts\RadiationMonitoring\Nexus1.RadiationMonitoring.Infrastructure\Nexus1.RadiationMonitoring.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
