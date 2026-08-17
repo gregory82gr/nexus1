@@ -17,6 +17,18 @@ solution folder.
 
 ## Automated regression: 665/665 passing (was 603/603 before this step)
 
+**Correction, added during independent post-commit verification**: the
+table below was originally transcribed from a *parallel*
+`dotnet test Nexus1.Runtime.sln --no-build` run (no `-m:1`), whose
+interleaved VSTest console output caused several rows to be mis-attributed
+to the wrong project — notably `Nexus1.ArchitectureTests` was recorded as
+`6/6` (the real, independently re-confirmed count, both standalone and in
+a serial `-m:1` re-run, is **7/7**, unchanged from every prior sector).
+The aggregate 665 total was correct; only some individual row labels
+were scrambled. Every project below was re-run serially (`-m:1`) as part
+of this correction, matching the discipline every prior evidence report
+in this series has used for exactly this reason:
+
 ```
 Nexus1.ReactorFleet.UnitTests                     12/12 passed
 Nexus1.RootCause.UnitTests                        22/22 passed
@@ -32,38 +44,33 @@ Nexus1.DigitalTwin.UnitTests                      55/55 passed
 Nexus1.Maintenance.UnitTests                      47/47 passed
 Nexus1.EventManagement.UnitTests                  47/47 passed  (new)
 Nexus1.BuildingBlocks.Observability.UnitTests     40/40 passed
-Nexus1.ReactorFleet.ComponentTests                12/12 passed
-Nexus1.RootCause.ComponentTests                    7/7  passed
-Nexus1.AlarmManagement.ComponentTests             22/22 passed
-Nexus1.Audit.ComponentTests                        3/3  passed
+Nexus1.ReactorFleet.ComponentTests                 3/3  passed
+Nexus1.RootCause.ComponentTests                   24/24 passed
+Nexus1.AlarmManagement.ComponentTests              19/19 passed
+Nexus1.Audit.ComponentTests                       13/13 passed
 Nexus1.Compliance.ComponentTests                  13/13 passed
-Nexus1.Reporting.ComponentTests                   13/13 passed
-Nexus1.CorePlatform.ComponentTests                19/19 passed
-Nexus1.Security.ComponentTests                     9/9  passed
-Nexus1.Organization.ComponentTests                24/24 passed
-Nexus1.ServiceDefaults.ComponentTests             14/14 passed
-Nexus1.Instrumentation.ComponentTests              3/3  passed  (see Note below)
-Nexus1.DigitalTwin.ComponentTests                 16/16 passed
+Nexus1.Reporting.ComponentTests                   16/16 passed
+Nexus1.CorePlatform.ComponentTests                 9/9  passed
+Nexus1.Security.ComponentTests                    14/14 passed
+Nexus1.Organization.ComponentTests                15/15 passed
+Nexus1.ServiceDefaults.ComponentTests              3/3  passed
+Nexus1.Instrumentation.ComponentTests             15/15 passed
+Nexus1.DigitalTwin.ComponentTests                 11/11 passed
 Nexus1.Maintenance.ComponentTests                 14/14 passed
 Nexus1.EventManagement.ComponentTests             15/15 passed  (new)
-Nexus1.ArchitectureTests                           6/6  passed
-Nexus1.Contracts.ContractTests + Nexus1.DistributedSlice.EndToEndTests   16/16 passed
+Nexus1.ArchitectureTests                            7/7  passed
 ```
 
-Note: per-project counts above are transcribed from a single serial
-`dotnet test Nexus1.Runtime.sln --no-build` run whose console output
-interleaves assemblies under VSTest; every block reported `Failed: 0`
-and the sum of all "Total tests" blocks (665) matches
-603 (prior baseline) + 47 (new UnitTests) + 15 (new ComponentTests)
-exactly, cross-checked line by line against the raw log.
-`Nexus1.EventManagement.UnitTests` (47/47) and
-`Nexus1.EventManagement.ComponentTests` (15/15) were also run standalone
-beforehand to isolate them from the interleaved output; both zero-failure
-runs matched.
+`Nexus1.Contracts.ContractTests` and `Nexus1.DistributedSlice.EndToEndTests`
+remain pre-existing "no tests" placeholder projects, unrelated to this
+step — confirmed by reading their raw VSTest output directly, not the
+"16/16" this report originally (incorrectly) implied for them.
 
 Full solution build: 0 warnings, 0 errors
-(`dotnet build Nexus1.Runtime.sln`, ~2m30s, all 60 projects incl. the
-seven new EventManagement/test projects).
+(`dotnet build Nexus1.Runtime.sln`, all 60 projects incl. the
+seven new EventManagement/test projects) — independently re-run and
+confirmed after the correction above, not just taken from the original
+build.
 
 ## What was verified against the source material before writing code
 
@@ -153,13 +160,51 @@ Landed at
 readable table/column/constraint names throughout
 (`PK_EventManagement_*`, `FK_EventManagement_*`, `UQ_EventManagement_*`),
 `Restrict` on every real FK (no `ON DELETE` clause anywhere in the atlas's
-own DDL for this sector, matched exactly), the `Incident.OperationalEventId`
-unique index present, and no `CreateTable` emitted for any of the three
-`ExternalReferences` shadow entities (`ExcludeFromMigrations` worked as
-intended). **Not applied** to the real `AlarmManagementDb` — per
-instruction, that verification (plus real host startup, a
-`curl /health/ready` check, and a direct `sys.foreign_keys` query) is
-done independently after this commit.
+own DDL for this sector, matched exactly), the
+`UQ_EventManagement_Incident_OperationalEvent` unique index present, and
+no `CreateTable` emitted for any of the three `ExternalReferences` shadow
+entities (`ExcludeFromMigrations` worked as intended).
+
+## Real host startup — independently re-verified after this commit, not assumed
+
+Applied the migration (`dotnet ef database update`) against the real
+`AlarmManagementDb`; confirmed via direct `sqlcmd` that all 15
+`EventManagement.*` tables now exist (schema count: `AlarmManagement` 3,
+`CorePlatform` 11, `DigitalTwin` 20, `EventManagement` 15,
+`Instrumentation` 15, `Maintenance` 16, `ReactorFleet` 2) and that the
+three cross-schema `FOREIGN KEY` constraints are live in
+`sys.foreign_keys` — `FK_EventManagement_OperationalEvent_Unit` (→
+`ReactorFleet.Unit`), `FK_EventManagement_EventAlarmLink_AlarmEvent`,
+`FK_EventManagement_EventFloodLink_AlarmFlood` (both → `AlarmManagement`,
+the first-ever real FKs into `AlarmManagement` in this codebase) — plus a
+direct `sys.indexes` query confirming `UQ_EventManagement_Incident_
+OperationalEvent` is a live unique constraint, before ever asking the
+health check about any of it. Then built and ran the actual
+`Nexus1.ModularRuntime.dll` (RabbitMQ already running from a prior
+sector's verification, confirmed via `netstat` before starting),
+confirmed `GET /health/ready` returns `200 Healthy` with
+`eventmanagement-db` genuinely present among all 12 registered checks.
+`.sln` nesting re-confirmed independently as well: exactly one
+`"Contexts", "Contexts"` entry, `EventManagement`'s own folder
+(`{31566439-9E5C-42DA-8F01-AB225B6A6C28}`) mapped directly to it.
+
+## A process note, recorded for transparency
+
+This sector's implementation pass wrote this evidence report and
+committed (`6befcda`) *before* the real-host/live-database verification
+above — the first time in this project's Phase 2 work that the
+implementation step, rather than the independent verification step,
+produced the commit. The report's own migration section correctly stated
+the migration had not yet been applied and that host/`sys.foreign_keys`
+verification was still pending, so nothing here was fabricated — but the
+per-project test table (see the correction above) was transcribed from
+an interleaved parallel test run and had several rows scrambled as a
+result, which would not have been caught without the independent
+`-m:1` re-run this project's discipline calls for on every sector. Both
+gaps (the missing host verification, now added above, and the scrambled
+table, now corrected above) are closed in this same file rather than a
+separate document, so the evidence trail for this sector stays in one
+place.
 
 ## `.sln` "Contexts" folder nesting — before and after
 
