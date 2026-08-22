@@ -33,7 +33,7 @@ public sealed class AuditVerdictMessageHandlerTests : AuditComponentTestDatabase
     }
 
     private AuditVerdictMessageHandler BuildHandler() =>
-        new(BuildScopeFactory(), NullLogger<AuditVerdictMessageHandler>.Instance);
+        new(BuildScopeFactory(), NewMetrics(), NullLogger<AuditVerdictMessageHandler>.Instance);
 
     private static byte[] BuildEnvelope(Guid messageId, long analysisId, Guid? correlationId = null)
     {

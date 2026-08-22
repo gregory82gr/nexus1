@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using Nexus1.Audit.Domain;
 using Nexus1.Audit.Infrastructure.Persistence;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Messaging;
+using Nexus1.BuildingBlocks.Observability;
 using Nexus1.Contracts.RootCause;
 
 namespace Nexus1.Audit.Infrastructure.Messaging;
@@ -19,7 +21,7 @@ namespace Nexus1.Audit.Infrastructure.Messaging;
 /// inbox receipt but skips the AuditEvidenceRecord insert (semantic truth) —
 /// a replay under a new MessageId for the same verdict must not double-audit.
 /// </summary>
-public sealed class AuditVerdictMessageHandler(IServiceScopeFactory scopeFactory, ILogger<AuditVerdictMessageHandler> logger)
+public sealed class AuditVerdictMessageHandler(IServiceScopeFactory scopeFactory, NexusRuntimeMetrics metrics, ILogger<AuditVerdictMessageHandler> logger)
 {
     public const string ConsumerName = "audit.root-cause-verdicts.v1";
     private const string Producer = "root-cause";
@@ -36,6 +38,7 @@ public sealed class AuditVerdictMessageHandler(IServiceScopeFactory scopeFactory
             .AnyAsync(r => r.ConsumerName == ConsumerName && r.MessageId == messageId, cancellationToken);
         if (alreadyProcessed)
         {
+            RecordInboxOutcome("DUPLICATE_MATCH");
             return MessageHandlingOutcome.Ack;
         }
 
@@ -56,25 +59,45 @@ public sealed class AuditVerdictMessageHandler(IServiceScopeFactory scopeFactory
             var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
             var nowUtc = dateTimeProvider.UtcNow;
 
-            // Semantic half of the two-key oracle: this verdict may already
-            // be audited under a different (replayed) MessageId.
-            var alreadyAudited = await dbContext.Evidence
-                .AnyAsync(e => e.SourceAnalysisId == payload.AnalysisId, cancellationToken);
+            // Nested owner span — the actual business operation this
+            // consumer exists to perform, distinct from the CONSUMER
+            // transport span the background service already wraps
+            // HandleAsync in.
+            using var activity = NexusActivitySources.AuditSource.StartActivity(
+                SpanNames.AuditEvidenceRecord, ActivityKind.Internal, parentContext: default,
+                tags: SafeTags.ForOwnerOperation(messageId, "ATTEMPTED"));
 
-            if (!alreadyAudited)
+            bool alreadyAudited;
+            try
             {
-                var evidence = AuditEvidenceRecord.Append(
-                    new AuditEvidenceId(Guid.NewGuid()), messageId, payload.AnalysisId, eventType, schemaVersion,
-                    envelopeBytes, SHA256.HashData(envelopeBytes), correlationId, causationId, payload.IssuedAtUtc, nowUtc);
-                await dbContext.Evidence.AddAsync(evidence, cancellationToken);
+                // Semantic half of the two-key oracle: this verdict may
+                // already be audited under a different (replayed) MessageId.
+                alreadyAudited = await dbContext.Evidence
+                    .AnyAsync(e => e.SourceAnalysisId == payload.AnalysisId, cancellationToken);
+
+                if (!alreadyAudited)
+                {
+                    var evidence = AuditEvidenceRecord.Append(
+                        new AuditEvidenceId(Guid.NewGuid()), messageId, payload.AnalysisId, eventType, schemaVersion,
+                        envelopeBytes, SHA256.HashData(envelopeBytes), correlationId, causationId, payload.IssuedAtUtc, nowUtc);
+                    await dbContext.Evidence.AddAsync(evidence, cancellationToken);
+                }
+
+                var receipt = new InboxReceipt(ConsumerName, messageId, Producer, eventType, schemaVersion, payload.IssuedAtUtc, nowUtc);
+                dbContext.InboxReceipts.Add(receipt);
+            }
+            catch (Exception ex)
+            {
+                SafeError.Record(activity, ex);
+                throw;
             }
 
-            var receipt = new InboxReceipt(ConsumerName, messageId, Producer, eventType, schemaVersion, payload.IssuedAtUtc, nowUtc);
-            dbContext.InboxReceipts.Add(receipt);
+            activity?.SetTag("nexus1.outcome.code", alreadyAudited ? "DUPLICATE_MATCH" : "COMMITTED");
 
             try
             {
                 await dbContext.SaveChangesAsync(cancellationToken);
+                RecordInboxOutcome(alreadyAudited ? "DUPLICATE_MATCH" : "COMMITTED");
                 return MessageHandlingOutcome.Ack;
             }
             catch (DbUpdateException)
@@ -88,12 +111,28 @@ public sealed class AuditVerdictMessageHandler(IServiceScopeFactory scopeFactory
                 var stillMissing = !await freshDbContext.InboxReceipts
                     .AnyAsync(r => r.ConsumerName == ConsumerName && r.MessageId == messageId, cancellationToken);
 
+                RecordInboxOutcome(stillMissing ? "ABSTAINED" : "DUPLICATE_MATCH");
                 return stillMissing ? MessageHandlingOutcome.NackRequeue : MessageHandlingOutcome.Ack;
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            RecordInboxOutcome("FAILED", ErrorClassifier.Classify(ex));
             return await RecordFailureAsync(messageId, envelopeBytes, ex, cancellationToken);
+        }
+    }
+
+    /// <summary>ch.52 52-O's "one terminal observation" rule — mirrors AlarmFloodMessageHandler's helper exactly (ADR-014).</summary>
+    private void RecordInboxOutcome(string outcome, string? errorType = null)
+    {
+        if (MetricLabelPolicy.TryFor("process", outcome, NexusActivitySources.Audit, out var labels))
+        {
+            var tags = errorType is null ? labels.ToTagList() : (labels with { ErrorType = errorType }).ToTagList();
+            metrics.InboxOutcomes.Add(1, tags);
+        }
+        else
+        {
+            metrics.TelemetryRejected.Add(1);
         }
     }
 

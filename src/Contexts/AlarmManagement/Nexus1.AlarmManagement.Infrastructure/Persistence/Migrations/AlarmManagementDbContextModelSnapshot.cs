@@ -190,8 +190,23 @@ namespace Nexus1.AlarmManagement.Infrastructure.Persistence.Migrations
                     b.Property<int>("SchemaVersion")
                         .HasColumnType("int");
 
+                    b.Property<string>("SpanId")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
                     b.Property<DateTime>("StoredAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<byte?>("TraceFlags")
+                        .HasColumnType("tinyint");
+
+                    b.Property<string>("TraceId")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("TraceState")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
 
                     b.HasKey("MessageId")
                         .HasName("PK_messaging_OutboxMessage");

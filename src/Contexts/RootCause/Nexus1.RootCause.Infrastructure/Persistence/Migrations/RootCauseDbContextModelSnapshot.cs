@@ -91,6 +91,9 @@ namespace Nexus1.RootCause.Infrastructure.Persistence.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("AlarmFloodId");
 
+                    b.Property<DateTime?>("AlarmFloodStartedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("ClosedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -211,8 +214,23 @@ namespace Nexus1.RootCause.Infrastructure.Persistence.Migrations
                     b.Property<int>("SchemaVersion")
                         .HasColumnType("int");
 
+                    b.Property<string>("SpanId")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
                     b.Property<DateTime>("StoredAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<byte?>("TraceFlags")
+                        .HasColumnType("tinyint");
+
+                    b.Property<string>("TraceId")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("TraceState")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
 
                     b.HasKey("MessageId")
                         .HasName("PK_messaging_OutboxMessage");

@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nexus1.BuildingBlocks.Messaging;
+using Nexus1.BuildingBlocks.Observability;
 using RabbitMQ.Client.Events;
 
 namespace Nexus1.RootCause.Infrastructure.Messaging;
@@ -8,12 +10,16 @@ namespace Nexus1.RootCause.Infrastructure.Messaging;
 /// <summary>
 /// Thin hosting loop — the actual dedup/retry/poison-classification logic
 /// lives in AlarmFloodMessageHandler, testable without a live RabbitMQ
-/// delivery.
+/// delivery. Extracts the propagated trace carrier and wraps the handler
+/// call in a CONSUMER span (ch.51 51-L) — a malformed or absent carrier
+/// starts a new diagnostic root here, it never rewrites the accepted
+/// envelope's business identity (ch.51 "INDEPENDENCE RULE").
 /// </summary>
 public sealed class AlarmFloodConsumerBackgroundService(
     RabbitMqConnectionManager connectionManager,
     RabbitMqOptions rabbitMqOptions,
     AlarmFloodMessageHandler messageHandler,
+    NexusRuntimeMetrics metrics,
     ILogger<AlarmFloodConsumerBackgroundService> logger) : BackgroundService
 {
     private const string QueueName = "rootcause.alarm-events.v1";
@@ -43,7 +49,27 @@ public sealed class AlarmFloodConsumerBackgroundService(
                     throw new InvalidOperationException($"Message has no valid MessageId property: '{delivery.BasicProperties.MessageId}'.");
                 }
 
-                var outcome = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
+                var eventType = delivery.BasicProperties.Type ?? "unknown";
+                var parentContext = AmqpCarrier.Extract(delivery.BasicProperties.Headers);
+                using var activity = NexusActivitySources.MessagingSource.StartActivity(
+                    SpanNames.ForProcess(eventType),
+                    ActivityKind.Consumer,
+                    parentContext,
+                    tags: SafeTags.ForMessageProcess(messageId, eventType));
+
+                var startedAt = Stopwatch.GetTimestamp();
+                MessageHandlingOutcome outcome;
+                try
+                {
+                    outcome = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
+                    RecordProcessAttempt(metrics, startedAt, ToMetricOutcome(outcome), errorType: null);
+                }
+                catch (Exception ex)
+                {
+                    SafeError.Record(activity, ex);
+                    RecordProcessAttempt(metrics, startedAt, "FAILED", ErrorClassifier.Classify(ex));
+                    throw;
+                }
                 switch (outcome)
                 {
                     case MessageHandlingOutcome.Ack:
@@ -77,6 +103,29 @@ public sealed class AlarmFloodConsumerBackgroundService(
         await using (stoppingToken.Register(() => stopped.TrySetResult()))
         {
             await stopped.Task;
+        }
+    }
+
+    private static string ToMetricOutcome(MessageHandlingOutcome outcome) => outcome switch
+    {
+        MessageHandlingOutcome.Ack => "COMMITTED",
+        MessageHandlingOutcome.NackNoRequeue => "REJECTED",
+        _ => "ABSTAINED",
+    };
+
+    /// <summary>ch.52 52-K's "process" messaging operation — one measurement per delivery attempt, whatever the outcome, matching 52-F's placement rule ("record when disposition chosen"), not just on success.</summary>
+    private static void RecordProcessAttempt(NexusRuntimeMetrics metrics, long startedAt, string outcome, string? errorType)
+    {
+        var seconds = Stopwatch.GetElapsedTime(startedAt).TotalSeconds;
+        if (MetricLabelPolicy.TryFor("process", outcome, NexusActivitySources.Messaging, out var labels))
+        {
+            var tags = errorType is null ? labels.ToTagList() : (labels with { ErrorType = errorType }).ToTagList();
+            metrics.MessageAttempts.Add(1, tags);
+            metrics.MessageDuration.Record(seconds, tags);
+        }
+        else
+        {
+            metrics.TelemetryRejected.Add(1);
         }
     }
 }

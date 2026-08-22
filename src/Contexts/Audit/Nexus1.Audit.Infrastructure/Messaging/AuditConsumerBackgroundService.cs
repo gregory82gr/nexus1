@@ -1,19 +1,23 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nexus1.BuildingBlocks.Messaging;
+using Nexus1.BuildingBlocks.Observability;
 using RabbitMQ.Client.Events;
 
 namespace Nexus1.Audit.Infrastructure.Messaging;
 
 /// <summary>
-/// Thin hosting loop — mirrors AlarmFloodConsumerBackgroundService exactly
-/// (ADR-010). Queue name and binding routing key are ch.34's frozen shape
-/// (Executable Asset 34-U), not ch.25's broader illustrative topology.
+/// Thin hosting loop — mirrors AlarmFloodConsumerBackgroundService exactly,
+/// including the CONSUMER span/carrier extraction (ADR-010/ADR-013). Queue
+/// name and binding routing key are ch.34's frozen shape (Executable Asset
+/// 34-U), not ch.25's broader illustrative topology.
 /// </summary>
 public sealed class AuditConsumerBackgroundService(
     RabbitMqConnectionManager connectionManager,
     RabbitMqOptions rabbitMqOptions,
     AuditVerdictMessageHandler messageHandler,
+    NexusRuntimeMetrics metrics,
     ILogger<AuditConsumerBackgroundService> logger) : BackgroundService
 {
     private const string QueueName = "audit.root-cause-verdicts.v1";
@@ -40,7 +44,27 @@ public sealed class AuditConsumerBackgroundService(
                     throw new InvalidOperationException($"Message has no valid MessageId property: '{delivery.BasicProperties.MessageId}'.");
                 }
 
-                var outcome = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
+                var eventType = delivery.BasicProperties.Type ?? "unknown";
+                var parentContext = AmqpCarrier.Extract(delivery.BasicProperties.Headers);
+                using var activity = NexusActivitySources.MessagingSource.StartActivity(
+                    SpanNames.ForProcess(eventType),
+                    ActivityKind.Consumer,
+                    parentContext,
+                    tags: SafeTags.ForMessageProcess(messageId, eventType));
+
+                var startedAt = Stopwatch.GetTimestamp();
+                MessageHandlingOutcome outcome;
+                try
+                {
+                    outcome = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
+                    RecordProcessAttempt(metrics, startedAt, ToMetricOutcome(outcome), errorType: null);
+                }
+                catch (Exception ex)
+                {
+                    SafeError.Record(activity, ex);
+                    RecordProcessAttempt(metrics, startedAt, "FAILED", ErrorClassifier.Classify(ex));
+                    throw;
+                }
                 switch (outcome)
                 {
                     case MessageHandlingOutcome.Ack:
@@ -74,6 +98,29 @@ public sealed class AuditConsumerBackgroundService(
         await using (stoppingToken.Register(() => stopped.TrySetResult()))
         {
             await stopped.Task;
+        }
+    }
+
+    private static string ToMetricOutcome(MessageHandlingOutcome outcome) => outcome switch
+    {
+        MessageHandlingOutcome.Ack => "COMMITTED",
+        MessageHandlingOutcome.NackNoRequeue => "REJECTED",
+        _ => "ABSTAINED",
+    };
+
+    /// <summary>ch.52 52-K's "process" messaging operation — mirrors AlarmFloodConsumerBackgroundService's helper exactly (ADR-014).</summary>
+    private static void RecordProcessAttempt(NexusRuntimeMetrics metrics, long startedAt, string outcome, string? errorType)
+    {
+        var seconds = Stopwatch.GetElapsedTime(startedAt).TotalSeconds;
+        if (MetricLabelPolicy.TryFor("process", outcome, NexusActivitySources.Messaging, out var labels))
+        {
+            var tags = errorType is null ? labels.ToTagList() : (labels with { ErrorType = errorType }).ToTagList();
+            metrics.MessageAttempts.Add(1, tags);
+            metrics.MessageDuration.Record(seconds, tags);
+        }
+        else
+        {
+            metrics.TelemetryRejected.Add(1);
         }
     }
 }

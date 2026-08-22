@@ -12,3 +12,8 @@ obj/
 ## OS
 Thumbs.db
 .DS_Store
+
+## Licensed source-material PDFs (copyrighted book copies) -- never
+## commit these; keep local copies outside the repo (e.g. Downloads).
+## See docs/adr/ADR-029-purge-source-material-pdfs-from-history.md.
+docs/source-material/**/*.pdf

@@ -263,6 +263,20 @@ silently:
 Do not silently skip a step's tests "to save time" — the whole point of this source material is
 that untested claims of completeness are the failure mode being designed against.
 
+**Observability (Ch. 51–52, ADR-013/ADR-014) is done, closed 2026-08-16.** Not one of the
+numbered steps above (it was added later, once the Phase 1 slice above was itself complete) —
+recorded here so a future session doesn't read this build order and conclude it's still
+outstanding. All six contexts (ReactorFleet excluded — it has no messaging or workflow surface
+to instrument) have full tracing (Ch. 51: owner spans, PRODUCER/CONSUMER messaging spans,
+carrier propagation) and metrics (Ch. 52: message attempts/duration, inbox outcomes, the outbox
+gauge trio, workflow duration) parity, proven per-context, as a verdict fan-out, and as one
+continuous six-context chain (complete and deliberately broken at two independent hops at
+once). See ADR-013/ADR-014's own closing notes and
+`artifacts/evidence/2026-08-16-observability-final-chain-proof.md` for the full proof chain.
+Named residuals genuinely not built (not silently declared done): `nexus1.edge.requests` (no
+BFF), `nexus1.projection.lag`, Prometheus recording rules, the educational-objective evaluator,
+a provisioned Grafana dashboard.
+
 ---
 
 ## 6. Architecture Decision Records (ADRs)
@@ -314,3 +328,55 @@ ledger habit.
 
 If anything in this file conflicts with what you find in the actual PDFs when you read them
 directly, the PDFs win — flag the conflict and we'll fix this file.
+
+---
+
+## 9. Phase 2 — full monolithic coverage of the remaining Schema Atlas sectors
+
+Phase 1 (the AlarmManagement → RootCause distributed slice, §2, plus its Audit/Compliance/
+Reporting fan-out subscribers and full observability) is complete: built, tested, and observed
+end to end, closed 2026-08-16. Phase 2 is a **new, distinct phase** — not a continuation of
+Phase 1's distributed-slice reasoning — with its own scope, order, and depth, recorded here
+before any Phase 2 code is written.
+
+### Scope
+
+The eleven Schema Atlas sectors not yet touched by Phase 1: **CorePlatform, Security,
+Organization, Instrumentation, DigitalTwin, EventManagement, Maintenance, Robotics,
+RadiationMonitoring, EmergencyPreparedness** — plus **ReinforcementLearning last**, per its
+own book-stated status. `From_Services_To_Runtime` Part 4's final boundary decision
+(ADR-060, Table 60-AN, "FINAL DECISION ON SERVICE EXTRACTION") records it explicitly:
+
+> RL Advisory | KEEP optional module | no activated public contract or extraction economics
+
+— i.e. the book's own architects, not this project, classify RL Advisory as a "KEEP optional
+module," distinct from every other capability's boundary decision in that table. ReinforcementLearning
+is sequenced last in Phase 2 for the same reason: it is the one sector the source material itself
+never resolves into a firm service or foundation commitment, so it should not gate anything else.
+
+### Order
+
+1. CorePlatform → Security → Organization
+2. Instrumentation → DigitalTwin
+3. Maintenance → EventManagement
+4. Robotics → RadiationMonitoring → EmergencyPreparedness
+5. ReinforcementLearning (last, per its own conditional status above)
+
+### Depth per sector
+
+Domain + Application (core commands/queries) + Infrastructure/EF Core persistence, with real
+LocalDB-backed unit and component tests. Explicitly **no** messaging (outbox/inbox), **no**
+tracing/metrics, **no** HTTP surface for any of these eleven sectors. They stay inside
+`Nexus1.ModularRuntime` as **protected foundation**, the same status Ch. 3's own "what is
+deliberately not in the first slice" box (quoted in ADR-001-amend) already gave most of them —
+there is no broker boundary or external HTTP consumer for any of them yet, so building
+messaging/observability/HTTP infrastructure now would be provisioning for a boundary that
+doesn't exist, the same restraint principle ADR-006 already applied to ReactorFleet's
+persistence and ADR-007 applied to deferring the Query BFF.
+
+### Checkpoint discipline
+
+One sector at a time, full checkpoint per sector — ADR + evidence report + commit — same
+rigor as the Phase 1 fan-out subscribers (Audit/Compliance/Reporting each got their own ADR,
+evidence report, and commit before the next one started). Not batched. Stop and report back
+after each sector before starting the next.

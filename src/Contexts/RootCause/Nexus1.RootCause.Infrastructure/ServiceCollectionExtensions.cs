@@ -21,6 +21,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<OutboxRelay>();
         services.AddHostedService<OutboxPublisherBackgroundService>();
 
+        // Assumes AddNexusObservability(...) already registered OutboxMetricState
+        // (host composition root registers observability once per host, not
+        // once per context — same pattern as AddNexusMessaging).
+        services.AddSingleton<RootCauseOutboxMetricSnapshotReader>();
+        services.AddHostedService<OutboxMetricRefreshBackgroundService>();
+
         // Assumes AddNexusMessaging(...) was already called (Host composition
         // root registers messaging once per host, not once per context).
         services.AddSingleton<AlarmFloodMessageHandler>();

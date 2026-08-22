@@ -8,9 +8,44 @@ using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Messaging;
 using Nexus1.Compliance.Infrastructure;
 using Nexus1.Compliance.Infrastructure.Persistence;
+using Nexus1.CorePlatform.Application;
+using Nexus1.CorePlatform.Infrastructure;
+using Nexus1.CorePlatform.Infrastructure.Persistence;
+using Nexus1.DigitalTwin.Application;
+using Nexus1.DigitalTwin.Infrastructure;
+using Nexus1.DigitalTwin.Infrastructure.Persistence;
+using Nexus1.EmergencyPreparedness.Application;
+using Nexus1.EmergencyPreparedness.Infrastructure;
+using Nexus1.EmergencyPreparedness.Infrastructure.Persistence;
+using Nexus1.EventManagement.Application;
+using Nexus1.EventManagement.Infrastructure;
+using Nexus1.EventManagement.Infrastructure.Persistence;
+using Nexus1.Instrumentation.Application;
+using Nexus1.Instrumentation.Infrastructure;
+using Nexus1.Instrumentation.Infrastructure.Persistence;
+using Nexus1.Maintenance.Application;
+using Nexus1.Maintenance.Infrastructure;
+using Nexus1.Maintenance.Infrastructure.Persistence;
+using Nexus1.Organization.Application;
+using Nexus1.Organization.Infrastructure;
+using Nexus1.Organization.Infrastructure.Persistence;
+using Nexus1.RadiationMonitoring.Application;
+using Nexus1.RadiationMonitoring.Infrastructure;
+using Nexus1.RadiationMonitoring.Infrastructure.Persistence;
 using Nexus1.ReactorFleet.Application;
 using Nexus1.ReactorFleet.Infrastructure;
 using Nexus1.ReactorFleet.Infrastructure.Persistence;
+using Nexus1.ReinforcementLearning.Application;
+using Nexus1.ReinforcementLearning.Infrastructure;
+using Nexus1.ReinforcementLearning.Infrastructure.Persistence;
+using Nexus1.Reporting.Infrastructure;
+using Nexus1.Reporting.Infrastructure.Persistence;
+using Nexus1.Robotics.Application;
+using Nexus1.Robotics.Infrastructure;
+using Nexus1.Robotics.Infrastructure.Persistence;
+using Nexus1.Security.Application;
+using Nexus1.Security.Infrastructure;
+using Nexus1.Security.Infrastructure.Persistence;
 using Nexus1.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,8 +57,17 @@ var auditConnectionString = builder.Configuration.GetConnectionString("AuditDb")
     ?? throw new InvalidOperationException("Missing ConnectionStrings:AuditDb configuration.");
 var complianceConnectionString = builder.Configuration.GetConnectionString("ComplianceDb")
     ?? throw new InvalidOperationException("Missing ConnectionStrings:ComplianceDb configuration.");
+var reportingConnectionString = builder.Configuration.GetConnectionString("ReportingDb")
+    ?? throw new InvalidOperationException("Missing ConnectionStrings:ReportingDb configuration.");
+var securityConnectionString = builder.Configuration.GetConnectionString("SecurityDb")
+    ?? throw new InvalidOperationException("Missing ConnectionStrings:SecurityDb configuration.");
+var organizationConnectionString = builder.Configuration.GetConnectionString("OrganizationDb")
+    ?? throw new InvalidOperationException("Missing ConnectionStrings:OrganizationDb configuration.");
 
 builder.Services.AddBuildingBlocksApplication();
+
+var otlpEndpoint = new Uri(builder.Configuration["Otel:OtlpEndpoint"] ?? "http://localhost:4317");
+builder.Services.AddNexusObservability(new NexusObservabilityOptions("Nexus1.ModularRuntime", otlpEndpoint));
 
 var rabbitMqOptions = new RabbitMqOptions(
     builder.Configuration["RabbitMq:HostName"] ?? "localhost",
@@ -36,19 +80,142 @@ builder.Services.AddNexusMessaging(rabbitMqOptions);
 builder.Services.AddReactorFleetApplication();
 builder.Services.AddReactorFleetInfrastructure(alarmManagementConnectionString);
 
+// Shares AlarmManagementDb (ADR-015, following ADR-006's precedent) — CorePlatform
+// is protected foundation composed in-process here, not independently deployed.
+builder.Services.AddCorePlatformApplication();
+builder.Services.AddCorePlatformInfrastructure(alarmManagementConnectionString);
+
 builder.Services.AddAlarmManagementApplication();
 builder.Services.AddAlarmManagementInfrastructure(alarmManagementConnectionString);
+
+// Shares AlarmManagementDb (ADR-019) — every external reference in Instrumentation's
+// fifteen-table scope points at ReactorFleet.Unit or CorePlatform.EngineeringUnit, both
+// already in this same physical database; no PII/credential sensitivity pulls toward
+// isolation, so it is composed here alongside them rather than getting its own database.
+builder.Services.AddInstrumentationApplication();
+builder.Services.AddInstrumentationInfrastructure(alarmManagementConnectionString);
+
+// Shares AlarmManagementDb (ADR-020) — DigitalTwin is the fifth registration sharing it,
+// after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation: every external reference in
+// DigitalTwin's twenty-table scope points at ReactorFleet.Unit, CorePlatform.EngineeringUnit or
+// Instrumentation.Signal, all three already co-located here; no PII/credential sensitivity pulls
+// toward isolation.
+builder.Services.AddDigitalTwinApplication();
+builder.Services.AddDigitalTwinInfrastructure(alarmManagementConnectionString);
+
+// Shares AlarmManagementDb (ADR-021) — Maintenance is the sixth registration sharing it,
+// after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation/DigitalTwin: this is the
+// first Phase 2 sector where the FK-locality argument doesn't point cleanly one direction
+// (Asset.UnitId/AssetConditionMeasurement/DegradationTrendPoint's signal and
+// engineering-unit references point here; WorkOrder.AssignedTeamId/AssignedPersonId would
+// point at OrganizationDb instead). ADR-021's Option A keeps the sector's own anchor
+// relationship and its condition/degradation evidence as real FKs, at the cost of
+// WorkOrder's two assignment columns becoming passport-only.
+builder.Services.AddMaintenanceApplication();
+builder.Services.AddMaintenanceInfrastructure(alarmManagementConnectionString);
+
+// Shares AlarmManagementDb (ADR-022) — EventManagement is the seventh registration sharing it,
+// after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation/DigitalTwin/Maintenance: a
+// clear-cut case (unlike Maintenance's genuine tradeoff) since every real internal FK
+// (OperationalEvent.UnitId -> ReactorFleet.Unit, EventAlarmLink.AlarmEventId ->
+// AlarmManagement.AlarmEvent, EventFloodLink.AlarmFloodId -> AlarmManagement.AlarmFlood) already
+// lives here, and OperationalEvent.PlantId is the sector's only Organization-side reference — a
+// single nullable passport column, not enough to create a genuine tradeoff.
+builder.Services.AddEventManagementApplication();
+builder.Services.AddEventManagementInfrastructure(alarmManagementConnectionString);
+
+// Shares AlarmManagementDb (ADR-023) — Robotics is the ninth registration sharing it,
+// after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation/DigitalTwin/Maintenance/
+// EventManagement: the only real cross-context FK in this sector's fifteen-table scope
+// (Robot.HomeUnitId / Mission.UnitId -> ReactorFleet.Unit) already lives here, and no
+// PII/credential sensitivity pulls toward isolation — the first Phase 2 sector with a
+// clean (zero-gap) whole-sector FK audit result.
+builder.Services.AddRoboticsApplication();
+builder.Services.AddRoboticsInfrastructure(alarmManagementConnectionString);
+
+// Shares AlarmManagementDb (ADR-024) — RadiationMonitoring is the tenth registration sharing it,
+// after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation/DigitalTwin/Maintenance/
+// EventManagement/Robotics: the real cross-context FKs in this sector's twenty-table scope
+// (RadiationZone.UnitId/RadiationMonitor.UnitId -> ReactorFleet.Unit,
+// RadiationReading.EngineeringUnitId/DoseLimit.EngineeringUnitId/
+// PersonDoseReading.EngineeringUnitId -> CorePlatform.EngineeringUnit) already live here — the
+// second consecutive Phase 2 sector (after Robotics) with a clean (zero-gap) whole-sector FK
+// audit result.
+builder.Services.AddRadiationMonitoringApplication();
+builder.Services.AddRadiationMonitoringInfrastructure(alarmManagementConnectionString);
+
+// Shares AlarmManagementDb (ADR-025) — EmergencyPreparedness is the eleventh registration sharing
+// it, after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation/DigitalTwin/Maintenance/
+// EventManagement/Robotics/RadiationMonitoring: real cross-context FKs to both
+// CorePlatform.EngineeringUnit (EmergencyResource.EngineeringUnitId) and
+// RadiationMonitoring.RadiationZone (AssemblyPoint.RadiationZoneId/EvacuationRouteZone.RadiationZoneId)
+// already live here — the first FK in this codebase targeting a table from a sector built within
+// this same Phase 2 sequence (RadiationMonitoring, sector 9) rather than a V1 or early-Phase-2
+// context, and the third consecutive Phase 2 sector with a clean (zero-gap) whole-sector FK audit
+// result.
+builder.Services.AddEmergencyPreparednessApplication();
+builder.Services.AddEmergencyPreparednessInfrastructure(alarmManagementConnectionString);
+
+// Shares AlarmManagementDb (ADR-026) — ReinforcementLearning is the twelfth registration sharing
+// it, after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation/DigitalTwin/Maintenance/
+// EventManagement/Robotics/RadiationMonitoring/EmergencyPreparedness: real cross-context FKs to
+// ReactorFleet.Unit (EnvironmentModel/Experiment/PolicyDeployment/AdvisorySession),
+// DigitalTwin.TwinModel (EnvironmentModel.TwinModelId) and CorePlatform.EngineeringUnit
+// (ActionSpace.EngineeringUnitId) already live here — the simplest external dependency
+// footprint of any Phase 2 sector (four contexts) and the fourth consecutive Phase 2 sector
+// with a clean (zero-gap) whole-sector FK audit result. Per ADR-026 Option A this sector is
+// training/persistence only — NO messaging, NO broker consumer, NO RL Advisory subscriber of
+// any kind; the optional Ch.36 advisory branch stays explicitly deferred.
+builder.Services.AddReinforcementLearningApplication();
+builder.Services.AddReinforcementLearningInfrastructure(alarmManagementConnectionString);
 
 builder.Services.AddAuditInfrastructure(auditConnectionString);
 
 builder.Services.AddComplianceInfrastructure(complianceConnectionString);
 
+builder.Services.AddReportingInfrastructure(reportingConnectionString);
+
+// Own physical database, SecurityDb (ADR-016) — not shared with the other
+// contexts above, unlike CorePlatform/ReactorFleet: ApplicationUser holds
+// credential-adjacent columns, a data-sensitivity reason to isolate
+// independent of deployment topology.
+builder.Services.AddSecurityApplication();
+builder.Services.AddSecurityInfrastructure(securityConnectionString);
+
+// Own physical database, OrganizationDb (ADR-017) — not shared with the other
+// contexts above: Person holds real PII (GivenName, FamilyName, DisplayName,
+// WorkEmail, WorkPhone), the same class of data-sensitivity reason ADR-016
+// used to isolate Security, independent of deployment topology.
+builder.Services.AddOrganizationApplication();
+builder.Services.AddOrganizationInfrastructure(organizationConnectionString);
+
 builder.Services
     .AddHealthChecks()
     .AddCheck<DbContextHealthCheck<ReactorFleetDbContext>>("reactorfleet-db")
+    .AddCheck<DbContextHealthCheck<CorePlatformDbContext>>("coreplatform-db")
+    .AddCheck<DbContextHealthCheck<InstrumentationDbContext>>("instrumentation-db")
+    // ADR-020's persistence decision: DigitalTwin shares AlarmManagementDb: this check is the
+    // second real confirmation (after Instrumentation, ADR-019) that ADR-018's strengthened
+    // DbContextHealthCheck<T> correctly handles a new schema being added to an already-migrated
+    // shared database (reachable but missing this context's own migration surfaces as Unhealthy).
+    .AddCheck<DbContextHealthCheck<DigitalTwinDbContext>>("digitaltwin-db")
+    .AddCheck<DbContextHealthCheck<MaintenanceDbContext>>("maintenance-db")
+    // ADR-022's persistence decision: EventManagement shares AlarmManagementDb.
+    .AddCheck<DbContextHealthCheck<EventManagementDbContext>>("eventmanagement-db")
+    // ADR-023's persistence decision: Robotics shares AlarmManagementDb.
+    .AddCheck<DbContextHealthCheck<RoboticsDbContext>>("robotics-db")
+    // ADR-024's persistence decision: RadiationMonitoring shares AlarmManagementDb.
+    .AddCheck<DbContextHealthCheck<RadiationMonitoringDbContext>>("radiationmonitoring-db")
+    // ADR-025's persistence decision: EmergencyPreparedness shares AlarmManagementDb.
+    .AddCheck<DbContextHealthCheck<EmergencyPreparednessDbContext>>("emergencypreparedness-db")
+    // ADR-026's persistence decision: ReinforcementLearning shares AlarmManagementDb.
+    .AddCheck<DbContextHealthCheck<ReinforcementLearningDbContext>>("reinforcementlearning-db")
     .AddCheck<DbContextHealthCheck<AlarmManagementDbContext>>("alarmmanagement-db")
     .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db")
-    .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db");
+    .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db")
+    .AddCheck<DbContextHealthCheck<ReportingDbContext>>("reporting-db")
+    .AddCheck<DbContextHealthCheck<SecurityDbContext>>("security-db")
+    .AddCheck<DbContextHealthCheck<OrganizationDbContext>>("organization-db");
 
 var app = builder.Build();
 
