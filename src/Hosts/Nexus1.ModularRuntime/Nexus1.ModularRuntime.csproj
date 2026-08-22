@@ -26,6 +26,8 @@
     <ProjectReference Include="..\..\Contexts\RadiationMonitoring\Nexus1.RadiationMonitoring.Infrastructure\Nexus1.RadiationMonitoring.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Contexts\EmergencyPreparedness\Nexus1.EmergencyPreparedness.Application\Nexus1.EmergencyPreparedness.Application.csproj" />
     <ProjectReference Include="..\..\Contexts\EmergencyPreparedness\Nexus1.EmergencyPreparedness.Infrastructure\Nexus1.EmergencyPreparedness.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Contexts\ReinforcementLearning\Nexus1.ReinforcementLearning.Application\Nexus1.ReinforcementLearning.Application.csproj" />
+    <ProjectReference Include="..\..\Contexts\ReinforcementLearning\Nexus1.ReinforcementLearning.Infrastructure\Nexus1.ReinforcementLearning.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Contexts\Security\Nexus1.Security.Application\Nexus1.Security.Application.csproj" />
     <ProjectReference Include="..\..\Contexts\Security\Nexus1.Security.Infrastructure\Nexus1.Security.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Contexts\Organization\Nexus1.Organization.Application\Nexus1.Organization.Application.csproj" />
