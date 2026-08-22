@@ -35,6 +35,9 @@ using Nexus1.RadiationMonitoring.Infrastructure.Persistence;
 using Nexus1.ReactorFleet.Application;
 using Nexus1.ReactorFleet.Infrastructure;
 using Nexus1.ReactorFleet.Infrastructure.Persistence;
+using Nexus1.ReinforcementLearning.Application;
+using Nexus1.ReinforcementLearning.Infrastructure;
+using Nexus1.ReinforcementLearning.Infrastructure.Persistence;
 using Nexus1.Reporting.Infrastructure;
 using Nexus1.Reporting.Infrastructure.Persistence;
 using Nexus1.Robotics.Application;
@@ -153,6 +156,19 @@ builder.Services.AddRadiationMonitoringInfrastructure(alarmManagementConnectionS
 builder.Services.AddEmergencyPreparednessApplication();
 builder.Services.AddEmergencyPreparednessInfrastructure(alarmManagementConnectionString);
 
+// Shares AlarmManagementDb (ADR-026) — ReinforcementLearning is the twelfth registration sharing
+// it, after ReactorFleet/CorePlatform/AlarmManagement/Instrumentation/DigitalTwin/Maintenance/
+// EventManagement/Robotics/RadiationMonitoring/EmergencyPreparedness: real cross-context FKs to
+// ReactorFleet.Unit (EnvironmentModel/Experiment/PolicyDeployment/AdvisorySession),
+// DigitalTwin.TwinModel (EnvironmentModel.TwinModelId) and CorePlatform.EngineeringUnit
+// (ActionSpace.EngineeringUnitId) already live here — the simplest external dependency
+// footprint of any Phase 2 sector (four contexts) and the fourth consecutive Phase 2 sector
+// with a clean (zero-gap) whole-sector FK audit result. Per ADR-026 Option A this sector is
+// training/persistence only — NO messaging, NO broker consumer, NO RL Advisory subscriber of
+// any kind; the optional Ch.36 advisory branch stays explicitly deferred.
+builder.Services.AddReinforcementLearningApplication();
+builder.Services.AddReinforcementLearningInfrastructure(alarmManagementConnectionString);
+
 builder.Services.AddAuditInfrastructure(auditConnectionString);
 
 builder.Services.AddComplianceInfrastructure(complianceConnectionString);
@@ -192,6 +208,8 @@ builder.Services
     .AddCheck<DbContextHealthCheck<RadiationMonitoringDbContext>>("radiationmonitoring-db")
     // ADR-025's persistence decision: EmergencyPreparedness shares AlarmManagementDb.
     .AddCheck<DbContextHealthCheck<EmergencyPreparednessDbContext>>("emergencypreparedness-db")
+    // ADR-026's persistence decision: ReinforcementLearning shares AlarmManagementDb.
+    .AddCheck<DbContextHealthCheck<ReinforcementLearningDbContext>>("reinforcementlearning-db")
     .AddCheck<DbContextHealthCheck<AlarmManagementDbContext>>("alarmmanagement-db")
     .AddCheck<DbContextHealthCheck<AuditDbContext>>("audit-db")
     .AddCheck<DbContextHealthCheck<ComplianceDbContext>>("compliance-db")
