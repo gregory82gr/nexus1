@@ -241,6 +241,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.ReinforcementLearnin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.ReinforcementLearning.ComponentTests", "tests\Nexus1.ReinforcementLearning.ComponentTests\Nexus1.ReinforcementLearning.ComponentTests.csproj", "{26CF2947-7432-4B2B-BC7E-F2CDC73137FF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.Bff", "src\Hosts\Nexus1.Bff\Nexus1.Bff.csproj", "{4F3BEABB-DF32-4D8A-8A52-DA6E2AAF102A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.Reporting.Application", "src\Contexts\Reporting\Nexus1.Reporting.Application\Nexus1.Reporting.Application.csproj", "{CE278AE8-F76A-487B-8F98-5D6B11DCE7B2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.Audit.Application", "src\Contexts\Audit\Nexus1.Audit.Application\Nexus1.Audit.Application.csproj", "{0B27D596-E399-42EF-8C6C-726B13B41635}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus1.Compliance.Application", "src\Contexts\Compliance\Nexus1.Compliance.Application\Nexus1.Compliance.Application.csproj", "{DC1A1BCA-091A-413F-86E6-C8F9DA749A7A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -638,6 +646,22 @@ Global
 		{26CF2947-7432-4B2B-BC7E-F2CDC73137FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{26CF2947-7432-4B2B-BC7E-F2CDC73137FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{26CF2947-7432-4B2B-BC7E-F2CDC73137FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F3BEABB-DF32-4D8A-8A52-DA6E2AAF102A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F3BEABB-DF32-4D8A-8A52-DA6E2AAF102A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F3BEABB-DF32-4D8A-8A52-DA6E2AAF102A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F3BEABB-DF32-4D8A-8A52-DA6E2AAF102A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE278AE8-F76A-487B-8F98-5D6B11DCE7B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE278AE8-F76A-487B-8F98-5D6B11DCE7B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE278AE8-F76A-487B-8F98-5D6B11DCE7B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE278AE8-F76A-487B-8F98-5D6B11DCE7B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B27D596-E399-42EF-8C6C-726B13B41635}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B27D596-E399-42EF-8C6C-726B13B41635}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B27D596-E399-42EF-8C6C-726B13B41635}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B27D596-E399-42EF-8C6C-726B13B41635}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC1A1BCA-091A-413F-86E6-C8F9DA749A7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC1A1BCA-091A-413F-86E6-C8F9DA749A7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC1A1BCA-091A-413F-86E6-C8F9DA749A7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC1A1BCA-091A-413F-86E6-C8F9DA749A7A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{9ED154C6-C14E-4D15-850E-F3570AA45BD8} = {6D76DB58-A0F0-4E1E-8335-232DBE7CA890}
@@ -757,5 +781,9 @@ Global
 		{CB637E27-7E41-4526-9176-EF172700DB25} = {D8C1283D-C239-46DA-91B9-C7B466AF92AC}
 		{057F6386-B631-4017-B617-622A68C68B23} = {DFD64979-71D4-46B5-BF62-217FA110CF39}
 		{26CF2947-7432-4B2B-BC7E-F2CDC73137FF} = {DFD64979-71D4-46B5-BF62-217FA110CF39}
+		{4F3BEABB-DF32-4D8A-8A52-DA6E2AAF102A} = {E1EBE638-28DB-4614-8CE8-762D2D5586EA}
+		{CE278AE8-F76A-487B-8F98-5D6B11DCE7B2} = {587695F8-2F89-4012-BFCA-3E175C9109D3}
+		{0B27D596-E399-42EF-8C6C-726B13B41635} = {31A7F46E-D479-430E-A69A-E9ECDE483DC2}
+		{DC1A1BCA-091A-413F-86E6-C8F9DA749A7A} = {D0D5500F-7CAB-4C21-91C6-2AB1547B2A26}
 	EndGlobalSection
 EndGlobal

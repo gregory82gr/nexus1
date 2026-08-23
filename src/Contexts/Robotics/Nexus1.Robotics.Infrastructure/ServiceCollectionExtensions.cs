@@ -38,6 +38,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILatestHealthSnapshotFinder, EfLatestHealthSnapshotFinder>();
         services.AddScoped<IMissionTimelineFinder, EfMissionTimelineFinder>();
         services.AddScoped<IBlockingReadinessFailuresFinder, EfBlockingReadinessFailuresFinder>();
+        services.AddScoped<IUnitMissionsFinder, EfUnitMissionsFinder>();
 
         return services;
     }

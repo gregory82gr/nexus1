@@ -4,6 +4,8 @@ namespace Nexus1.ReactorFleet.Application;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddReactorFleetApplication(this IServiceCollection services) =>
-        services.AddScoped<RecordUnitPowerSnapshotCommandHandler>();
+    public static IServiceCollection AddReactorFleetApplication(this IServiceCollection services) => services
+        .AddScoped<RecordUnitPowerSnapshotCommandHandler>()
+        .AddScoped<GetUnitsQueryHandler>()
+        .AddScoped<GetUnitByIdQueryHandler>();
 }

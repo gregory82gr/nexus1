@@ -10,5 +10,6 @@ public static class ServiceCollectionExtensions
         .AddScoped<GetActiveRadiationZonesQueryHandler>()
         .AddScoped<GetMonitorsWithCalibrationDueQueryHandler>()
         .AddScoped<GetLatestReadingPerMonitorQueryHandler>()
-        .AddScoped<GetOpenDoseAlertsQueryHandler>();
+        .AddScoped<GetOpenDoseAlertsQueryHandler>()
+        .AddScoped<GetUnitRadiationSafetyQueryHandler>();
 }
