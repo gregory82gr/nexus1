@@ -46,6 +46,9 @@ using Nexus1.EventManagement.Infrastructure.Persistence;
 using Nexus1.EmergencyPreparedness.Application;
 using Nexus1.EmergencyPreparedness.Infrastructure;
 using Nexus1.EmergencyPreparedness.Infrastructure.Persistence;
+using Nexus1.ReinforcementLearning.Application;
+using Nexus1.ReinforcementLearning.Infrastructure;
+using Nexus1.ReinforcementLearning.Infrastructure.Persistence;
 using Nexus1.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -294,6 +297,39 @@ if (IsContextEnabled("EmergencyPreparedness"))
     builder.Services.AddEmergencyPreparednessInfrastructure(alarmManagementConnectionString);
 }
 
+if (IsContextEnabled("ReinforcementLearning"))
+{
+    // Shares AlarmManagementDb (ADR-026). Confirmed by reading
+    // AddReinforcementLearningInfrastructure directly: zero
+    // AddHostedService<...>() calls — no opt-out needed ("training/
+    // persistence only", ADR-026 Option A).
+    //
+    // Audit finding (From_Trial_to_Policy vs. this codebase, done before
+    // this slice): Chapters 1-9's actual Q-learning core (Trainer, Learner,
+    // Bellman/TD-error update, surrogate environment) was never built here
+    // — only its persistence shape (QTable/QTableEntry/TrainingRun/
+    // HyperparameterSet as data rows). Chapter 10's AdvisoryService
+    // (live state -> clamped suggestion) was excluded too, not just
+    // messaging as ADR-026's own text originally scoped: AdvisoryRecommendation/
+    // AdvisorySession only record an already-computed recommendation
+    // (RecordAdvisoryRecommendationCommand) and read it back
+    // (GetClampedRecommendationsQuery) — nothing in this codebase computes
+    // one. The endpoints below reflect exactly that: recorded history, not
+    // a live "Why This Action" suggestion.
+    //
+    // Second finding: Policy/PolicyEntry are real, materialized EF tables
+    // (populated once by ExtractPolicyCommand), not the book's own
+    // Appendix C design — a SQL VIEW computed via ROW_NUMBER() on every
+    // read, which "cannot drift from the values beneath it." Here it CAN
+    // drift from QTableEntry if ExtractPolicyCommand isn't re-run after a
+    // QTable update. GetActivePolicyIdQuery/EfActivePolicyFinder (new in
+    // this slice) picks the most recently extracted Policy whose QTable
+    // IsFinal — a judgment call, since no IsCurrent concept exists on
+    // Policy itself.
+    builder.Services.AddReinforcementLearningApplication();
+    builder.Services.AddReinforcementLearningInfrastructure(alarmManagementConnectionString);
+}
+
 var healthChecksBuilder = builder.Services.AddHealthChecks();
 if (IsContextEnabled("ReactorFleet"))
 {
@@ -368,6 +404,11 @@ if (IsContextEnabled("EventManagement"))
 if (IsContextEnabled("EmergencyPreparedness"))
 {
     healthChecksBuilder.AddCheck<DbContextHealthCheck<EmergencyPreparednessDbContext>>("emergencypreparedness-db");
+}
+
+if (IsContextEnabled("ReinforcementLearning"))
+{
+    healthChecksBuilder.AddCheck<DbContextHealthCheck<ReinforcementLearningDbContext>>("reinforcementlearning-db");
 }
 
 var app = builder.Build();
@@ -730,9 +771,35 @@ app.MapGet("/api/v1/emergency-preparedness/evacuation-routes/open-or-restricted"
     return Results.Ok(result.Value);
 });
 
-app.MapGet("/api/v1/emergency-preparedness/resource-readiness-dashboard", async ([FromServices] GetResourceReadinessDashboardQueryHandler handler, CancellationToken cancellationToken) =>
+// Named gap: "current/active policy" is not a concept this domain models
+// (no IsCurrent flag, PolicyStatus is a generic lookup) — GetActivePolicyIdQuery
+// is this slice's own judgment call (most recently extracted Policy whose
+// QTable IsFinal), not a recovered atlas fact. Returns 404 when no final
+// policy has ever been extracted yet, rather than fabricating one.
+app.MapGet("/api/v1/reinforcement-learning/policy", async (
+    [FromServices] GetActivePolicyIdQueryHandler activePolicyHandler,
+    [FromServices] GetPolicyGridQueryHandler policyGridHandler,
+    CancellationToken cancellationToken) =>
 {
-    var result = await handler.Handle(new GetResourceReadinessDashboardQuery(), cancellationToken);
+    var activePolicyResult = await activePolicyHandler.Handle(new GetActivePolicyIdQuery(), cancellationToken);
+    if (activePolicyResult.Value is not { } policyId)
+    {
+        return Results.NotFound();
+    }
+
+    var gridResult = await policyGridHandler.Handle(new GetPolicyGridQuery(policyId), cancellationToken);
+    return Results.Ok(gridResult.Value);
+});
+
+// Named gap: this is recorded advisory history, not a live "Why This
+// Action" suggestion. Nothing in this codebase reads a live state, clamps,
+// or computes a recommendation (From_Trial_to_Policy Ch.10's AdvisoryService
+// has no equivalent here) — AdvisoryRecommendation rows are written by
+// RecordAdvisoryRecommendationCommand from a recommendation computed
+// elsewhere, and this endpoint only reads that history back.
+app.MapGet("/api/v1/reinforcement-learning/recommendations", async ([FromServices] GetClampedRecommendationsQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new GetClampedRecommendationsQuery(), cancellationToken);
     return Results.Ok(result.Value);
 });
 

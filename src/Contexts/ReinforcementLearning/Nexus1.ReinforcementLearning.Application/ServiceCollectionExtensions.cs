@@ -11,5 +11,6 @@ public static class ServiceCollectionExtensions
         .AddScoped<GetPolicyEntryCountQueryHandler>()
         .AddScoped<GetFinalQTableEntryCountQueryHandler>()
         .AddScoped<GetPolicyGridQueryHandler>()
-        .AddScoped<GetClampedRecommendationsQueryHandler>();
+        .AddScoped<GetClampedRecommendationsQueryHandler>()
+        .AddScoped<GetActivePolicyIdQueryHandler>();
 }
