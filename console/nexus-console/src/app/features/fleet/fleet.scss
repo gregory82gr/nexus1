@@ -1,0 +1,27 @@
+.fleet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.summary h2 { margin: 6px 0 2px; }
+.sub { color: var(--text-dim); font-size: 11px; }
+
+.unit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.unitcard {
+  cursor: pointer;
+}
+// Selected card carries the cyan border, ported verbatim from .unitcard.sel.
+.unitcard.sel {
+  border-color: var(--cyan);
+}
+.code { font-family: 'Chakra Petch', sans-serif; font-weight: 600; }
+.name { color: var(--text-dim); font-size: 11px; margin-bottom: 8px; }
+.value { font-size: 22px; margin: 6px 0 2px; }
+.value.muted { color: var(--text-mute); }
+.asof { color: var(--text-dim); font-size: 10px; }
+.select-label { margin-top: 8px; font-size: 10px; color: var(--text-dim); }
+.state-panel { max-width: 320px; }

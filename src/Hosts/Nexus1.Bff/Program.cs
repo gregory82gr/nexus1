@@ -107,6 +107,20 @@ bool IsContextEnabled(string contextName) =>
 
 builder.Services.AddBuildingBlocksApplication();
 
+// Dev-only CORS for the Angular console (nexus-console, Ch. 5 onward calls
+// this host directly from the browser at localhost:4200). Named gap found
+// live, not anticipated: nothing in this BFF's seventeen prior slices ever
+// needed a browser-origin caller before now -- every evidence capture used
+// curl/sqlcmd, never an actual page. No CORS policy existed at all until
+// the Plant Fleet screen's own live verification hit a real blocked
+// XMLHttpRequest. Restricted to Development and to the console's own dev
+// port, not a wildcard origin.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddCors(options => options.AddPolicy("NexusConsoleDev", policy =>
+        policy.WithOrigins("http://localhost:4200").AllowAnyMethod().AllowAnyHeader()));
+}
+
 if (IsContextEnabled("ReactorFleet"))
 {
     builder.Services.AddReactorFleetApplication();
@@ -412,6 +426,11 @@ if (IsContextEnabled("ReinforcementLearning"))
 }
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("NexusConsoleDev");
+}
 
 // Liveness: process is up, no dependency checks (ADR-007 precedent).
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });

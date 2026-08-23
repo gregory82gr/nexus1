@@ -1,0 +1,45 @@
+<div class="fleet">
+  <div class="panel summary">
+    <span class="pill info">UNITS REPORTING</span>
+    <h2>{{ reportingCount() }} / {{ totalCount() }}</h2>
+    <p class="sub">units with a recorded power reading</p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching the fleet from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      <div class="unit-grid">
+        @for (unit of loadedUnits; track unit.id) {
+          <div class="panel unitcard" [class.sel]="selectedId() === unit.id" (click)="select(unit)">
+            <div class="code">{{ unit.code }}</div>
+            <div class="name">{{ unit.name }}</div>
+
+            @if (unit.latestPowerPercent !== null) {
+              <span class="pill" [class.warn]="isLowReading(unit)" [class.ok]="!isLowReading(unit)">
+                {{ isLowReading(unit) ? 'LOW' : 'READING' }}
+              </span>
+              <div class="value">{{ unit.latestPowerPercent }}%</div>
+              <div class="asof">as of {{ unit.latestPowerRecordedAtUtc }}</div>
+            } @else {
+              <span class="pill warn">NO READING</span>
+              <div class="value muted">—</div>
+            }
+
+            <div class="select-label">{{ selectedId() === unit.id ? 'SELECTED' : 'Select' }}</div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

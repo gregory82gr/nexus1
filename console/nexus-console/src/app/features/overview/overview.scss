@@ -1,0 +1,44 @@
+.overview {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.stat .ph { color: var(--text-dim); font-size: 10px; margin-bottom: 6px; }
+.stat .val { font-size: 22px; }
+
+.grid.c-21 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+}
+.grid.c-12 {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
+}
+.panel .ph {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.panel .ph h2 { font-size: 13px; margin: 0; }
+.tag { color: var(--text-dim); font-size: 10px; }
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+}
+.row:last-child { border-bottom: none; }
+.ln { font-size: 12px; }
+.sub { color: var(--text-dim); font-size: 10px; }
+.mimic.offline { display: flex; align-items: center; justify-content: center; padding: 20px; }
+.state-panel { max-width: 320px; }

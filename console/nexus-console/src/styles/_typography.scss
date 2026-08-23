@@ -1,0 +1,15 @@
+// Faces named by index.html. Load via @fontsource or a <link> in index.html;
+// the fallback chain keeps the console legible before the webfont resolves.
+html, body {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 13px;
+  line-height: 1.3;
+  letter-spacing: .2px;
+  color: var(--text);
+  background: var(--bg);
+}
+h1, h2, h3, .disp {
+  font-family: 'Chakra Petch', sans-serif;
+  font-weight: 600;
+  letter-spacing: .4px;
+}
