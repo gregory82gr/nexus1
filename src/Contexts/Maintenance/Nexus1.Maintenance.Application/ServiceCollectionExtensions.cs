@@ -10,6 +10,7 @@ public static class ServiceCollectionExtensions
         .AddScoped<GetWorkOrdersWithOriginQueryHandler>()
         .AddScoped<GetLatestConditionPerAssetQueryHandler>()
         .AddScoped<GetActiveDegradationCasesQueryHandler>()
+        .AddScoped<GetUnitAssetConditionsQueryHandler>()
         .AddScoped<RecordAssetConditionCommandHandler>()
         .AddScoped<OpenWorkOrderCommandHandler>()
         .AddScoped<RecordDegradationCommandHandler>();

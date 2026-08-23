@@ -10,5 +10,6 @@ public static class ServiceCollectionExtensions
         .AddScoped<GetAvailableRobotsByUnitQueryHandler>()
         .AddScoped<GetLatestHealthSnapshotPerRobotQueryHandler>()
         .AddScoped<GetMissionTimelineQueryHandler>()
-        .AddScoped<GetBlockingReadinessFailuresQueryHandler>();
+        .AddScoped<GetBlockingReadinessFailuresQueryHandler>()
+        .AddScoped<GetUnitRoboticsOverviewQueryHandler>();
 }

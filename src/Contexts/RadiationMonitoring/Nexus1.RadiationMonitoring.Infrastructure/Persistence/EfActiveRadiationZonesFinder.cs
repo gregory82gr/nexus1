@@ -20,4 +20,16 @@ internal sealed class EfActiveRadiationZonesFinder(RadiationMonitoringDbContext 
 
         return await query.ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<UnitRadiationZoneDto>> GetActiveRadiationZonesForUnitAsync(int unitId, CancellationToken cancellationToken)
+    {
+        var query =
+            from z in dbContext.RadiationZones
+            where !EF.Property<bool>(z, "IsDeleted") && z.UnitId == unitId
+            join c in dbContext.RadiationAreaClassifications on z.RadiationAreaClassificationId equals c.Id
+            join s in dbContext.RadiationZoneStatuses on z.RadiationZoneStatusId equals s.Id
+            select new UnitRadiationZoneDto(z.Code, z.Name, c.Code, s.Code);
+
+        return await query.ToListAsync(cancellationToken);
+    }
 }

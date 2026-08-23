@@ -9,6 +9,8 @@ public static class ServiceCollectionExtensions
         .AddScoped<GetLatestMeasurementsForTagQueryHandler>()
         .AddScoped<GetOpenSignalQualityEventsForUnitQueryHandler>()
         .AddScoped<GetAcquisitionPathForTagQueryHandler>()
+        .AddScoped<GetUnitSignalReadingsQueryHandler>()
+        .AddScoped<GetUnitSignalQualityEventsQueryHandler>()
         .AddScoped<RecordMeasurementCommandHandler>()
         .AddScoped<OpenSignalQualityEventCommandHandler>()
         .AddScoped<CloseSignalQualityEventCommandHandler>();

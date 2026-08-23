@@ -17,4 +17,10 @@ internal sealed class EfAlarmEventFinder(AlarmManagementDbContext dbContext) : I
         await dbContext.AlarmEvents
             .Where(e => e.UnitId == unitId && e.State == AlarmState.Active)
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<AlarmEvent>> GetAllActiveAsync(CancellationToken cancellationToken) =>
+        await dbContext.AlarmEvents
+            .Where(e => e.State == AlarmState.Active)
+            .OrderByDescending(e => e.RaisedAtUtc)
+            .ToListAsync(cancellationToken);
 }

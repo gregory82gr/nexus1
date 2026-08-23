@@ -42,7 +42,7 @@ public class DependencyLawTests
             return ("Contracts", projectName["Nexus1.Contracts.".Length..]);
         }
 
-        if (projectName is "Nexus1.ModularRuntime" || projectName.EndsWith(".Host", StringComparison.Ordinal))
+        if (projectName is "Nexus1.ModularRuntime" or "Nexus1.Bff" || projectName.EndsWith(".Host", StringComparison.Ordinal))
         {
             return ("Host", null);
         }

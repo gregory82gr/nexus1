@@ -9,5 +9,6 @@ public static class ServiceCollectionExtensions
         .AddScoped<EvaluateReadingCommandHandler>()
         .AddScoped<AcknowledgeAlarmCommandHandler>()
         .AddScoped<DetectFloodCommandHandler>()
-        .AddScoped<GetActiveAlarmsForUnitQueryHandler>();
+        .AddScoped<GetActiveAlarmsForUnitQueryHandler>()
+        .AddScoped<GetActiveAlarmsQueryHandler>();
 }

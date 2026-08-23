@@ -10,5 +10,6 @@ public static class ServiceCollectionExtensions
         .AddScoped<AssignPersonToDepartmentCommandHandler>()
         .AddScoped<AssignPersonToTeamCommandHandler>()
         .AddScoped<RecordStaffingScenarioResultCommandHandler>()
-        .AddScoped<GetLatestStaffingGapsQueryHandler>();
+        .AddScoped<GetLatestStaffingGapsQueryHandler>()
+        .AddScoped<GetDepartmentRosterQueryHandler>();
 }

@@ -52,6 +52,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISitePlantHierarchyFinder, EfSitePlantHierarchyFinder>();
         services.AddScoped<IPersonOrganizationContextFinder, EfPersonOrganizationContextFinder>();
         services.AddScoped<IStaffingGapFinder, EfStaffingGapFinder>();
+        services.AddScoped<IDepartmentRosterFinder, EfDepartmentRosterFinder>();
 
         return services;
     }

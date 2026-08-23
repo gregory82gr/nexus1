@@ -29,4 +29,63 @@ internal sealed class EfLatestHealthSnapshotFinder(RoboticsDbContext dbContext) 
 
         return await query.ToListAsync(cancellationToken);
     }
+
+    /// <summary>
+    /// Per-unit, includes robots with zero snapshots (unlike the fleet-wide
+    /// query above, which excludes via "where latest != null"). Lookup
+    /// codes (battery/communication status) are resolved in a separate
+    /// in-memory pass rather than joined inside the ordered correlated
+    /// subquery — same translation-safety reasoning as
+    /// RadiationMonitoring's per-unit finder (joining after OrderByDescending
+    /// inside a subquery is exactly the shape this file's own top comment
+    /// already found EF Core failing to translate once).
+    /// </summary>
+    public async Task<IReadOnlyList<UnitRobotStatusDto>> GetRobotStatusForUnitAsync(int unitId, CancellationToken cancellationToken)
+    {
+        var robotRows = await dbContext.Robots
+            .Where(r => !EF.Property<bool>(r, "IsDeleted") && r.HomeUnitId == unitId)
+            .Join(dbContext.RobotStatuses, r => r.RobotStatusId, rs => rs.Id, (r, rs) => new
+            {
+                r.Code,
+                r.Name,
+                RobotStatus = rs.Code,
+                LatestBatteryPercent = dbContext.RobotHealthSnapshots
+                    .Where(s => s.RobotId == r.Id)
+                    .OrderByDescending(s => s.SnapshotAtUtc)
+                    .Select(s => s.BatteryPercent)
+                    .FirstOrDefault(),
+                LatestSnapshotAtUtc = dbContext.RobotHealthSnapshots
+                    .Where(s => s.RobotId == r.Id)
+                    .OrderByDescending(s => s.SnapshotAtUtc)
+                    .Select(s => (DateTime?)s.SnapshotAtUtc)
+                    .FirstOrDefault(),
+                LatestBatteryStatusId = dbContext.RobotHealthSnapshots
+                    .Where(s => s.RobotId == r.Id)
+                    .OrderByDescending(s => s.SnapshotAtUtc)
+                    .Select(s => (int?)s.BatteryStatusId.Value)
+                    .FirstOrDefault(),
+                LatestCommunicationStatusId = dbContext.RobotHealthSnapshots
+                    .Where(s => s.RobotId == r.Id)
+                    .OrderByDescending(s => s.SnapshotAtUtc)
+                    .Select(s => (int?)s.CommunicationStatusId.Value)
+                    .FirstOrDefault(),
+            })
+            .ToListAsync(cancellationToken);
+
+        var batteryStatusCodesById = await dbContext.BatteryStatuses
+            .ToDictionaryAsync(b => b.Id.Value, b => b.Code, cancellationToken);
+        var communicationStatusCodesById = await dbContext.CommunicationStatuses
+            .ToDictionaryAsync(c => c.Id.Value, c => c.Code, cancellationToken);
+
+        return robotRows
+            .Select(x => new UnitRobotStatusDto(
+                x.Code,
+                x.Name,
+                x.RobotStatus,
+                x.LatestBatteryPercent,
+                x.LatestBatteryStatusId is int bId && batteryStatusCodesById.TryGetValue(bId, out var bCode) ? bCode : null,
+                x.LatestCommunicationStatusId is int cId && communicationStatusCodesById.TryGetValue(cId, out var cCode) ? cCode : null,
+                x.LatestSnapshotAtUtc))
+            .ToList();
+    }
 }

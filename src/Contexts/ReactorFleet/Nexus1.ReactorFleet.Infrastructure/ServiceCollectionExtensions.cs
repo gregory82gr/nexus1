@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Nexus1.BuildingBlocks.Application;
+using Nexus1.ReactorFleet.Application;
 using Nexus1.ReactorFleet.Domain;
 using Nexus1.ReactorFleet.Infrastructure.Persistence;
 
@@ -20,6 +21,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<Unit, UnitId>, EfRepository<Unit, UnitId>>();
         services.AddScoped<IRepository<UnitPowerSnapshot, UnitPowerSnapshotId>, EfRepository<UnitPowerSnapshot, UnitPowerSnapshotId>>();
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+
+        services.AddScoped<IUnitFleetFinder, EfUnitFleetFinder>();
 
         return services;
     }

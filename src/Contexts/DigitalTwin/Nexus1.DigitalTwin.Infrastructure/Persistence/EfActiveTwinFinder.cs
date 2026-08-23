@@ -16,4 +16,15 @@ internal sealed class EfActiveTwinFinder(DigitalTwinDbContext dbContext) : IActi
             .Join(dbContext.TwinFidelityLevels, x => x.tm.TwinFidelityLevelId, tfl => tfl.Id, (x, tfl) => new { x.tm, x.u, x.tmt, x.tms, tfl })
             .Select(x => new ActiveTwinDto(x.u.Code, x.tm.Code, x.tmt.Code, x.tms.Code, x.tfl.Code))
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<UnitTwinStateDto>> GetActiveTwinsForUnitAsync(int unitId, CancellationToken cancellationToken) =>
+        await dbContext.TwinModels
+            .Where(tm => !tm.IsDeleted && tm.UnitId == unitId)
+            .Join(dbContext.Set<ReactorFleetUnitReference>(), tm => tm.UnitId, u => u.UnitId, (tm, u) => new { tm, u })
+            .Join(dbContext.TwinModelTypes, x => x.tm.TwinModelTypeId, tmt => tmt.Id, (x, tmt) => new { x.tm, x.u, tmt })
+            .Join(dbContext.TwinModelStatuses, x => x.tm.TwinModelStatusId, tms => tms.Id, (x, tms) => new { x.tm, x.u, x.tmt, tms })
+            .Join(dbContext.TwinFidelityLevels, x => x.tm.TwinFidelityLevelId, tfl => tfl.Id, (x, tfl) => new { x.tm, x.u, x.tmt, x.tms, tfl })
+            .Select(x => new UnitTwinStateDto(
+                x.u.UnitId, x.u.Code, x.tm.Code, x.tm.Name, x.tmt.Code, x.tms.Code, x.tfl.Code, x.tm.IsAuthoritative))
+            .ToListAsync(cancellationToken);
 }
