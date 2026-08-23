@@ -8,7 +8,19 @@ public sealed class EngineeringUnitConfiguration : IEntityTypeConfiguration<Engi
 {
     public void Configure(EntityTypeBuilder<EngineeringUnit> builder)
     {
-        builder.ToTable("EngineeringUnit", "CorePlatform");
+        // Atlas C.1.4.8, verbatim: the fourteen QuantityType values match
+        // EngineeringQuantityType's own member names exactly, so this
+        // constraint was always compatible with the existing
+        // HasConversion<string>() mapping below — its absence (found
+        // during the CorePlatform slice's own QuantityType-mismatch
+        // investigation) was a doc-vs-implementation gap, not a design
+        // conflict. Added now; both real rows already carry corrected,
+        // matching values.
+        builder.ToTable("EngineeringUnit", "CorePlatform", t => t.HasCheckConstraint(
+            "CK_CorePlatform_EngineeringUnit_QuantityType",
+            "[QuantityType] IN (N'Power', N'ThermalPower', N'Temperature', N'Pressure', N'Reactivity', " +
+            "N'Flow', N'Frequency', N'Percentage', N'RadiationDoseRate', N'RadiationDose', N'CountRate', " +
+            "N'Mass', N'Time', N'Other')"));
         builder.HasKey(x => x.Id).HasName("PK_CorePlatform_EngineeringUnit");
 
         builder.Property(x => x.Id)
