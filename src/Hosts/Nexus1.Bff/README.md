@@ -42,7 +42,7 @@ Valid names match the `IsContextEnabled(...)` calls in `Program.cs`:
 `ReactorFleet`, `AlarmManagement`, `DigitalTwin`, `RadiationMonitoring`,
 `Reporting`, `Robotics`, `Instrumentation`, `Organization`, `Security`,
 `Maintenance`, `CorePlatform`, `Audit`, `Compliance`, `EventManagement`,
-`EmergencyPreparedness`.
+`EmergencyPreparedness`, `ReinforcementLearning`.
 
 A context left out is simply never composed — its `DbContext`, finders, and
 query handlers are never registered. Routes for every context stay mapped

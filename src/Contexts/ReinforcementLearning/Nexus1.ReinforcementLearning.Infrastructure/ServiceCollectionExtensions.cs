@@ -48,6 +48,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFinalQTableEntryCountFinder, EfFinalQTableEntryCountFinder>();
         services.AddScoped<IPolicyGridFinder, EfPolicyGridFinder>();
         services.AddScoped<IClampedRecommendationsFinder, EfClampedRecommendationsFinder>();
+        services.AddScoped<IActivePolicyFinder, EfActivePolicyFinder>();
 
         return services;
     }
