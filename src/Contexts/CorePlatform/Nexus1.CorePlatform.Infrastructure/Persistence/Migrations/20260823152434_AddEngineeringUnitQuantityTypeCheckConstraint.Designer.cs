@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Nexus1.CorePlatform.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Nexus1.CorePlatform.Infrastructure.Persistence;
 namespace Nexus1.CorePlatform.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(CorePlatformDbContext))]
-    partial class CorePlatformDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260823152434_AddEngineeringUnitQuantityTypeCheckConstraint")]
+    partial class AddEngineeringUnitQuantityTypeCheckConstraint
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
