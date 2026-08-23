@@ -173,3 +173,37 @@ attempt.
 
 Robotics is next, evidence to follow separately per the task's instruction
 not to batch the two reports.
+
+## Closing note (added 2026-08-23, after the seventeenth and final slice): this endpoint is also "the RootCause slice"
+
+Before designing a would-be eighteenth vertical slice for RootCause, its
+actual reachability was investigated rather than assumed. Findings,
+recorded here because they resolve directly against this slice's own
+endpoint:
+
+- **`Nexus1.RootCause.Host` has no query-capable HTTP surface at all.**
+  Its `Program.cs` was read in full: the only `app.Map*` calls are
+  `/health/live` and `/health/ready`. `AddRootCauseApplication`/
+  `AddRootCauseInfrastructure`/`AddNexusMessaging` are registered, but
+  nothing exposes RootCause's Application layer over HTTP — it exists
+  purely to back RootCause's own message publishing/consumption.
+  `Nexus1.RootCause.Host` was confirmed **untouched by any BFF work**,
+  consistent with ADR-001 (RootCause stays out-of-process).
+- **The only real path to RootCause data is via its published events.**
+  Searched the whole solution for every consumer of
+  `RootCauseCaseOpenedV1`/`RootCauseVerdictIssuedV1`: exactly three exist
+  (Audit, Compliance, Reporting). Audit's and Compliance's projections are
+  the narrow ledgers already covered by their own slices (12 and 14).
+  Reporting's `ReportingProjectionMessageHandler` is the one that builds an
+  actual case-investigation-history shape (`RootCauseCaseSummary`), and
+  `GetCaseSummariesForUnitQuery` — this slice's own endpoint — is already
+  that path, shipped since slice 5.
+
+**Conclusion: no new RootCause BFF slice was built.** There was nothing on
+the other end of a direct HTTP integration to call, and no gap to close —
+`GET /api/v1/reporting/units/{id}` (this slice's endpoint) already is the
+real, practical RootCause data path available to the BFF today, under
+Reporting's name rather than RootCause's own.
+
+This closes out the vertical-slice effort: all seventeen Schema Atlas
+sectors, plus the Overview aggregation, are now live in `Nexus1.Bff`.
