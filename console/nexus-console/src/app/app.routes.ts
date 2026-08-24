@@ -61,8 +61,14 @@ export const routes: Routes = [
   { path: 'reactor3d', title: '3D Reactor View', data: { title: '3D Reactor View', chapter: 15 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
 
   // Rod Inspection group (2)
-  { path: 'insp-overview', title: 'Inspection Overview', data: { title: 'Inspection Overview', chapter: 16 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'ndt-methods', title: 'NDT Methods', data: { title: 'NDT Methods', chapter: 16 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Rod Inspection cluster (Ch. 16) -- Inspection Overview, NDT Methods,
+  // and Rod Type/Film all map to Maintenance's one real generic
+  // asset/condition endpoint; Rod Type/Film is not built at all (nothing
+  // real to show -- see asset-condition.ts's own doc comment). NDT
+  // Methods is genuinely static reference content, not a duplicate view
+  // over the live list, so it gets its own component.
+  { path: 'insp-overview', title: 'Inspection Overview', loadComponent: () => import('./features/asset-condition/asset-condition').then((m) => m.AssetConditionComponent) },
+  { path: 'ndt-methods', title: 'NDT Methods', loadComponent: () => import('./features/ndt-methods/ndt-methods').then((m) => m.NdtMethodsComponent) },
 
   // Personnel group (2)
   { path: 'personnel-overview', title: 'Personnel Overview', data: { title: 'Personnel Overview', chapter: 17 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },

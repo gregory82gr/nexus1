@@ -1,0 +1,12 @@
+.ndt-methods { display: flex; flex-direction: column; gap: 14px; }
+.header .ph { font-family: 'Chakra Petch', sans-serif; font-weight: 600; }
+.header .tag { color: var(--text-dim); font-size: 10px; margin-left: 8px; }
+.header .sub { color: var(--text-dim); font-size: 11px; margin-top: 6px; }
+
+.table .row { display: flex; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.table .row:last-child { border-bottom: none; }
+.code { flex: 0 0 auto; width: 40px; font-family: 'Chakra Petch', sans-serif; font-weight: 600; color: var(--cyan); }
+.body .name { font-size: 13px; margin-bottom: 4px; }
+.body .sub { color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+.body .sub strong { color: var(--text); font-weight: 600; }
+.body .note { color: var(--amber); }

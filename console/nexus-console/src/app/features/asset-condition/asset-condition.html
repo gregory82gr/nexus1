@@ -1,0 +1,67 @@
+<div class="asset-condition">
+  <div class="panel consolidation-note">
+    <span class="pill info">INSPECTION OVERVIEW</span>
+    <p class="sub">
+      The book's Rod Inspection cluster (Inspection Overview, NDT Methods, Rod Type/Film) maps to
+      one real endpoint here (<code>GET /maintenance/units/{{ unitId() }}/assets</code>) — Maintenance
+      has no rod-specific entity anywhere, only a generic maintainable-asset/condition model. No
+      radiograph, indication, or acceptance verdict is shown: none of that is real data, and drawing a
+      convincing fake one is exactly what this book's own Ch. 16 warns against. Rod Type/Film is not
+      built — there is nothing real to show. See the separate NDT Methods page for the (genuinely
+      authored, non-fabricated) reference table.
+    </p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching asset conditions from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      <div class="panel summary">
+        <span class="pill info">ASSETS ASSESSED</span>
+        <h2>{{ assessedCount() }} / {{ totalCount }}</h2>
+        <p class="sub">assets with a recorded condition assessment, across {{ loadedGroups.length }} categor{{ loadedGroups.length === 1 ? 'y' : 'ies' }}</p>
+      </div>
+
+      @if (loadedGroups.length === 0) {
+        <div class="panel state-panel">
+          <span class="pill nosource">NO ASSETS</span>
+          <p class="sub">No assets are recorded for this unit yet.</p>
+        </div>
+      }
+
+      @for (group of loadedGroups; track group.category) {
+        <div class="panel group">
+          <div class="ph"><h2>{{ group.category }}</h2><span class="tag">{{ group.assets.length }} assets</span></div>
+          @for (asset of group.assets; track asset.assetCode) {
+            <div class="row">
+              <div class="ln">
+                {{ asset.name }} <span class="sub">({{ asset.assetCode }})</span>
+                @if (asset.isSafetyRelated) {
+                  <span class="pill warn">SAFETY</span>
+                }
+              </div>
+              @if (asset.latestConditionGrade !== null) {
+                <div class="figures">
+                  <span class="pill ok">{{ asset.latestConditionGrade }}</span>
+                  <span class="sub">{{ asset.latestHealthScorePercent }}% · {{ asset.latestRemainingUsefulLifeDays }}d RUL</span>
+                </div>
+              } @else {
+                <span class="pill nosource">NO ASSESSMENT</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+</div>

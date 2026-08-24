@@ -1,0 +1,27 @@
+<div class="ndt-methods">
+  <div class="panel header">
+    <span class="ph">NDT METHODS <span class="tag">REFERENCE — NOT PLANT DATA</span></span>
+    <p class="sub">
+      A reference table of nondestructive testing methods — general domain knowledge, not a
+      measurement or a claim about any specific asset. No backend call happens on this screen.
+      Rod-specific inspection results (Inspection Overview / Rod Type-Film) are not shown here or
+      anywhere in this console: nothing real exists to populate them with.
+    </p>
+  </div>
+
+  <div class="panel table">
+    @for (m of methods; track m.code) {
+      <div class="row">
+        <div class="code">{{ m.code }}</div>
+        <div class="body">
+          <div class="name">{{ m.name }}</div>
+          <div class="sub"><strong>Detects:</strong> {{ m.detects }}</div>
+          <div class="sub"><strong>Typical use:</strong> {{ m.typicalUse }}</div>
+          @if (m.note) {
+            <div class="sub note">{{ m.note }}</div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
