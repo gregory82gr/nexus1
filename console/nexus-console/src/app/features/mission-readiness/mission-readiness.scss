@@ -1,0 +1,34 @@
+.mission-readiness { display: flex; flex-direction: column; gap: 14px; }
+.note .sub { margin-top: 6px; color: var(--text-dim); font-size: 11px; }
+
+.ph { margin-bottom: 8px; }
+.ph h2 { font-size: 13px; margin: 0; font-family: 'Chakra Petch', sans-serif; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.row:last-of-type { border-bottom: none; }
+.ln { font-size: 12px; }
+.figures { display: flex; align-items: center; gap: 8px; }
+.sub { color: var(--text-dim); font-size: 11px; }
+.detail { margin: -2px 0 6px; font-style: italic; }
+
+.lookup-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.lookup-row label { color: var(--text-dim); font-size: 11px; }
+.lookup-row input {
+  width: 90px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 12px;
+}
+.btn {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}

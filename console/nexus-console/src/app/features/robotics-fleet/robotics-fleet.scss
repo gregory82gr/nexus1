@@ -1,0 +1,12 @@
+.robotics-fleet { display: flex; flex-direction: column; gap: 14px; }
+.note .sub { margin-top: 6px; color: var(--text-dim); font-size: 11px; }
+
+.robots .ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.robots .ph h2 { font-size: 13px; margin: 0; font-family: 'Chakra Petch', sans-serif; }
+.tag { color: var(--text-dim); font-size: 10px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: none; }
+.ln { font-size: 12px; }
+.figures { display: flex; align-items: center; gap: 8px; }
+.figures .sub { color: var(--text-dim); font-size: 10px; }
+.state-panel { max-width: 320px; }

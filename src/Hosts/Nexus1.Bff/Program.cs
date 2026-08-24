@@ -514,6 +514,29 @@ app.MapGet("/api/v1/robotics/units/{id:int}", async (int id, [FromServices] GetU
     return Results.Ok(result.Value);
 });
 
+// Mission Readiness drill-down (Robotics cluster, Ch. 19 follow-up) -- two
+// thin additions wrapping Application-layer queries that already existed
+// (GetBlockingReadinessFailuresQuery/GetMissionTimelineQuery, atlas
+// C.12.5.2 queries 3 and 4) but had never been mapped to any BFF route.
+// Both scoped to a specific, already-known MissionId (a long, not an
+// int -- MissionId's own underlying type), matching the real domain: a
+// MissionReadinessAssessment is a recorded verdict for one already-
+// dispatched mission, with named blocking checks -- not a live
+// capability-matching engine over abstract mission types. No new
+// Application/Infrastructure code needed; both finders were already
+// registered in DI.
+app.MapGet("/api/v1/robotics/missions/{id:long}/readiness-failures", async (long id, [FromServices] GetBlockingReadinessFailuresQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new GetBlockingReadinessFailuresQuery(id), cancellationToken);
+    return Results.Ok(result.Value);
+});
+
+app.MapGet("/api/v1/robotics/missions/{id:long}/timeline", async (long id, [FromServices] GetMissionTimelineQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new GetMissionTimelineQuery(id), cancellationToken);
+    return Results.Ok(result.Value);
+});
+
 // Reactor sub-screens (Core, Control Rods, Kinetics, Neutronics, Coolant/TH,
 // Steam Generators — six of the book's seven Reactor screens; the seventh,
 // Model Analysis, is a separate real grouping, below) — ONE endpoint, not six.

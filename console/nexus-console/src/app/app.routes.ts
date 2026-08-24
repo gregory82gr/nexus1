@@ -92,8 +92,15 @@ export const routes: Routes = [
   { path: 'waste', title: 'Waste & Spent Fuel', data: { title: 'Waste & Spent Fuel', chapter: 18 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
 
   // Robotics & Vehicles group (2)
-  { path: 'robotics-overview', title: 'Robotics Fleet Overview', data: { title: 'Robotics Fleet Overview', chapter: 19 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'robotics-readiness', title: 'Mission Readiness', data: { title: 'Mission Readiness', chapter: 19 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Robotics & Vehicles (Ch. 19). Fleet Overview is fully real (robot
+  // status/health, no dose field anywhere in the domain). Mission
+  // Readiness is reshaped around the real recorded-assessment model
+  // (MissionReadinessAssessment/MissionReadinessItem) rather than the
+  // book's own live capability-matching engine over abstract mission
+  // types, which the real domain has no data to support -- see
+  // features/mission-readiness/mission-readiness.ts's own doc comment.
+  { path: 'robotics-overview', title: 'Robotics Fleet Overview', loadComponent: () => import('./features/robotics-fleet/robotics-fleet').then((m) => m.RoboticsFleetComponent) },
+  { path: 'robotics-readiness', title: 'Mission Readiness', loadComponent: () => import('./features/mission-readiness/mission-readiness').then((m) => m.MissionReadinessComponent) },
 
   // Zone Access group (2)
   { path: 'access-presence', title: 'Live Presence', data: { title: 'Live Presence', chapter: 20 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
