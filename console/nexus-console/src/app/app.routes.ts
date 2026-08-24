@@ -103,8 +103,14 @@ export const routes: Routes = [
   { path: 'robotics-readiness', title: 'Mission Readiness', loadComponent: () => import('./features/mission-readiness/mission-readiness').then((m) => m.MissionReadinessComponent) },
 
   // Zone Access group (2)
-  { path: 'access-presence', title: 'Live Presence', data: { title: 'Live Presence', chapter: 20 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'access-matrix', title: 'Permissions Matrix', data: { title: 'Permissions Matrix', chapter: 20 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Zone Access (Ch. 20) -- neither Permissions Matrix nor Live Presence
+  // has any real backing anywhere in this solution (no class-to-zone
+  // authorization, no presence/badge/entry-log concept, checked across
+  // every context's domain layer). Both routes point at the same
+  // real, honestly-labeled zone registry instead -- see
+  // features/zone-registry/zone-registry.ts's own doc comment.
+  { path: 'access-presence', title: 'Live Presence', data: { focusLabel: 'Live Presence' }, loadComponent: () => import('./features/zone-registry/zone-registry').then((m) => m.ZoneRegistryComponent) },
+  { path: 'access-matrix', title: 'Permissions Matrix', data: { focusLabel: 'Permissions Matrix' }, loadComponent: () => import('./features/zone-registry/zone-registry').then((m) => m.ZoneRegistryComponent) },
 
   // remaining flat screens (16)
   { path: 'power', title: 'Power & Grid', data: { title: 'Power & Grid', chapter: 21 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },

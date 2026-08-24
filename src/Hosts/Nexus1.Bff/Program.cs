@@ -490,6 +490,31 @@ app.MapGet("/api/v1/radiation-monitoring/units/{id:int}", async (int id, [FromSe
     return Results.Ok(result.Value);
 });
 
+// Zone Access cluster (Ch. 20 follow-up) — a thin addition wrapping an
+// Application-layer query that already existed
+// (GetActiveRadiationZonesQuery/ActiveRadiationZoneDto, atlas C.13.5.2
+// query 1) but had never been mapped to any BFF route. Fleet-wide (no
+// {id} parameter at all — the query itself takes none), unlike the
+// per-unit UnitRadiationSafetyDto.Zones slice above.
+//
+// Neither of the book's own two Zone Access screens (Permissions Matrix
+// — which entity class may enter which zone; Live Presence — named
+// people, real-time zone, violation flag) has ANY real backing anywhere
+// in this solution, checked directly across every context's domain
+// layer, not just Security's own already-known RBAC-only finding: no
+// class-to-zone authorization mapping and no presence/badge/entry-log
+// concept exists anywhere. This endpoint exposes the one real,
+// thematically-adjacent capability that does exist — the physical zone
+// registry itself (RadiationZone: code, name, classification, status,
+// optional home unit) — named honestly as a zone registry, not
+// misrepresented as either book screen. See the frontend's own
+// zone-registry component doc comment for the full reasoning.
+app.MapGet("/api/v1/radiation-monitoring/zones", async ([FromServices] GetActiveRadiationZonesQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new GetActiveRadiationZonesQuery(), cancellationToken);
+    return Results.Ok(result.Value);
+});
+
 // Trends & History screen: per-unit root-cause case history (ADR-030
 // follow-up slice). This is investigation-case history (RootCause analyses
 // opened from an alarm flood, eventually closed with a verdict), NOT a

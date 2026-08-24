@@ -1,0 +1,60 @@
+<div class="zone-registry">
+  <div class="panel note">
+    <span class="pill info">{{ focusLabel }}</span>
+    <p class="sub">
+      Neither of the book's own two Zone Access screens has any real backing anywhere in this
+      solution: no class-to-zone permissions matrix exists (Security's own domain is
+      application-level RBAC only — roles and permissions, never a physical zone), and no
+      real-time presence, badge, or entry-log concept exists either, anywhere. This screen shows
+      the one real, thematically-adjacent capability that does exist — the physical radiation-zone
+      registry, fleet-wide — grouped by real classification, not by an invented entity-class
+      taxonomy. Named honestly as a zone registry, not a permissions matrix or a presence view.
+    </p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching zones from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      <div class="panel summary">
+        <span class="pill info">ZONES REGISTERED</span>
+        <h2>{{ totalCount }}</h2>
+        <p class="sub">across {{ loadedGroups.length }} classification{{ loadedGroups.length === 1 ? '' : 's' }}</p>
+      </div>
+
+      @if (loadedGroups.length === 0) {
+        <div class="panel state-panel">
+          <span class="pill nosource">NO ZONES</span>
+          <p class="sub">No active zones are recorded.</p>
+        </div>
+      }
+
+      @for (group of loadedGroups; track group.classification) {
+        <div class="panel group">
+          <div class="ph"><h2>{{ group.classification }}</h2><span class="tag">{{ group.zones.length }} zones</span></div>
+          @for (zone of group.zones; track zone.code) {
+            <div class="row">
+              <div class="ln">
+                {{ zone.name }} <span class="sub">({{ zone.code }})</span>
+                @if (zone.unitCode) {
+                  <span class="pill nosource">{{ zone.unitCode }}</span>
+                }
+              </div>
+              <span class="pill" [class.ok]="zone.status === 'POSTED'" [class.nosource]="zone.status !== 'POSTED'">{{ zone.status }}</span>
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+</div>
