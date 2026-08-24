@@ -1,0 +1,60 @@
+<div class="reactor-instr">
+  <div class="panel consolidation-note">
+    <span class="pill info">{{ focusLabel }}</span>
+    <p class="sub">
+      This screen, and the Core / Control Rods / Neutronics / Coolant-TH / Steam &amp; Secondary nav
+      entries that all lead here, read the same one real signal feed
+      (<code>GET /instrumentation/units/{{ unitId() }}/signals</code>). The real backend has no
+      separate entity per subsystem — only generic tagged signals, grouped below by their real
+      category, not by the nav label you clicked. Control Rods has no move/SCRAM controls here: this
+      console never sends reactor commands, on any screen.
+    </p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching signals from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      <div class="panel summary">
+        <span class="pill info">SIGNALS REPORTING</span>
+        <h2>{{ reportingCount() }} / {{ totalCount }}</h2>
+        <p class="sub">signals with a recorded reading, across {{ loadedGroups.length }} categor{{ loadedGroups.length === 1 ? 'y' : 'ies' }}</p>
+      </div>
+
+      @if (loadedGroups.length === 0) {
+        <div class="panel state-panel">
+          <span class="pill nosource">NO SIGNALS</span>
+          <p class="sub">No signals are recorded for this unit yet.</p>
+        </div>
+      }
+
+      @for (group of loadedGroups; track group.categoryCode) {
+        <div class="panel group">
+          <div class="ph"><h2>{{ group.categoryCode }}</h2><span class="tag">{{ group.signals.length }} signals</span></div>
+          @for (signal of group.signals; track signal.tag) {
+            <div class="row">
+              <div class="ln">{{ signal.name }} <span class="sub">({{ signal.tag }})</span></div>
+              @if (signal.latestValue !== null) {
+                <span class="pill" [class.crit]="signal.latestQualityCode !== 'GOOD'" [class.ok]="signal.latestQualityCode === 'GOOD'">
+                  {{ signal.latestValue }} · {{ signal.latestQualityCode }}
+                </span>
+              } @else {
+                <span class="pill nosource">NO READING</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+</div>

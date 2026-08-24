@@ -1,0 +1,52 @@
+<div class="analysis">
+  <div class="panel header">
+    <span class="ph">MODEL ANALYSIS <span class="tag">VERIFICATION, NOT VALIDATION</span></span>
+    <p class="sub">
+      This page checks whether this console's own point-kinetics implementation
+      (<code>core/physics/point-kinetics.ts</code>) matches the formula it documents —
+      that is answerable entirely from inside the software, with no plant data. It does not, and
+      cannot, check whether that formula matches any real reactor: the constants are illustrative,
+      chosen for drill pacing, and no commissioning data from any real unit was ever consulted. No
+      backend call happens on this screen at all.
+    </p>
+    <p class="sub">
+      Narrower than a full physics-solver audit, by design: this app's shared model evaluates the
+      exact analytic exponential every call rather than numerically integrating an ODE, so there is
+      no discretization/integration error to find here — only whether the code's output matches its
+      own defining equation, computed independently and compared below.
+    </p>
+  </div>
+
+  <div class="panel summary" [class.hot]="!allPassed">
+    <span class="pill" [class.ok]="allPassed" [class.crit]="!allPassed">{{ allPassed ? 'ALL CHECKS PASS' : 'CHECK FAILURE' }}</span>
+    <p class="sub">{{ checks.length }} checks, computed live in this browser on page load — not pre-recorded.</p>
+  </div>
+
+  <div class="panel checks">
+    <div class="ph"><h2>Checks</h2></div>
+    @for (c of checks; track c.name) {
+      <div class="row">
+        <div class="ln">
+          {{ c.name }}
+          <div class="sub">{{ c.note }}</div>
+        </div>
+        <div class="figures">
+          <div class="sub">expected {{ c.expected | number: '1.0-6' }}</div>
+          <div class="sub">actual {{ c.actual | number: '1.0-6' }}</div>
+          <span class="pill" [class.ok]="c.passed" [class.crit]="!c.passed">{{ c.passed ? 'PASS' : 'FAIL' }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="panel constants">
+    <div class="ph"><h2>Model constants</h2></div>
+    <div class="row"><div class="ln">Reactivity gain</div><div class="val">{{ constants.REACTIVITY_GAIN_PER_PCM_PER_SEC }} /pcm/s</div></div>
+    <div class="row"><div class="ln">SCRAM decay rate</div><div class="val">{{ constants.SCRAM_DECAY_PER_SEC }} /s</div></div>
+    <div class="row"><div class="ln">Power bounds</div><div class="val">{{ constants.MIN_POWER_PERCENT }}–{{ constants.MAX_POWER_PERCENT }}%</div></div>
+    <p class="sub gap-note">
+      Illustrative, chosen for Training Mode's drill pacing — not derived from, and not validated
+      against, any specific reactor design.
+    </p>
+  </div>
+</div>

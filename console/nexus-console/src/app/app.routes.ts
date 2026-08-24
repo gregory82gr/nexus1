@@ -29,16 +29,35 @@ export const routes: Routes = [
   // endpoint rather than the book's fleet-wide physical plant scene; see
   // features/plant-3d/plant-3d.ts's own doc comment for the full reasoning.
   { path: 'plant3d', title: 'Plant 3D View', loadComponent: () => import('./features/plant-3d/plant-3d').then((m) => m.Plant3dComponent) },
-  { path: 'training', title: 'Training Mode', data: { title: 'Training Mode', chapter: 9 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Training Mode (Ch. 9) -- genuinely self-contained, confirmed before
+  // building: no BFF call anywhere in the feature, no shared service or
+  // type with any real-plant screen (features/training/drill-store.ts's
+  // own doc comment, and containment.spec.ts).
+  { path: 'training', title: 'Training Mode', loadComponent: () => import('./features/training/training').then((m) => m.TrainingComponent) },
 
-  // Reactor group (8)
-  { path: 'core', title: 'Core', data: { title: 'Core', chapter: 10 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'rods', title: 'Control Rods', data: { title: 'Control Rods', chapter: 10 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'neutronics', title: 'Neutronics', data: { title: 'Neutronics', chapter: 11 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'kinetics', title: 'Reactor Kinetics', data: { title: 'Reactor Kinetics', chapter: 11 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'coolant', title: 'Coolant / TH', data: { title: 'Coolant / TH', chapter: 12 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'steam', title: 'Steam & Secondary', data: { title: 'Steam & Secondary', chapter: 13 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'analysis', title: 'Model Analysis', data: { title: 'Model Analysis', chapter: 14 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Reactor group (8). Core, Control Rods, Neutronics, Coolant/TH, and
+  // Steam & Secondary all point at the same ReactorInstrumentationComponent
+  // -- consolidated after investigation found the real backend has one
+  // generic signal feed behind all five, not five distinct groupings (see
+  // features/reactor-instrumentation/reactor-instrumentation.ts's own doc
+  // comment). `focusLabel` is bound via withComponentInputBinding() from
+  // each route's own `data` -- orientation only, not a data filter.
+  { path: 'core', title: 'Core', data: { focusLabel: 'Core' }, loadComponent: () => import('./features/reactor-instrumentation/reactor-instrumentation').then((m) => m.ReactorInstrumentationComponent) },
+  { path: 'rods', title: 'Control Rods', data: { focusLabel: 'Control Rods' }, loadComponent: () => import('./features/reactor-instrumentation/reactor-instrumentation').then((m) => m.ReactorInstrumentationComponent) },
+  { path: 'neutronics', title: 'Neutronics', data: { focusLabel: 'Neutronics' }, loadComponent: () => import('./features/reactor-instrumentation/reactor-instrumentation').then((m) => m.ReactorInstrumentationComponent) },
+  // Reactor Kinetics stays its own real screen -- not a different backend
+  // source (same one signals endpoint), but genuine client-side work the
+  // others don't need: deriving reactor period from real polled readings
+  // via core/physics/point-kinetics.ts, instead of a raw percent delta.
+  { path: 'kinetics', title: 'Reactor Kinetics', loadComponent: () => import('./features/reactor-kinetics/reactor-kinetics').then((m) => m.ReactorKineticsComponent) },
+  { path: 'coolant', title: 'Coolant / TH', data: { focusLabel: 'Coolant / TH' }, loadComponent: () => import('./features/reactor-instrumentation/reactor-instrumentation').then((m) => m.ReactorInstrumentationComponent) },
+  { path: 'steam', title: 'Steam & Secondary', data: { focusLabel: 'Steam & Secondary' }, loadComponent: () => import('./features/reactor-instrumentation/reactor-instrumentation').then((m) => m.ReactorInstrumentationComponent) },
+  // Model Analysis (Ch. 14) -- built as the book intends: fully
+  // client-side solver verification, no BFF call. The real signal-quality
+  // endpoint stays unused here; it's a genuinely different real thing
+  // (live telemetry trust), tracked separately for a future, honestly
+  // named screen rather than shoehorned into this one.
+  { path: 'analysis', title: 'Model Analysis', loadComponent: () => import('./features/model-analysis/model-analysis').then((m) => m.ModelAnalysisComponent) },
   { path: 'reactor3d', title: '3D Reactor View', data: { title: '3D Reactor View', chapter: 15 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
 
   // Rod Inspection group (2)
