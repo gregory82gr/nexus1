@@ -10,7 +10,16 @@
   @for (entry of nav; track entry.label) {
     @if (isGroup(entry)) {
       <div class="navgroup" [class.open]="isOpen(entry)">
-        <div class="grouphead" (click)="toggle(entry)">
+        <div
+          class="grouphead"
+          [class.active]="isActiveGroup(entry)"
+          role="button"
+          tabindex="0"
+          [attr.aria-expanded]="isOpen(entry)"
+          (click)="toggle(entry)"
+          (keydown.enter)="toggle(entry)"
+          (keydown.space)="toggle(entry); $event.preventDefault()"
+        >
           {{ entry.label }}<span class="chev">&#9654;</span>
         </div>
         <div class="subnav">

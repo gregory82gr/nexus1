@@ -1,5 +1,5 @@
-import { Component, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 export interface NavEntry {
   path: string;
@@ -88,8 +88,22 @@ export const NAV: (NavEntry | NavGroup)[] = [
   { path: 'about', label: 'About', icon: '' },
 ];
 
-function isGroup(entry: NavEntry | NavGroup): entry is NavGroup {
+export function isGroup(entry: NavEntry | NavGroup): entry is NavGroup {
   return 'children' in entry;
+}
+
+// Pure, exported for testing without a router: given the current URL and
+// the nav tree, which group (if any) contains the active child route.
+// Matches on a leading-segment basis (`/core` or `/core/anything`) since
+// every entry here is a single flat path segment.
+export function findActiveGroupLabel(url: string, nav: readonly (NavEntry | NavGroup)[]): string | null {
+  const clean = url.split('?')[0].split('#')[0];
+  for (const entry of nav) {
+    if (isGroup(entry) && entry.children.some((child) => clean === `/${child.path}` || clean.startsWith(`/${child.path}/`))) {
+      return entry.label;
+    }
+  }
+  return null;
 }
 
 @Component({
@@ -100,15 +114,54 @@ function isGroup(entry: NavEntry | NavGroup): entry is NavGroup {
   styleUrl: './sidebar.scss',
 })
 export class SidebarComponent {
+  private readonly router = inject(Router);
+
   nav = NAV;
   isGroup = isGroup;
 
   // Nothing mutates NAV itself, so it isn't a service -- only which groups
-  // are open is component state.
-  private openGroups = signal(new Set<string>());
+  // are open is component state. Seeded with the group containing the
+  // initial route already open, so a direct navigation/refresh onto a
+  // nested route (e.g. /core) never lands on a collapsed group hiding its
+  // own active link.
+  private openGroups = signal(new Set<string>(SidebarComponent.groupsFor(this.router.url)));
+
+  // Reactive so the group-header active indicator (and further
+  // auto-expansion) updates on every navigation, not just component
+  // construction -- a plain `router.url` read wouldn't re-trigger this
+  // app's zoneless change detection on its own.
+  private readonly currentUrl = signal(this.router.url);
+
+  constructor() {
+    this.router.events.subscribe((event) => {
+      if (!(event instanceof NavigationEnd)) return;
+      const url = event.urlAfterRedirects;
+      this.currentUrl.set(url);
+      const label = findActiveGroupLabel(url, this.nav);
+      if (label && !this.openGroups().has(label)) {
+        const next = new Set(this.openGroups());
+        next.add(label);
+        this.openGroups.set(next);
+      }
+    });
+  }
+
+  private static groupsFor(url: string): string[] {
+    const label = findActiveGroupLabel(url, NAV);
+    return label ? [label] : [];
+  }
 
   isOpen(entry: NavGroup): boolean {
     return this.openGroups().has(entry.label);
+  }
+
+  // Drives the collapsed-group indicator: true when the active route is
+  // one of this group's children, regardless of whether the group is
+  // currently expanded. This is the fix for the gap that made a
+  // collapsed group give no sign at all that the current page was
+  // inside it.
+  isActiveGroup(entry: NavGroup): boolean {
+    return findActiveGroupLabel(this.currentUrl(), this.nav) === entry.label;
   }
 
   toggle(entry: NavGroup): void {
