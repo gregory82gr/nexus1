@@ -1,0 +1,72 @@
+.training { display: flex; flex-direction: column; gap: 14px; }
+
+.trn-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--amber);
+  border-radius: 6px;
+  background: repeating-linear-gradient(135deg, rgba(255, 176, 0, 0.09) 0 10px, rgba(255, 176, 0, 0.03) 10px 20px);
+  color: var(--text-dim);
+  font-size: 11px;
+}
+.trn-banner strong, .controls .ph, .score-value {
+  font-family: 'Chakra Petch', sans-serif;
+}
+.trn-banner strong { display: block; color: var(--amber); margin-bottom: 2px; }
+.trn-banner .dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: var(--amber);
+  animation: trn-pulse 1.4s ease-in-out infinite;
+}
+@keyframes trn-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.controls .ph { font-weight: 600; }
+.controls .tag, .sep { color: var(--text-dim); font-size: 10px; margin-left: 8px; }
+.control-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+.btn {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn.chip { padding: 4px 8px; }
+.btn.chip.sel { border-color: var(--cyan); color: var(--cyan); }
+.btn.chip.crit { border-color: var(--red); color: var(--red); }
+
+.grid.c-3 { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 12px; }
+.ph { display: block; margin-bottom: 8px; font-size: 13px; }
+
+.drill-card { padding: 8px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.drill-card.sel { color: var(--cyan); }
+.drill-card.disabled { cursor: default; opacity: 0.6; }
+.drill-card .name { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.drill-card .sub, .stat .lbl { color: var(--text-dim); font-size: 10px; }
+.stat .lbl { text-transform: uppercase; }
+
+.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }
+.stat .val, .scram-flag { margin-bottom: 8px; }
+.stat .val { font-size: 16px; margin-top: 2px; }
+
+.rod-row input[type='range'] { width: 100%; margin: 8px 0; }
+.rod-quick { display: flex; gap: 6px; flex-wrap: wrap; }
+.gap-note { margin-top: 10px; }
+
+.score-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+.score-value { font-size: 32px; }
+.score-value.muted { color: var(--text-mute); }
+.score-marker { color: var(--amber); font-size: 10px; }

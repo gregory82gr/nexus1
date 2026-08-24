@@ -1,0 +1,54 @@
+<div class="kinetics">
+  <div class="panel note">
+    <span class="pill info">REACTOR KINETICS</span>
+    <p class="sub">
+      Period is derived from real polled readings of the unit's power-like signal (see
+      power-signal.ts), not simulated: d(ln P)/dt between the two most recent polls, the same
+      textbook rate a reactor period uses. Polling every {{ pollIntervalSeconds }}s;
+      period shows as ∞ s (critical) until at least two distinct readings have arrived, and stays
+      ∞ s if the value never changes between polls — this backend's data does not update in real
+      time on its own.
+    </p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching signals from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      @if (powerSignal; as sig) {
+        <div class="stat-row">
+          <div class="panel stat">
+            <div class="lbl">REACTOR POWER (PROXY)</div>
+            <div class="val">{{ sig.latestValue }}</div>
+            <div class="sub">{{ sig.name }} ({{ sig.tag }})</div>
+          </div>
+          <div class="panel stat">
+            <div class="lbl">REACTOR PERIOD</div>
+            <div class="val">{{ periodLabel }}</div>
+            <div class="sub">poll {{ pollCount() }}</div>
+          </div>
+          <div class="panel stat">
+            <div class="lbl">AS OF</div>
+            <div class="val small">{{ sig.latestTimestampUtc }}</div>
+            <div class="sub">quality {{ sig.latestQualityCode }}</div>
+          </div>
+        </div>
+      } @else {
+        <div class="panel state-panel">
+          <span class="pill nosource">NO SOURCE</span>
+          <p class="sub">No power-like signal (CategoryCode POWER or NEUTRONICS) is reporting for this unit.</p>
+        </div>
+      }
+    }
+  }
+</div>

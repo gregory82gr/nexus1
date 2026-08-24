@@ -1,0 +1,8 @@
+.kinetics { display: flex; flex-direction: column; gap: 14px; }
+.note .sub { margin-top: 6px; color: var(--text-dim); font-size: 11px; }
+.stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.stat .lbl { color: var(--text-dim); font-size: 10px; }
+.stat .val { font-size: 22px; margin: 4px 0 2px; }
+.stat .val.small { font-size: 12px; }
+.stat .sub { color: var(--text-dim); font-size: 10px; }
+.state-panel { max-width: 320px; }

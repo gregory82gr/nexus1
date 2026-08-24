@@ -1,0 +1,22 @@
+.panel {
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border-radius: 6px;
+  padding: 14px 15px;
+  position: relative;
+}
+.panel.hot { border-color: var(--line-hot); }
+
+.pill {
+  display: inline-block; font-size: 9px;
+  letter-spacing: .8px; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 3px; font-weight: 600;
+}
+.pill.ok { background: rgba(61,220,132,.13); color: var(--green); }
+.pill.warn { background: rgba(255,176,0,.13); color: var(--amber); }
+.pill.crit { background: rgba(255,59,70,.14); color: var(--red); }
+.pill.info { background: rgba(34,211,238,.12); color: var(--cyan); }
+// Added in the Overview screen (Ch. 6): the book's own fifth pill state --
+// "renders each row with a NO SOURCE pill in --text-mute" -- not needed
+// until a screen had an unsourced claim to mark.
+.pill.nosource { background: rgba(60,82,87,.25); color: var(--text-mute); }

@@ -1,0 +1,102 @@
+<div class="training">
+  <div class="trn-banner">
+    <span class="dot"></span>
+    <div>
+      <strong>TRAINING EXERCISE — NOT A LIVE PLANT.</strong>
+      Drills run on a local, simplified point-kinetics simulator. For skills demonstration only —
+      not a certified operator-training simulator, confers no qualification, and has no control
+      authority over any plant.
+    </div>
+  </div>
+
+  <div class="panel controls">
+    <span class="ph">DRILL CONTROL <span class="tag">{{ store.phase() | uppercase }}</span></span>
+    <div class="control-row">
+      <button class="btn" [disabled]="!selectedDrill || store.phase() === 'running'" (click)="store.start()">▶ Start</button>
+      <button class="btn" [disabled]="store.phase() === 'idle'" (click)="store.abort()">Abort</button>
+      @if (store.phase() === 'frozen') {
+        <button class="btn" (click)="store.resume()">▶ Resume</button>
+      } @else {
+        <button class="btn" [disabled]="store.phase() !== 'running'" (click)="store.freeze()">❙❙ Freeze</button>
+      }
+      <button class="btn" (click)="store.reset()">Reset reactor</button>
+
+      <span class="sep">Time×</span>
+      @for (m of timeMultipliers; track m) {
+        <button class="btn chip" [class.sel]="store.timeMultiplier() === m" (click)="store.setTimeMultiplier(m)">{{ m }}×</button>
+      }
+    </div>
+  </div>
+
+  <div class="grid c-3">
+    <div class="panel drills">
+      <span class="ph">DRILLS</span>
+      @for (drill of drills; track drill.id) {
+        <div
+          class="drill-card"
+          [class.sel]="store.selectedDrillId() === drill.id"
+          [class.disabled]="store.phase() === 'running'"
+          (click)="store.selectDrill(drill.id)"
+        >
+          <div class="name">{{ drill.name }} <span class="pill info">{{ drill.difficulty }}</span></div>
+          <div class="sub">{{ drill.description }}</div>
+        </div>
+      }
+    </div>
+
+    <div class="panel reactor">
+      <span class="ph">LIVE REACTOR <span class="tag">SIMULATED — POINT KINETICS</span></span>
+      <div class="stat-row">
+        <div class="stat"><div class="lbl">REACTOR POWER</div><div class="val">{{ store.reactor().powerPercent | number: '1.1-1' }}%</div></div>
+        <div class="stat"><div class="lbl">TARGET</div><div class="val">{{ targetLabel() }}</div></div>
+        <div class="stat"><div class="lbl">REACTOR PERIOD</div><div class="val">{{ periodLabel() }}</div></div>
+        <div class="stat"><div class="lbl">ROD REACTIVITY</div><div class="val">{{ store.rodPositionPcm() }} pcm</div></div>
+      </div>
+
+      @if (store.reactor().scrammed) {
+        <div class="scram-flag"><span class="pill crit">⚠ SCRAMMED</span></div>
+      }
+
+      <div class="rod-row">
+        <label class="lbl" for="rod-slider">Control rod bank (reactivity)</label>
+        <input
+          id="rod-slider"
+          type="range"
+          min="-400"
+          max="120"
+          step="1"
+          [value]="store.rodPositionPcm()"
+          (input)="onRodInput($any($event.target).value)"
+        />
+        <div class="rod-quick">
+          <button class="btn chip" (click)="store.nudgeRod(-50)">−50</button>
+          <button class="btn chip" (click)="store.nudgeRod(-10)">−10</button>
+          <button class="btn chip" (click)="store.setRodPosition(0)">Critical (0)</button>
+          <button class="btn chip" (click)="store.nudgeRod(10)">+10</button>
+          <button class="btn chip" (click)="store.nudgeRod(50)">+50</button>
+          <button class="btn chip crit" (click)="store.scram()">⚠ SCRAM</button>
+        </div>
+      </div>
+      <p class="sub gap-note">These controls drive the simulation only. They are not wired to any command endpoint and cannot be.</p>
+    </div>
+
+    <div class="panel objective">
+      <span class="ph">OBJECTIVE &amp; SCORE <span class="tag">{{ countdownLabel() }}</span></span>
+      @if (!selectedDrill) {
+        <p class="sub">Select a drill to load its objectives.</p>
+      } @else {
+        <p class="sub">{{ selectedDrill.description }}</p>
+
+        @if (store.score(); as score) {
+          <div class="score-row">
+            <div class="score-value">{{ score.value }} / 100</div>
+            <span class="pill" [class.ok]="score.verdict === 'PASS'" [class.crit]="score.verdict === 'FAIL'">{{ score.verdict }}</span>
+          </div>
+          <div class="score-marker">UNCALIBRATED — demonstration scoring, not a validated training standard</div>
+        } @else {
+          <div class="score-row"><div class="score-value muted">— / 100</div></div>
+        }
+      }
+    </div>
+  </div>
+</div>

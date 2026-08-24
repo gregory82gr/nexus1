@@ -1,0 +1,23 @@
+.analysis { display: flex; flex-direction: column; gap: 14px; }
+.header .ph { font-family: 'Chakra Petch', sans-serif; font-weight: 600; }
+.header .tag { color: var(--text-dim); font-size: 10px; margin-left: 8px; }
+.header .sub, .gap-note { color: var(--text-dim); font-size: 11px; margin-top: 6px; }
+.header code { color: var(--cyan); font-size: 10px; }
+
+.summary { display: flex; align-items: center; gap: 10px; }
+.summary .sub { color: var(--text-dim); font-size: 11px; }
+
+.ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ph h2 { font-size: 13px; margin: 0; }
+
+.checks .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.checks .row:last-child { border-bottom: none; }
+.checks .ln { font-size: 12px; max-width: 60%; }
+.checks .ln .sub { color: var(--text-dim); font-size: 10px; margin-top: 2px; }
+.figures { display: flex; align-items: center; gap: 10px; text-align: right; }
+.figures .sub { color: var(--text-dim); font-size: 10px; }
+
+.constants .row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--line); }
+.constants .row:last-of-type { border-bottom: none; }
+.constants .ln { font-size: 12px; color: var(--text-dim); }
+.constants .val { font-size: 12px; }

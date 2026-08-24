@@ -1,0 +1,28 @@
+<aside class="nav">
+  <div class="brand">
+    <div class="reactor-mark"></div>
+    <div>
+      <div class="nm">NEXUS-1</div>
+      <div class="sub">Operator Console</div>
+    </div>
+  </div>
+
+  @for (entry of nav; track entry.label) {
+    @if (isGroup(entry)) {
+      <div class="navgroup" [class.open]="isOpen(entry)">
+        <div class="grouphead" (click)="toggle(entry)">
+          {{ entry.label }}<span class="chev">&#9654;</span>
+        </div>
+        <div class="subnav">
+          @for (child of entry.children; track child.path) {
+            <a class="subitem" [routerLink]="child.path" routerLinkActive="active">{{ child.label }}</a>
+          }
+        </div>
+      </div>
+    } @else {
+      <a class="navitem" [routerLink]="entry.path" routerLinkActive="active">
+        <span class="ic">{{ entry.icon }}</span>{{ entry.label }}
+      </a>
+    }
+  }
+</aside>

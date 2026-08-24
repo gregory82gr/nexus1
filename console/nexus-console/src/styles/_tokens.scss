@@ -1,0 +1,26 @@
+// Ported unchanged from index.html :root -- do not re-choose these values.
+// The hex codes are the visual contract with the Phase-0 console.
+
+:root {
+  /* surfaces */
+  --bg: #070b0c;        --bg-grid: #0d1517;
+  --panel: #0c1416;     --panel-2: #0f1a1d;
+
+  /* structure */
+  --line: #1a2a2e;      --line-hot: #26464d;
+
+  /* text */
+  --text: #cfe3e6;      --text-dim: #5f7a80;   --text-mute: #3c5257;
+
+  /* signal colours */
+  --cyan: #22d3ee;      --cyan-deep: #0e7490;
+  --amber: #ffb000;     --green: #3ddc84;
+  --red: #ff3b46;       --violet: #9d7bff;     --magenta: #ff5da2;
+}
+
+// Compile-time mirrors, for SCSS math and clearer call-sites.
+$cyan: #22d3ee;
+$green: #3ddc84;
+$amber: #ffb000;
+$red: #ff3b46;
+$violet: #9d7bff;

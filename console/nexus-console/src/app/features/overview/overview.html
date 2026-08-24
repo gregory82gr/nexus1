@@ -1,0 +1,125 @@
+<div class="overview">
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching the overview from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      <div class="stat-row">
+        <div class="panel stat">
+          <div class="ph">POWER</div>
+          @if (overview?.unit?.latestPowerPercent !== null && overview?.unit?.latestPowerPercent !== undefined) {
+            <div class="val">{{ overview!.unit!.latestPowerPercent }}%</div>
+          } @else {
+            <span class="pill warn">NO READING</span>
+          }
+        </div>
+        <div class="panel stat">
+          <div class="ph">AVAILABILITY</div>
+          <span class="pill nosource">NO SOURCE</span>
+        </div>
+      </div>
+
+      <section class="grid c-21">
+        <div class="panel hot">
+          <div class="ph">
+            <h2>Live Signals</h2>
+            @if (sectionError('signals'); as err) {
+              <span class="pill crit">UNREACHABLE</span>
+            } @else {
+              <span class="tag">{{ overview?.signals?.length ?? 0 }} signals</span>
+            }
+          </div>
+          @if (sectionError('signals'); as err) {
+            <p class="sub">{{ err }}</p>
+          } @else if (overview?.signals?.length) {
+            @for (sig of overview!.signals!; track sig.tag) {
+              <div class="row">
+                <div class="ln">{{ sig.name }} <span class="sub">({{ sig.tag }})</span></div>
+                @if (sig.latestValue !== null) {
+                  <span class="pill info">{{ sig.latestValue }} {{ sig.latestQualityCode }}</span>
+                } @else {
+                  <span class="pill nosource">NO READING</span>
+                }
+              </div>
+            }
+          } @else {
+            <div class="mimic offline"><span class="nosource">NO SIGNALS</span></div>
+          }
+        </div>
+
+        <div class="panel">
+          <div class="ph"><h2>Section Status</h2></div>
+          @for (section of ['unit', 'activeAlarms', 'radiation', 'signals']; track section) {
+            <div class="row">
+              <div class="ln">{{ section }}</div>
+              @if (sectionError(section); as err) {
+                <span class="pill crit" [title]="err">ERROR</span>
+              } @else {
+                <span class="pill ok">OK</span>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="grid c-12">
+        <div class="panel">
+          <div class="ph"><h2>Recent Power Snapshots</h2><span class="tag">last {{ overview?.unit?.recentPowerSnapshots?.length ?? 0 }}</span></div>
+          @if (overview?.unit?.recentPowerSnapshots?.length) {
+            @for (snap of overview!.unit!.recentPowerSnapshots; track snap.recordedAtUtc) {
+              <div class="row"><div class="ln">{{ snap.recordedAtUtc }}</div><div class="val">{{ snap.powerPercent }}%</div></div>
+            }
+          } @else {
+            <span class="pill nosource">NO HISTORY</span>
+          }
+        </div>
+
+        <div class="panel">
+          <div class="ph"><h2>Recent Alarms</h2><span class="tag">{{ alarmCount() }} active</span></div>
+          @if (sectionError('activeAlarms'); as err) {
+            <p class="sub">{{ err }}</p>
+          } @else if (overview?.activeAlarms?.length) {
+            @for (alarm of overview!.activeAlarms!; track alarm.alarmEventId) {
+              <div class="row alarm-row">
+                <span class="pill" [class.crit]="alarm.severity === 'CRIT'" [class.warn]="alarm.severity === 'WARN'" [class.info]="alarm.severity !== 'CRIT' && alarm.severity !== 'WARN'">{{ alarm.severity }}</span>
+                <div class="ln">{{ alarm.message }}</div>
+                <div class="sub">{{ alarm.raisedAtUtc }}</div>
+              </div>
+            }
+          } @else {
+            <span class="pill ok">NO ACTIVE ALARMS</span>
+          }
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="ph"><h2>Radiation / Safety</h2></div>
+        @if (sectionError('radiation'); as err) {
+          <p class="sub">{{ err }}</p>
+        } @else if (overview?.radiation) {
+          @for (mon of overview!.radiation!.monitors; track mon.monitorCode) {
+            <div class="row">
+              <div class="ln">{{ mon.monitorName }} ({{ mon.monitorStatus }})</div>
+              @if (mon.latestValue !== null) {
+                <span class="pill info">{{ mon.latestValue }} {{ mon.engineeringUnitSymbol }}</span>
+              } @else {
+                <span class="pill nosource">NO READING</span>
+              }
+            </div>
+          }
+        } @else {
+          <span class="pill nosource">NO DATA</span>
+        }
+      </section>
+    }
+  }
+</div>

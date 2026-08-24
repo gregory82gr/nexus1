@@ -1,0 +1,15 @@
+// Named gap: as with the sidebar, the book's own pixel-precise topbar CSS
+// was not present in the chapter excerpts available for this port.
+.topbar {
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  height: 58px;
+}
+.title { font-family: 'Chakra Petch', sans-serif; font-weight: 600; }
+.scope { color: var(--text-dim); font-size: 12px; }
+.badge { margin-left: auto; }
+.clock { font-variant-numeric: tabular-nums; color: var(--text-dim); }
