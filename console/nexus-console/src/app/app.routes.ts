@@ -81,7 +81,13 @@ export const routes: Routes = [
   { path: 'personnel-stress', title: 'Stress Test', loadComponent: () => import('./features/absence-stress-test/absence-stress-test').then((m) => m.AbsenceStressTestComponent) },
 
   // Plant Lifecycle group (3)
-  { path: 'aging', title: 'Aging & Degradation', data: { title: 'Aging & Degradation', chapter: 18 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Plant Lifecycle (Ch. 18). Ageing & Degradation is real (real
+  // DegradationRecord/DegradationTrendPoint data, unlike the book's own
+  // fully-generated source) and gets a real screen. Decommissioning and
+  // Waste & Spent Fuel are not built at all -- checked directly, neither
+  // has any entity anywhere in Maintenance's domain, a total-absence
+  // gap like Security's own zone-access finding, not missing fields.
+  { path: 'aging', title: 'Aging & Degradation', loadComponent: () => import('./features/ageing-degradation/ageing-degradation').then((m) => m.AgeingDegradationComponent) },
   { path: 'decommissioning', title: 'Decommissioning', data: { title: 'Decommissioning', chapter: 18 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'waste', title: 'Waste & Spent Fuel', data: { title: 'Waste & Spent Fuel', chapter: 18 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
 

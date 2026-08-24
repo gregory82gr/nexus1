@@ -1,0 +1,57 @@
+<div class="ageing">
+  <div class="panel note">
+    <span class="pill info">AGEING &amp; DEGRADATION</span>
+    <p class="sub">
+      No life-consumed percentages or progress bars here, by design: a filled bar asserts continuous
+      measurement toward a known, monotonic endpoint, which almost nothing on a decade timescale
+      (vessel embrittlement, tube wear, insulation ageing) actually has. Each case below shows its
+      real mechanism, severity, when it was detected, and how many measured trend points exist —
+      a count of data points, not a fabricated percentage. Fleet-wide, not scoped to one unit — the
+      real query behind this has no unit parameter at all. No per-point chart is shown: the endpoint
+      returns a trend-point count, not the individual measured values or a limit to chart them
+      against.
+    </p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching active degradation cases from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      @if (loadedCases.length === 0) {
+        <div class="panel state-panel">
+          <span class="pill nosource">NO ACTIVE CASES</span>
+          <p class="sub">No active degradation cases are recorded across the fleet.</p>
+        </div>
+      } @else {
+        <div class="panel cases">
+          <div class="ph"><h2>Active Cases</h2><span class="tag">{{ loadedCases.length }} across the fleet</span></div>
+          @for (c of loadedCases; track c.assetCode + c.mechanism) {
+            <div class="row">
+              <div class="ln">
+                {{ c.assetCode }}
+                <span class="sub">{{ c.mechanism }}</span>
+              </div>
+              <div class="figures">
+                <span class="sub">detected {{ c.detectedAtUtc }}</span>
+                <span class="pill" [class.ok]="toneOf(c.severity) === 'ok'" [class.warn]="toneOf(c.severity) === 'warn'" [class.crit]="toneOf(c.severity) === 'crit'" [class.nosource]="toneOf(c.severity) === 'unknown'">
+                  {{ c.severity }}
+                </span>
+                <span class="pill info">{{ c.trendPoints }} measured point{{ c.trendPoints === 1 ? '' : 's' }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+</div>

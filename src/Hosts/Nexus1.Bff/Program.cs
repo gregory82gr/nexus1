@@ -701,6 +701,23 @@ app.MapGet("/api/v1/maintenance/units/{id:int}/assets", async (int id, [FromServ
     return Results.Ok(result.Value);
 });
 
+// Ageing & Degradation screen (Plant Lifecycle cluster, ADR-030 follow-up)
+// -- a thin addition wrapping an Application-layer query that already
+// existed (GetActiveDegradationCasesQuery/ActiveDegradationCaseDto, atlas
+// C.9.5.2 query 5) but had never been mapped to any BFF route. Genuinely
+// fleet-wide (no {id} parameter at all) -- the query itself takes none,
+// matching the same "ByUnit-named but actually fleet-wide" shape already
+// seen in this context's other finders. Returns each active case's asset
+// code, mechanism, severity, and a COUNT of trend points (not the
+// individual measured values, and no limit/threshold) -- exactly the
+// "last real reading and how many exist, not a percentage" shape this
+// screen's own book chapter argues for, not a coincidence.
+app.MapGet("/api/v1/maintenance/degradation-cases", async ([FromServices] GetActiveDegradationCasesQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new GetActiveDegradationCasesQuery(), cancellationToken);
+    return Results.Ok(result.Value);
+});
+
 // Named gap: "Component Registry" is NOT an honest name for what CorePlatform
 // actually models. CorePlatform has no physical-equipment/component entity
 // anywhere — its own "components" (DeploymentVersion.ComponentName/ComponentType)
