@@ -1,0 +1,98 @@
+<div class="plant3d">
+  <div class="toolbar panel">
+    <span class="ph">PLANT 3D VIEW <span class="tag">TWIN BINDING</span></span>
+    <p class="note">
+      Derived from real data: twin status, declared fidelity, and the authoritative flag for the
+      selected unit's active twin model. Everything else in this scene -- shape, motion, camera
+      distance -- is illustrative, the same disclosure discipline as the book's own Plant 3D View.
+    </p>
+  </div>
+
+  <div class="stage-row">
+    <div class="stage-wrap panel">
+      <div #stage class="stage"></div>
+
+      @switch (state().status) {
+        @case ('loading') {
+          <div class="fallback">
+            <span class="pill info">LOADING</span>
+            <p>Fetching twin state from Nexus1.Bff…</p>
+          </div>
+        }
+        @case ('error') {
+          <div class="fallback hot">
+            <span class="pill crit">UNREACHABLE</span>
+            <p>{{ errorMessage }}</p>
+          </div>
+        }
+      }
+
+      @if (unavailable()) {
+        <div class="fallback">
+          <span class="pill warn">3D UNAVAILABLE</span>
+          <p>three.js could not start in this browser (WebGL unsupported, or the chunk failed to load).</p>
+        </div>
+      }
+
+      <div class="marker">REPRESENTATIVE VISUAL · not a survey model</div>
+    </div>
+
+    <div class="info panel">
+      @switch (state().status) {
+        @case ('loading') {
+          <p class="sub">Waiting on twin state…</p>
+        }
+        @case ('error') {
+          <p class="sub">{{ errorMessage }}</p>
+        }
+        @case ('loaded') {
+          @if (loadedTwin; as twin) {
+            <div class="ph"><h2>{{ twin.twinName }}</h2></div>
+
+            <div class="row"><div class="ln">Twin code</div><div class="val">{{ twin.twinCode }}</div></div>
+            <div class="row"><div class="ln">Model type</div><div class="val">{{ twin.modelType }}</div></div>
+
+            <div class="row">
+              <div class="ln">Status</div>
+              <span class="pill" [class.ok]="tone === 'ok'" [class.warn]="tone === 'warn'" [class.crit]="tone === 'crit'" [class.nosource]="tone === 'unknown'">
+                {{ twin.status }}
+              </span>
+            </div>
+
+            <div class="row"><div class="ln">Fidelity</div><div class="val">{{ twin.fidelity }}</div></div>
+
+            @if (fidelityBand !== null) {
+              <div class="row"><div class="ln">Trust band</div><div class="val">{{ fidelityBand! + 1 }} / 5</div></div>
+            } @else {
+              <div class="row"><div class="ln">Trust band</div><span class="pill nosource">UNRECOGNIZED</span></div>
+            }
+
+            <div class="row">
+              <div class="ln">Authoritative</div>
+              @if (twin.isAuthoritative) {
+                <span class="pill ok">YES</span>
+              } @else {
+                <span class="pill nosource">NO</span>
+              }
+            </div>
+
+            <p class="sub gap-note">
+              Not shown: divergence / sync-drift data (a named backend gap -- the join doesn't
+              exist as a query yet) and the book's own physical plant layout (containments,
+              turbines, per-class steam-generator counts) -- none of those inputs exist for this
+              unit in the real domain. Drag the object above to rotate it.
+            </p>
+          } @else {
+            <div class="ph"><h2>No twin modeled</h2></div>
+            <span class="pill nosource">NO TWIN</span>
+            <p class="sub gap-note">
+              Unit {{ unitId() }} has no active twin model recorded. This is a real, HTTP&nbsp;200
+              response from the endpoint (an empty list), not a fault -- a unit legitimately having
+              no digital twin yet is not an error condition, per the endpoint's own prior evidence.
+            </p>
+          }
+        }
+      }
+    </div>
+  </div>
+</div>

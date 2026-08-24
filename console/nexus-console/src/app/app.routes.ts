@@ -25,7 +25,10 @@ export const routes: Routes = [
   // Plant Fleet (Ch. 7) -- the first screen with a real, wired-up backend
   // call, replacing the placeholder.
   { path: 'fleet', title: 'Plant Fleet', loadComponent: () => import('./features/fleet/fleet').then((m) => m.FleetComponent) },
-  { path: 'plant3d', title: 'Plant 3D View', data: { title: 'Plant 3D View', chapter: 8 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Plant 3D View (Ch. 8) -- reshaped around the real per-unit digital-twin
+  // endpoint rather than the book's fleet-wide physical plant scene; see
+  // features/plant-3d/plant-3d.ts's own doc comment for the full reasoning.
+  { path: 'plant3d', title: 'Plant 3D View', loadComponent: () => import('./features/plant-3d/plant-3d').then((m) => m.Plant3dComponent) },
   { path: 'training', title: 'Training Mode', data: { title: 'Training Mode', chapter: 9 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
 
   // Reactor group (8)
