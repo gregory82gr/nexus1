@@ -71,8 +71,14 @@ export const routes: Routes = [
   { path: 'ndt-methods', title: 'NDT Methods', loadComponent: () => import('./features/ndt-methods/ndt-methods').then((m) => m.NdtMethodsComponent) },
 
   // Personnel group (2)
-  { path: 'personnel-overview', title: 'Personnel Overview', data: { title: 'Personnel Overview', chapter: 17 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'personnel-stress', title: 'Stress Test', data: { title: 'Stress Test', chapter: 17 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Personnel (Ch. 17) -- department-scoped (core/state/department-state.ts),
+  // deliberately rendering less than the real data allows: no names are
+  // fetched into either screen's own component state, matching the
+  // book's own minimization argument. Sector Roster (the book's "one
+  // screen that needs names") is not built -- it needs a real route
+  // guard, and none exists yet in this console.
+  { path: 'personnel-overview', title: 'Personnel Overview', loadComponent: () => import('./features/personnel-overview/personnel-overview').then((m) => m.PersonnelOverviewComponent) },
+  { path: 'personnel-stress', title: 'Stress Test', loadComponent: () => import('./features/absence-stress-test/absence-stress-test').then((m) => m.AbsenceStressTestComponent) },
 
   // Plant Lifecycle group (3)
   { path: 'aging', title: 'Aging & Degradation', data: { title: 'Aging & Degradation', chapter: 18 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },

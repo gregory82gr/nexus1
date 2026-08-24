@@ -1,0 +1,27 @@
+.stress-test { display: flex; flex-direction: column; gap: 14px; }
+.note .sub { margin-top: 6px; color: var(--text-dim); font-size: 11px; }
+.scenario-picker { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.scenario-picker label { color: var(--text-dim); font-size: 11px; }
+.scenario-picker input {
+  width: 70px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.summary { display: flex; align-items: center; gap: 10px; }
+.summary .sub { color: var(--text-dim); font-size: 11px; }
+
+.gaps .ph { margin-bottom: 8px; }
+.gaps .ph h2 { font-size: 13px; margin: 0; font-family: 'Chakra Petch', sans-serif; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.row:last-of-type { border-bottom: none; }
+.ln { font-size: 12px; }
+.figures { display: flex; align-items: center; gap: 8px; }
+.figures .sub { color: var(--text-dim); font-size: 10px; }
+.notes { margin: -2px 0 4px; font-style: italic; }
+.state-panel { max-width: 320px; }

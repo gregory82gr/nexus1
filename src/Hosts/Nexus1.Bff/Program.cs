@@ -651,6 +651,23 @@ app.MapGet("/api/v1/organization/departments/{id:int}/roster", async (int id, [F
     return Results.Ok(result.Value);
 });
 
+// Absence Stress Test screen (Personnel cluster, ADR-030 follow-up) — a
+// thin addition wrapping an Application-layer query that already existed
+// (GetLatestStaffingGapsQuery/StaffingScenarioGapDto, atlas C.3.8 query 3)
+// but had never been mapped to any BFF route. Position-level required-vs-
+// available headcount for a named staffing scenario's most recently
+// recorded evaluation — no names, no absence reasons, matching the same
+// minimization shape the roster endpoint's own screen (Personnel Overview)
+// deliberately renders down to. An empty array means the scenario has
+// never been evaluated (no recorded StaffingScenarioResult yet), not an
+// error — same "real 200, not a 404" convention as every other list
+// endpoint in this host.
+app.MapGet("/api/v1/organization/staffing-scenarios/{id:int}/gaps", async (int id, [FromServices] GetLatestStaffingGapsQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new GetLatestStaffingGapsQuery(id), cancellationToken);
+    return Results.Ok(result.Value);
+});
+
 // Named gap: this is NOT a "Zone Access" (physical/area access) endpoint —
 // Security's domain model has no zone/physical-access concept anywhere.
 // ApplicationUser/ApplicationRole/Permission/PermissionCategory are entirely

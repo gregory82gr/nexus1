@@ -1,0 +1,69 @@
+<div class="personnel-overview">
+  <div class="panel note">
+    <span class="pill info">PERSONNEL OVERVIEW</span>
+    <p class="sub">
+      Department-scoped, not unit-scoped — Organization's hierarchy has no connection to a
+      ReactorFleet unit at all. Shows position counts and safety-critical coverage only: the real
+      roster includes each person's name, but the question this screen answers ("does the
+      department meet its complement, is every safety-critical position covered?") doesn't need
+      one, so no name is fetched into this component's own state, let alone rendered. The one
+      screen that would need names — contacting a specific qualified person — is not built: it
+      needs a real route guard, and none exists yet in this console.
+    </p>
+    <div class="dept-picker">
+      <label for="dept-id">Department ID</label>
+      <input id="dept-id" type="number" min="1" [value]="departmentState.selectedId()" (change)="onDepartmentIdInput($any($event.target).value)" />
+    </div>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching the roster from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      @if (summary; as s) {
+        <div class="stat-row">
+          <div class="panel stat">
+            <div class="lbl">TOTAL ASSIGNED</div>
+            <div class="val">{{ s.totalCount }}</div>
+          </div>
+          <div class="panel stat">
+            <div class="lbl">SAFETY-CRITICAL POSITIONS FILLED</div>
+            <div class="val">{{ s.safetyCriticalCount }}</div>
+          </div>
+        </div>
+
+        @if (s.positions.length === 0) {
+          <div class="panel state-panel">
+            <span class="pill nosource">NO ROSTER</span>
+            <p class="sub">No one is currently assigned to this department.</p>
+          </div>
+        } @else {
+          <div class="panel positions">
+            <div class="ph"><h2>Position Coverage</h2><span class="tag">{{ s.positions.length }} distinct positions</span></div>
+            @for (p of s.positions; track p.positionTitle) {
+              <div class="row">
+                <div class="ln">
+                  {{ p.positionTitle }}
+                  @if (p.anySafetyCritical) {
+                    <span class="pill warn">SAFETY-CRITICAL</span>
+                  }
+                </div>
+                <div class="val">{{ p.count }}</div>
+              </div>
+            }
+          </div>
+        }
+      }
+    }
+  }
+</div>
