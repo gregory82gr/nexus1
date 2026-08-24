@@ -1,0 +1,26 @@
+.personnel-overview { display: flex; flex-direction: column; gap: 14px; }
+.note .sub { margin-top: 6px; color: var(--text-dim); font-size: 11px; }
+.dept-picker { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.dept-picker label { color: var(--text-dim); font-size: 11px; }
+.dept-picker input {
+  width: 70px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.stat-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.stat .lbl { color: var(--text-dim); font-size: 10px; }
+.stat .val { font-size: 22px; margin-top: 4px; }
+
+.positions .ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.positions .ph h2 { font-size: 13px; margin: 0; font-family: 'Chakra Petch', sans-serif; }
+.tag { color: var(--text-dim); font-size: 10px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: none; }
+.ln { font-size: 12px; display: flex; align-items: center; gap: 8px; }
+.state-panel { max-width: 320px; }

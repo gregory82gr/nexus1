@@ -24,14 +24,52 @@
 .navitem, .grouphead, .subitem {
   display: block;
   padding: 7px 14px;
+  border-left: 3px solid transparent; // reserved so the active accent bar never shifts layout
   color: var(--text-dim);
   text-decoration: none;
   cursor: pointer;
 }
-.navitem.active, .subitem.active { color: var(--cyan); background: var(--panel-2); }
 .grouphead { display: flex; justify-content: space-between; align-items: center; }
+.subitem { padding-left: 25px; } // 28px minus the 3px border reserved above
+
+// Hover -- a plain, subtle lift, deliberately weaker than both the active
+// treatment below and the focus-visible outline further down, so the
+// three states stay visually distinct from one another.
+.navitem:hover, .grouphead:hover, .subitem:hover {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+// Active (route-current) -- panel/panel-2 alone (#0c1416 vs #0f1a1d) are
+// too close in value to read as a real background shift, so this pairs
+// the color change with a genuinely visible cyan-tinted wash and a left
+// accent bar, not text color alone.
+.navitem.active, .subitem.active, .grouphead.active {
+  color: var(--cyan);
+  background: rgba(34, 211, 238, 0.1);
+  border-left-color: var(--cyan);
+}
+
+// Collapsed-group indicator -- the fix for the gap where a collapsed
+// group gave no sign at all that the active route lived inside it.
+// isActiveGroup() (sidebar.ts) drives .grouphead.active regardless of
+// whether .subnav is open, so this rule alone covers the collapsed case;
+// the group is also auto-expanded on navigation (sidebar.ts's own
+// NavigationEnd handling), so in practice a user only sees the
+// collapsed-but-active state for the instant before it opens, or if they
+// deliberately re-collapse an already-active group.
+.grouphead.active { font-weight: 600; }
+
+// Keyboard focus -- a distinct treatment from both hover and the
+// route-active state (violet, not cyan), and genuinely reachable: the
+// group header is a plain <div> with a click handler, so it also needs
+// tabindex/keydown handling (sidebar.html) for this to mean anything.
+.navitem:focus-visible, .grouphead:focus-visible, .subitem:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: -2px;
+}
+
 .chev { font-size: 8px; transition: transform 0.15s; }
 .navgroup.open .chev { transform: rotate(90deg); }
 .navgroup:not(.open) .subnav { display: none; }
-.subitem { padding-left: 28px; font-size: 12px; }
 .ic { margin-right: 8px; }

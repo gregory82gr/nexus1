@@ -1,0 +1,65 @@
+<div class="stress-test">
+  <div class="panel note">
+    <span class="pill info">ABSENCE STRESS TEST</span>
+    <p class="sub">
+      Role slots, not people — this screen holds no names, and the endpoint behind it doesn't carry
+      any. Scenarios remove role slots; no colleague is marked absent by a simulation. Position
+      titles are not resolved here: the endpoint returns a raw position id with no name lookup, so
+      that's rendered honestly rather than guessed from an unrelated department's own roster.
+    </p>
+    <div class="scenario-picker">
+      <label for="scenario-id">Staffing Scenario ID</label>
+      <input id="scenario-id" type="number" min="1" [value]="scenarioId()" (change)="onScenarioIdInput($any($event.target).value)" />
+    </div>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching the latest scenario result from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      @if (loadedGaps.length === 0) {
+        <div class="panel state-panel">
+          <span class="pill nosource">NOT EVALUATED</span>
+          <p class="sub">This scenario has never been evaluated — no recorded result exists yet.</p>
+        </div>
+      } @else {
+        <div class="panel summary" [class.hot]="breachedCount() > 0">
+          <span class="pill" [class.ok]="breachedCount() === 0" [class.crit]="breachedCount() > 0">
+            {{ breachedCount() > 0 ? 'STAFFING BREACH' : 'ADEQUATE' }}
+          </span>
+          <p class="sub">{{ breachedCount() }} of {{ loadedGaps.length }} positions short of the required count.</p>
+        </div>
+
+        <div class="panel gaps">
+          <div class="ph"><h2>Position Coverage</h2></div>
+          @for (gap of loadedGaps; track gap.positionId) {
+            <div class="row">
+              <div class="ln">Position #{{ gap.positionId }}</div>
+              <div class="figures">
+                <span class="sub">{{ gap.availableCount }} / {{ gap.requiredCount }} required</span>
+                @if (gap.gapCount > 0) {
+                  <span class="pill crit">SHORT {{ gap.gapCount }}</span>
+                } @else {
+                  <span class="pill ok">COVERED</span>
+                }
+              </div>
+            </div>
+            @if (gap.notes) {
+              <p class="sub notes">{{ gap.notes }}</p>
+            }
+          }
+        </div>
+      }
+    }
+  }
+</div>
