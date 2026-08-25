@@ -1,0 +1,9 @@
+.component-registry { display: flex; flex-direction: column; gap: 14px; }
+.note .sub, .checks .sub { margin-top: 6px; color: var(--text-dim); font-size: 11px; }
+.ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ph h2 { font-size: 13px; margin: 0; font-family: 'Chakra Petch', sans-serif; }
+.tag { color: var(--text-dim); font-size: 10px; }
+.sub { color: var(--text-dim); font-size: 11px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: none; }
+.ln { font-size: 12px; font-weight: 600; }

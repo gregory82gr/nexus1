@@ -151,11 +151,48 @@ export const routes: Routes = [
   // RootCause has no scored causal graph per ADR-005).
   { path: 'ai', title: 'AI Diagnostics', loadComponent: () => import('./features/ai-diagnostics/ai-diagnostics').then((m) => m.AiDiagnosticsComponent) },
 
-  // remaining flat screens (12)
-  { path: 'rlopt', title: 'Optimization (RL)', data: { title: 'Optimization (RL)', chapter: 25 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'trends', title: 'Trends & History', data: { title: 'Trends & History', chapter: 26 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'deps', title: 'System Dependencies', data: { title: 'System Dependencies', chapter: 27 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'components', title: 'Component Registry', data: { title: 'Component Registry', chapter: 28 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Optimization (Ch. 25) -- ADR-026: ReinforcementLearning is training/
+  // persistence only, no live advisory computation anywhere. Shows the
+  // real active policy grid (a stored snapshot that can drift from the
+  // underlying Q-table, not the book's own recomputed-on-read SQL view)
+  // and real clamped-recommendation history -- both already-live BFF
+  // routes, no new backend code. No training-run/reward-trend panel: no
+  // query for either exists in this codebase. See
+  // features/optimization/optimization.ts's own doc comment.
+  { path: 'rlopt', title: 'Optimization (RL)', loadComponent: () => import('./features/optimization/optimization').then((m) => m.OptimizationComponent) },
+
+  // Trends & History (Ch. 26) -- two concrete corrections, no data panel.
+  // Storage note corrected (SQL Server/EF Core, never the book's
+  // PostgreSQL + TimescaleDB claim). Availability stays NO SOURCE,
+  // exactly as Ch.6 first marked it: no online/offline transition and no
+  // scram/trip-with-actor event is ever recorded anywhere in this
+  // backend, a total absence of the retention mechanism itself, not a
+  // thin history -- see features/trends/trends.ts's own doc comment for
+  // the full investigation.
+  { path: 'trends', title: 'Trends & History', loadComponent: () => import('./features/trends/trends').then((m) => m.TrendsComponent) },
+
+  // System Dependencies (Ch. 27) -- the book's Graph tab (default, loads
+  // first) discloses nothing about its edge weights/delays, though
+  // Matrix and Chain both honestly call theirs illustrative. Fixed
+  // structurally: one disclosure banner at this component's own
+  // container level, above the tab switch, plus every edge typed
+  // `kind: 'illustrative-topology'` directly on the data. Node status:
+  // checked directly, only 3 of 12 nodes (Neutron Flux, Thermal Power,
+  // Turbine) have real signal backing anywhere; the other 9 render a
+  // visually distinct NO SOURCE treatment, never a fabricated colour --
+  // see features/dependencies/dependencies.ts's own doc comment.
+  { path: 'deps', title: 'System Dependencies', loadComponent: () => import('./features/dependencies/dependencies').then((m) => m.DependenciesComponent) },
+
+  // Component Registry (Ch. 28) -- unlike every prior gap chapter, the
+  // book's own premise here is a REAL wear model (health from service
+  // years + SCRAM count + load), mis-disclosed only in placement. Checked
+  // directly: none of the three inputs are real/populated in this
+  // backend, and the book's own 11-12-component-per-unit premise is
+  // itself unsupported (1 real asset per unit, AssetComponent never
+  // populated). NO SOURCE, same shape as Ch.26's availability finding --
+  // see features/component-registry/component-registry.ts's own doc
+  // comment for the full investigation.
+  { path: 'components', title: 'Component Registry', loadComponent: () => import('./features/component-registry/component-registry').then((m) => m.ComponentRegistryComponent) },
   // Digital Twin: never individually audited by the book's own Appendix A --
   // chapter number below is a placed-near-neighbor judgment call, not an
   // asserted fact.

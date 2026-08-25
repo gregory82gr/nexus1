@@ -1,0 +1,6 @@
+.trends { display: flex; flex-direction: column; gap: 14px; }
+.ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ph h2 { font-size: 13px; margin: 0; font-family: 'Chakra Petch', sans-serif; }
+.tag { color: var(--text-dim); font-size: 10px; }
+.sub { color: var(--text-dim); font-size: 11px; margin-top: 6px; }
+.was { font-size: 12px; font-style: italic; text-decoration: line-through; color: var(--text-dim); }

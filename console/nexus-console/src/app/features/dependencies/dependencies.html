@@ -1,0 +1,169 @@
+<div class="dependencies">
+  <!--
+    THE SHARED BANNER -- rendered once, here, above the tab switch below.
+    Not inside any @switch case, not duplicated per tab: this is the
+    structural fix the chapter itself asks for, not an editorial one.
+  -->
+  <div class="panel banner" data-banner="illustrative">
+    <span class="pill nosource">EDGES: ILLUSTRATIVE-TOPOLOGY</span>
+    <span class="pill info">NODES: LIVE WHERE REAL, NO SOURCE OTHERWISE</span>
+    <p class="sub">
+      Every edge's weight and delay is a reasonable, simplified causal model — not identified from
+      plant data — same category as the point-kinetics model already ported. Node status is live
+      and real for the 3 nodes with an actual backing signal (Neutron Flux, Thermal Power,
+      Turbine); the other 9 are explicitly marked NO SOURCE below, never a fabricated colour.
+    </p>
+  </div>
+
+  <div class="panel tabbar">
+    <button type="button" class="tab" [class.active]="tab() === 'graph'" (click)="setTab('graph')">GRAPH</button>
+    <button type="button" class="tab" [class.active]="tab() === 'matrix'" (click)="setTab('matrix')">MATRIX</button>
+    <button type="button" class="tab" [class.active]="tab() === 'chain'" (click)="setTab('chain')">CAUSAL CHAIN</button>
+  </div>
+
+  @switch (tab()) {
+    @case ('graph') {
+      <div class="panel graphcanvas-panel">
+        <div class="ph"><h2>Dependency Graph</h2><span class="tag">{{ nodes.length }} nodes · {{ edges.length }} edges</span></div>
+        <p class="sub legend">
+          Solid = forward influence, width ∝ illustrative weight. Dashed violet = negative feedback
+          (xenon, fuel temp → reactivity).
+        </p>
+
+        <!--
+          An actual node-link diagram: real SVG lines connecting node
+          centers, not a card grid next to a flat text list. Line
+          endpoints and card positions share the same logical coordinate
+          space (dependency-graph.ts's NODE_POSITIONS), scaled together
+          so they never drift apart.
+        -->
+        <div class="graph-canvas">
+          <svg
+            class="graph-svg"
+            [attr.viewBox]="'0 0 ' + viewBoxWidth + ' ' + viewBoxHeight"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            <defs>
+              <marker id="arrow-forward" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--text-dim)" />
+              </marker>
+              <marker id="arrow-feedback" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#a78bfa" />
+              </marker>
+            </defs>
+            @for (l of edgeLines; track l.edge.from + l.edge.to) {
+              <line
+                [attr.x1]="l.x1" [attr.y1]="l.y1" [attr.x2]="l.x2" [attr.y2]="l.y2"
+                [attr.stroke-width]="l.strokeWidth"
+                [class.feedback-line]="l.edge.weight < 0"
+                [attr.marker-end]="l.edge.weight < 0 ? 'url(#arrow-feedback)' : 'url(#arrow-forward)'"
+                [attr.data-edge]="l.edge.from + '-' + l.edge.to"
+              />
+            }
+          </svg>
+
+          @for (n of nodes; track n.id) {
+            @let s = statusFor(n);
+            <div
+              class="node"
+              [attr.data-node]="n.id"
+              [attr.data-status]="s.kind"
+              [class.real]="s.kind === 'real'"
+              [class.gap]="s.kind === 'no-source'"
+              [style.left]="nodeStyles[n.id].left"
+              [style.top]="nodeStyles[n.id].top"
+            >
+              <div class="node-label">{{ n.label }}</div>
+              @switch (s.kind) {
+                @case ('real') {
+                  <span class="pill ok">LIVE</span>
+                  <div class="node-value">{{ s.value }}</div>
+                }
+                @case ('real-no-reading') {
+                  <span class="pill nosource">NO READING YET</span>
+                }
+                @case ('loading') {
+                  <span class="pill info">LOADING</span>
+                }
+                @case ('error') {
+                  <span class="pill crit">UNREACHABLE</span>
+                }
+                @case ('no-source') {
+                  <span class="pill nosource">NO SOURCE</span>
+                }
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="panel edgelist">
+        <div class="ph"><h2>Influence Edges — exact values</h2><span class="tag">{{ edges.length }} edges</span></div>
+        <p class="sub">The diagram above is the graph; this list is the same 14 edges as precise numbers, for reading exact weight and delay values off the same dataset.</p>
+        @for (e of edges; track e.from + e.to) {
+          <div class="row">
+            <div class="ln">
+              {{ labelOf(e.from) }} <span class="arrow" [class.feedback]="e.weight < 0">→</span> {{ labelOf(e.to) }}
+              @if (e.weight < 0) {
+                <span class="pill nosource">FEEDBACK</span>
+              }
+            </div>
+            <div class="ln"><span class="sub">weight {{ e.weight }}</span><span class="sub">delay {{ e.delaySeconds }}s</span></div>
+          </div>
+        }
+      </div>
+    }
+    @case ('matrix') {
+      <div class="panel matrix">
+        <div class="ph"><h2>Influence Matrix</h2><span class="tag">{{ nodes.length }}×{{ nodes.length }}</span></div>
+        <div class="matrix-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                @for (to of nodes; track to.id) {
+                  <th>{{ to.label }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (from of nodes; track from.id) {
+                <tr>
+                  <th>{{ from.label }}</th>
+                  @for (to of nodes; track to.id) {
+                    @let c = cell(from.id, to.id);
+                    <td [class.feedback]="c && c.weight < 0">
+                      @if (from.id === to.id) {
+                        <span class="sub">—</span>
+                      } @else if (c) {
+                        {{ c.weight }}
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+    @case ('chain') {
+      <div class="panel chain">
+        <div class="ph"><h2>Causal Chain</h2><span class="tag">illustrative trip reconstruction</span></div>
+        @for (e of chain; track e.from + e.to; let i = $index) {
+          <div class="row">
+            <div class="ln">
+              <span class="step">{{ i + 1 }}</span>
+              {{ labelOf(e.from) }} <span class="arrow">→</span> {{ labelOf(e.to) }}
+            </div>
+            <div class="ln"><span class="sub">weight {{ e.weight }}</span><span class="sub">+{{ e.delaySeconds }}s</span></div>
+          </div>
+        }
+        <p class="sub note">
+          Two negative-feedback edges (xenon, fuel temperature) loop back into Reactivity and are
+          not part of this straight-line reconstruction — see the Graph tab for the full topology.
+        </p>
+      </div>
+    }
+  }
+</div>

@@ -1,0 +1,113 @@
+<div class="optimization">
+  <div class="panel note">
+    <span class="pill nosource">NO LIVE ADVISOR</span>
+    <p class="sub">
+      This system has no running RL agent and no real-time "here's what to do next" advisory
+      engine anywhere (ADR-026: training/persistence only). No reward-trend or training-run
+      history is shown either — no query for either exists in this codebase; nothing here is
+      fabricated to fill the gap. What's shown below is real: the learned policy grid and a
+      history of past recommendations that were clamped to a safety band.
+    </p>
+  </div>
+
+  <div class="panel note">
+    <span class="pill info">ACTIVE POLICY GRID</span>
+    <p class="sub">
+      "Active policy" is a judgment call (most recent extraction from a final Q-table), not a
+      modeled fact — no IsCurrent flag exists. Policy/PolicyEntry are real, materialized tables,
+      not the book's own SQL view: this grid can drift from the underlying Q-table if the policy
+      isn't re-extracted after a training update. A snapshot as of its own extraction, not a
+      live-computed view.
+    </p>
+  </div>
+
+  @switch (policyState().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching the active policy from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('no-policy') {
+      <div class="panel state-panel">
+        <span class="pill nosource">NO POLICY YET</span>
+        <p class="sub">No final policy has ever been extracted from a training run.</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ policyErrorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      <div class="panel policy-grid">
+        <div class="ph"><h2>Policy Grid</h2><span class="tag">{{ loadedPolicyEntries.length }} states</span></div>
+        @for (e of loadedPolicyEntries; track e.stateIndex) {
+          <div class="row">
+            <div class="ln">{{ e.stateCode }} <span class="sub">state {{ e.stateIndex }}</span></div>
+            <div class="ln">
+              <span class="pill ok">{{ e.bestActionCode }}</span>
+              <span class="sub">Q={{ e.bestQValue }}</span>
+              @if (e.actionMargin !== null) {
+                <span class="sub">margin {{ e.actionMargin }}</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <div class="panel note">
+    <span class="pill info">CLAMPED RECOMMENDATIONS — RECORDED HISTORY, NOT LIVE</span>
+    <p class="sub">
+      Past advisory recommendations that were clamped to a safety band before use, already
+      recorded. Not a live "why this action" explanation — nothing in this codebase reads a
+      current plant state or computes a recommendation in response to it.
+    </p>
+  </div>
+
+  @switch (recommendationsState().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching clamped recommendations from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ recommendationsErrorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      @if (loadedRecommendations.length === 0) {
+        <div class="panel state-panel">
+          <span class="pill nosource">NO CLAMPED RECOMMENDATIONS</span>
+          <p class="sub">No recorded recommendation has ever been clamped.</p>
+        </div>
+      } @else {
+        <div class="panel recommendations">
+          <div class="ph"><h2>Clamped Recommendations</h2><span class="tag">{{ loadedRecommendations.length }} recorded</span></div>
+          @for (r of loadedRecommendations; track r.advisoryRecommendationId) {
+            <div class="row">
+              <div class="ln">
+                {{ r.stateCode }}
+                <span class="sub">requested {{ r.requestedAtUtc }}</span>
+              </div>
+              <div class="ln">
+                <span class="pill nosource">{{ r.recommendedActionCode }}</span>
+                <span class="sub">→</span>
+                <span class="pill ok">{{ r.clampedActionCode }}</span>
+              </div>
+            </div>
+            @if (r.clampReason) {
+              <p class="sub reason">{{ r.clampReason }}</p>
+            }
+          }
+        </div>
+      }
+    }
+  }
+</div>
