@@ -1,0 +1,45 @@
+<div class="trends">
+  <div class="panel storage-note">
+    <div class="ph"><h2>Storage Note</h2><span class="tag">CORRECTED</span></div>
+    <p class="was">was: "Backed by a time-series store (PostgreSQL + TimescaleDB)."</p>
+    <p class="sub">
+      Never true of this build. This solution persists exclusively through EF Core over SQL
+      Server (LocalDB in this development environment) — across every context built in this
+      arc. No PostgreSQL, no TimescaleDB, anywhere in this stack.
+    </p>
+  </div>
+
+  <div class="panel note">
+    <div class="ph"><h2>Availability</h2><span class="pill nosource">NO SOURCE</span></div>
+    <p class="sub">
+      Ch. 6 marked this figure NO SOURCE twenty chapters ago and it stays that way here: an
+      availability figure is a property of a retained history (online time ÷ elapsed time over
+      a stated window), and no such history exists in this backend to compute it from. Checked
+      directly: no unit online/offline transition is ever recorded anywhere (ReactorFleet.Unit
+      has no status field at all, only Code/Name), and no scram/trip event is ever recorded with
+      both a timestamp and an actor — the closest match, a "Trip" alarm severity, is
+      automatically raised with no actor field. This is a total absence of the retention
+      mechanism itself, not a thin history — so this screen does not show "insufficient
+      history" (that would imply a mechanism exists), and it does not show a computed
+      percentage of any kind.
+    </p>
+    <p class="sub">
+      Had the mechanism existed, the computation would have been: online time ÷ elapsed time
+      over an explicit window (e.g. trailing 30 days), reported only with its window and its
+      transition count, and marked UNCALIBRATED if the retained history were simulated rather
+      than real plant history — never a bare percentage. None of that runs today; described here
+      so the gap is precise, not vague.
+    </p>
+  </div>
+
+  <div class="panel note">
+    <span class="pill nosource">NO OTHER TREND PANEL SHOWN</span>
+    <p class="sub">
+      Two real, adjacent capabilities exist elsewhere in this console and are deliberately not
+      repeated here: RootCause's investigation-case history is already shown on AI Diagnostics
+      (Ch. 24), and ReactorFleet's real power-snapshot history is already shown on Overview
+      (Ch. 6). Showing either again here would duplicate an existing screen, not add a new real
+      capability.
+    </p>
+  </div>
+</div>

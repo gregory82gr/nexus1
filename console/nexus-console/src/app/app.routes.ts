@@ -161,8 +161,17 @@ export const routes: Routes = [
   // features/optimization/optimization.ts's own doc comment.
   { path: 'rlopt', title: 'Optimization (RL)', loadComponent: () => import('./features/optimization/optimization').then((m) => m.OptimizationComponent) },
 
-  // remaining flat screens (11)
-  { path: 'trends', title: 'Trends & History', data: { title: 'Trends & History', chapter: 26 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Trends & History (Ch. 26) -- two concrete corrections, no data panel.
+  // Storage note corrected (SQL Server/EF Core, never the book's
+  // PostgreSQL + TimescaleDB claim). Availability stays NO SOURCE,
+  // exactly as Ch.6 first marked it: no online/offline transition and no
+  // scram/trip-with-actor event is ever recorded anywhere in this
+  // backend, a total absence of the retention mechanism itself, not a
+  // thin history -- see features/trends/trends.ts's own doc comment for
+  // the full investigation.
+  { path: 'trends', title: 'Trends & History', loadComponent: () => import('./features/trends/trends').then((m) => m.TrendsComponent) },
+
+  // remaining flat screens (10)
   { path: 'deps', title: 'System Dependencies', data: { title: 'System Dependencies', chapter: 27 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'components', title: 'Component Registry', data: { title: 'Component Registry', chapter: 28 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   // Digital Twin: never individually audited by the book's own Appendix A --
