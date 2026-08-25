@@ -129,8 +129,18 @@ export const routes: Routes = [
   // features/radiation-safety/radiation-safety.ts's own doc comment.
   { path: 'rad', title: 'Radiation / Safety', loadComponent: () => import('./features/radiation-safety/radiation-safety').then((m) => m.RadiationSafetyComponent) },
 
-  // remaining flat screens (14)
-  { path: 'alarms', title: 'Alarms & Events', data: { title: 'Alarms & Events', chapter: 23 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Alarms & Events (Ch. 23) -- the book's own subject here is the
+  // aggregator itself: 11 decorative pooled events on a timer, mixed with
+  // a real #rod-scram trigger that fires before the rod it describes has
+  // actually moved. Neither the decorative generator nor that specific
+  // risk is ported: no timer here, and no SCRAM/rod-write path exists
+  // anywhere in this backend (Control Rods stay read-only everywhere) --
+  // see features/alarms-events/alarms-events.ts's own doc comment for the
+  // full investigation. Real list + a real acknowledge write, both
+  // already live and proven since the first BFF vertical slice.
+  { path: 'alarms', title: 'Alarms & Events', loadComponent: () => import('./features/alarms-events/alarms-events').then((m) => m.AlarmsEventsComponent) },
+
+  // remaining flat screens (13)
   { path: 'ai', title: 'AI Diagnostics', data: { title: 'AI Diagnostics', chapter: 24 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'rlopt', title: 'Optimization (RL)', data: { title: 'Optimization (RL)', chapter: 25 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'trends', title: 'Trends & History', data: { title: 'Trends & History', chapter: 26 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
