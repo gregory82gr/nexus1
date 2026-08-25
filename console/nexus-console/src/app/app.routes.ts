@@ -121,8 +121,15 @@ export const routes: Routes = [
   // own guard comment for why no function may derive one from the other.
   { path: 'power', title: 'Power & Grid', loadComponent: () => import('./features/power-grid/power-grid').then((m) => m.PowerGridComponent) },
 
-  // remaining flat screens (15)
-  { path: 'rad', title: 'Radiation / Safety', data: { title: 'Radiation / Safety', chapter: 22 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Radiation & Safety (Ch. 22) -- the safety banner is the book's own
+  // wording, unchanged; the book's own finding here is narrower (its
+  // Area Radiation Monitors table quietly scales 4 rows from 2 upstream
+  // signals). This system's real RadiationMonitor/RadiationReading model
+  // supports genuinely independent per-instrument monitors -- see
+  // features/radiation-safety/radiation-safety.ts's own doc comment.
+  { path: 'rad', title: 'Radiation / Safety', loadComponent: () => import('./features/radiation-safety/radiation-safety').then((m) => m.RadiationSafetyComponent) },
+
+  // remaining flat screens (14)
   { path: 'alarms', title: 'Alarms & Events', data: { title: 'Alarms & Events', chapter: 23 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'ai', title: 'AI Diagnostics', data: { title: 'AI Diagnostics', chapter: 24 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'rlopt', title: 'Optimization (RL)', data: { title: 'Optimization (RL)', chapter: 25 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },

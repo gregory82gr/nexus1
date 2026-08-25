@@ -1,0 +1,53 @@
+<div class="radiation-safety">
+  <div class="panel banner">
+    <span class="pill crit">MONITORING &amp; ADVISORY ONLY</span>
+    <p class="sub">
+      Reactor protection systems are hardware-isolated, deterministic, and human-supervised. This
+      platform has no authority over safety actuation — it monitors and advises only.
+    </p>
+  </div>
+
+  <div class="panel note">
+    <span class="pill info">AREA RADIATION MONITORS</span>
+    <p class="sub">
+      The book's own source computes 4 of its 5 area-monitor rows as linear scalings of only 2
+      upstream signals, admitted in an inline comment invisible on the rendered screen. Checked
+      directly here: this system's RadiationMonitoring context has a genuinely separate, real
+      per-instrument model (RadiationMonitor + an independent RadiationReading per monitor) — every
+      row below is its own independently-entered value, not a formula from fewer upstream numbers.
+    </p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching monitors from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      <div class="panel monitors">
+        <div class="ph"><h2>Monitors</h2><span class="tag">{{ loadedMonitors.length }} independent instruments</span></div>
+        @for (m of loadedMonitors; track m.monitorCode) {
+          <div class="row">
+            <div class="ln">
+              {{ m.monitorName }} <span class="sub">({{ m.monitorCode }})</span>
+              <span class="pill" [class.ok]="m.monitorStatus === 'OPERATIONAL'" [class.nosource]="m.monitorStatus !== 'OPERATIONAL'">{{ m.monitorStatus }}</span>
+            </div>
+            @if (m.latestValue !== null) {
+              <span class="pill ok">{{ m.latestValue }} {{ m.engineeringUnitSymbol }}</span>
+            } @else {
+              <span class="pill nosource">NO READING YET</span>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+</div>
