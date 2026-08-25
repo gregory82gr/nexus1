@@ -140,8 +140,18 @@ export const routes: Routes = [
   // already live and proven since the first BFF vertical slice.
   { path: 'alarms', title: 'Alarms & Events', loadComponent: () => import('./features/alarms-events/alarms-events').then((m) => m.AlarmsEventsComponent) },
 
-  // remaining flat screens (13)
-  { path: 'ai', title: 'AI Diagnostics', data: { title: 'AI Diagnostics', chapter: 24 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // AI Diagnostics (Ch. 24) -- the book's own DSLM advisory panel (ROADMAP ·
+  // PLANNED, not running in this build) survives unchanged. Its Predictive
+  // Diagnostics panel does not: the book colors a demo risk score with the
+  // real alarm table's own LED classes. This screen shows RootCause's real
+  // investigation-case history instead (via Reporting's projection,
+  // GetCaseSummariesForUnitQuery), deliberately styled apart from every
+  // alarm/safety panel -- see features/ai-diagnostics/ai-diagnostics.ts's
+  // own doc comment for the full investigation (ComponentRegistry absent,
+  // RootCause has no scored causal graph per ADR-005).
+  { path: 'ai', title: 'AI Diagnostics', loadComponent: () => import('./features/ai-diagnostics/ai-diagnostics').then((m) => m.AiDiagnosticsComponent) },
+
+  // remaining flat screens (12)
   { path: 'rlopt', title: 'Optimization (RL)', data: { title: 'Optimization (RL)', chapter: 25 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'trends', title: 'Trends & History', data: { title: 'Trends & History', chapter: 26 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'deps', title: 'System Dependencies', data: { title: 'System Dependencies', chapter: 27 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
