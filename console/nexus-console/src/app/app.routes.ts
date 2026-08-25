@@ -151,8 +151,17 @@ export const routes: Routes = [
   // RootCause has no scored causal graph per ADR-005).
   { path: 'ai', title: 'AI Diagnostics', loadComponent: () => import('./features/ai-diagnostics/ai-diagnostics').then((m) => m.AiDiagnosticsComponent) },
 
-  // remaining flat screens (12)
-  { path: 'rlopt', title: 'Optimization (RL)', data: { title: 'Optimization (RL)', chapter: 25 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Optimization (Ch. 25) -- ADR-026: ReinforcementLearning is training/
+  // persistence only, no live advisory computation anywhere. Shows the
+  // real active policy grid (a stored snapshot that can drift from the
+  // underlying Q-table, not the book's own recomputed-on-read SQL view)
+  // and real clamped-recommendation history -- both already-live BFF
+  // routes, no new backend code. No training-run/reward-trend panel: no
+  // query for either exists in this codebase. See
+  // features/optimization/optimization.ts's own doc comment.
+  { path: 'rlopt', title: 'Optimization (RL)', loadComponent: () => import('./features/optimization/optimization').then((m) => m.OptimizationComponent) },
+
+  // remaining flat screens (11)
   { path: 'trends', title: 'Trends & History', data: { title: 'Trends & History', chapter: 26 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'deps', title: 'System Dependencies', data: { title: 'System Dependencies', chapter: 27 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'components', title: 'Component Registry', data: { title: 'Component Registry', chapter: 28 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
