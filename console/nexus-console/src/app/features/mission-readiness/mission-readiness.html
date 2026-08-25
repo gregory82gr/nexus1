@@ -1,0 +1,82 @@
+<div class="mission-readiness">
+  <div class="panel note">
+    <span class="pill info">MISSION READINESS</span>
+    <p class="sub">
+      Reshaped around the real domain: no capability/dose data exists to evaluate abstract mission
+      types live against the fleet, so this screen shows the unit's real, already-dispatched
+      missions below, and — separately — the real, recorded readiness assessment for a specific
+      mission you look up by id. The mission list carries each mission's code but not its numeric
+      id, so the lookup is a manual tool, not a click-through from the list.
+    </p>
+  </div>
+
+  <div class="panel missions">
+    <div class="ph"><h2>Missions</h2></div>
+    @switch (missionsState().status) {
+      @case ('loading') {
+        <p class="sub">Fetching missions from Nexus1.Bff…</p>
+      }
+      @case ('error') {
+        <p class="sub">{{ missionsErrorMessage }}</p>
+      }
+      @case ('loaded') {
+        @if (loadedMissions.length === 0) {
+          <span class="pill nosource">NO MISSIONS</span>
+        } @else {
+          @for (m of loadedMissions; track m.missionCode) {
+            <div class="row">
+              <div class="ln">
+                {{ m.title }} <span class="sub">({{ m.missionCode }})</span>
+              </div>
+              <div class="figures">
+                <span class="pill info">{{ m.missionType }}</span>
+                <span class="pill" [class.ok]="m.missionStatus === 'COMPLETED'" [class.warn]="m.missionStatus === 'IN_PROGRESS'" [class.nosource]="m.missionStatus !== 'COMPLETED' && m.missionStatus !== 'IN_PROGRESS'">
+                  {{ m.missionStatus }}
+                </span>
+              </div>
+            </div>
+          }
+        }
+      }
+    }
+  </div>
+
+  <div class="panel lookup">
+    <div class="ph"><h2>Readiness Lookup</h2></div>
+    <div class="lookup-row">
+      <label for="mission-id">Mission ID</label>
+      <input id="mission-id" type="text" [value]="lookupMissionId()" (input)="onLookupIdInput($any($event.target).value)" />
+      <button class="btn" (click)="lookupReadiness()">Check readiness</button>
+    </div>
+
+    @switch (failuresState().status) {
+      @case ('idle') {
+        <p class="sub">Enter a mission id and check its recorded readiness assessment.</p>
+      }
+      @case ('loading') {
+        <p class="sub">Fetching readiness failures…</p>
+      }
+      @case ('error') {
+        <p class="sub">{{ failuresErrorMessage }}</p>
+      }
+      @case ('loaded') {
+        @if (loadedFailures.length === 0) {
+          <span class="pill ok">NO BLOCKING FAILURES</span>
+          <p class="sub">No blocking readiness checks are recorded for this mission (or it has no recorded assessment at all — a real 200 either way).</p>
+        } @else {
+          @for (f of loadedFailures; track f.checkName) {
+            <div class="row">
+              <div class="ln">{{ f.checkName }}</div>
+              <div class="figures">
+                <span class="pill crit">{{ f.readinessStatus }}</span>
+              </div>
+            </div>
+            @if (f.detail) {
+              <p class="sub detail">{{ f.detail }}</p>
+            }
+          }
+        }
+      }
+    }
+  </div>
+</div>

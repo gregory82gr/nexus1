@@ -1,0 +1,39 @@
+.ai-diagnostics { display: flex; flex-direction: column; gap: 14px; }
+.dslm h2 { margin: 8px 0 4px; font-size: 14px; font-family: 'Chakra Petch', sans-serif; }
+.dslm .sub, .note .sub { margin-top: 6px; color: var(--text-dim); font-size: 11px; }
+
+.example {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+.example .ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.example .ph h2 { font-size: 12px; margin: 0; }
+.example .tag { color: var(--text-dim); font-size: 10px; letter-spacing: 0.03em; }
+.example .q { font-size: 12px; font-style: italic; margin: 6px 0; }
+.example .a { font-size: 12px; margin: 6px 0; }
+.example .cite { font-size: 10px; color: var(--text-dim); margin: 6px 0; }
+
+.ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ph h2 { font-size: 13px; margin: 0; font-family: 'Chakra Petch', sans-serif; }
+.tag { color: var(--text-dim); font-size: 10px; }
+.sub { color: var(--text-dim); font-size: 11px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: none; }
+.ln { font-size: 12px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.verdict-text { font-size: 12px; text-align: right; }
+.state-panel { max-width: 320px; }
+
+// Deliberately distinct from .pill.ok/.warn/.crit (the alarm/safety LED
+// classes) -- an investigation-case status is neither a severity nor a
+// score, so it never borrows that visual vocabulary, by design.
+.case-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  border: 1px solid var(--line);
+}
+.case-status.open { border-color: var(--cyan); color: var(--cyan); }
+.case-status.verdict { border-color: var(--text-dim); color: var(--text); background: var(--panel-2); }

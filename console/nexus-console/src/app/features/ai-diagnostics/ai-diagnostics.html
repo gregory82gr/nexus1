@@ -1,0 +1,82 @@
+<div class="ai-diagnostics">
+  <div class="panel dslm">
+    <span class="pill nosource">ROADMAP · PLANNED</span>
+    <h2>Domain-Specific Language Model Advisory</h2>
+    <p class="sub">
+      Not running in this build. The advisory panel described here — natural-language questions
+      answered with grounded citations into plant data — is future scope, not implemented,
+      deployed, or wired to any live service in this console.
+    </p>
+
+    <div class="example">
+      <div class="ph"><h2>Example Interaction</h2><span class="tag">ILLUSTRATIVE ONLY — NOT LIVE</span></div>
+      <p class="q">"Why is Unit 1's turbine vibration alarm still active?"</p>
+      <p class="a">
+        "The most recent turbine vibration alarm on Unit 1 correlates with a bearing wear trend
+        flagged three days ago. Recommend inspection before next scheduled outage."
+      </p>
+      <p class="cite">
+        Grounded in: Component Registry (FV-104) · Root-Cause EVT-2026-0418 · Alarms &amp; Events
+      </p>
+      <p class="sub">
+        This example is scripted text from the source material, not a live query result. Component
+        Registry does not exist anywhere in this build yet (Ch. 28, still unreached) and RootCause's
+        real domain model (ADR-005) has no scored causal graph to cite — nothing on this console can
+        produce a cited explanation like this today, and no grounding or citation-generation pipeline
+        is built here.
+      </p>
+    </div>
+  </div>
+
+  <div class="panel note">
+    <span class="pill info">PREDICTIVE DIAGNOSTICS — REAL DATA, NOT A SCORE</span>
+    <p class="sub">
+      The book's own Component Risk table colors demo risk percentages with the same LED classes
+      the real alarm table uses — a demo score visually claiming the same authority as a live alarm.
+      Not ported. What's shown below instead is RootCause's own real investigation-case history for
+      this unit (an alarm flood opened a case; eventually a free-text verdict) — genuinely real, but
+      not a prediction or a percentage, and deliberately styled differently from every alarm/safety
+      panel in this console.
+    </p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching case history from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      @if (loadedCases.length === 0) {
+        <div class="panel state-panel">
+          <span class="pill nosource">NO CASES</span>
+          <p class="sub">No root-cause investigation cases are recorded for this unit.</p>
+        </div>
+      } @else {
+        <div class="panel cases">
+          <div class="ph"><h2>Investigation Cases</h2><span class="tag">{{ loadedCases.length }} for this unit</span></div>
+          @for (c of loadedCases; track c.caseId) {
+            <div class="row">
+              <div class="ln">
+                <span class="case-status" [class.open]="c.status === 'Open'" [class.verdict]="c.status === 'VerdictIssued'">{{ c.status }}</span>
+                <span class="sub">opened {{ c.openedAtUtc }}</span>
+              </div>
+              @if (c.verdict) {
+                <span class="verdict-text">{{ c.verdict }}</span>
+              } @else {
+                <span class="sub">investigation in progress, no verdict yet</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+</div>

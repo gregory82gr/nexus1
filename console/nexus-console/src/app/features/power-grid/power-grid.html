@@ -1,0 +1,60 @@
+<div class="power-grid">
+  <div class="panel note">
+    <span class="pill info">{{ focusLabel }}</span>
+    <p class="sub">
+      The book's own source computes grid frequency from local turbine RPM — physically backwards,
+      since a synchronized grid has one shared frequency every connected turbine tracks, not one any
+      single turbine sets. The fix here is structural, not a different formula: turbine shaft speed
+      stays a real, separately-sourced measurement; grid frequency, phase angle, breaker state, and
+      sync status are a distinct, unconnected field set below it. Active power, reactive power,
+      generator voltage, and power factor were checked directly in Instrumentation and found to have
+      never been seeded or measured anywhere in this system — an honest gap, not shown as if real.
+    </p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching signals from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      <div class="panel measurement">
+        <div class="ph"><h2>Turbine Shaft Speed</h2><span class="tag">real measurement</span></div>
+        @if (tie!.turbineSpeedRpm.source === 'measured') {
+          <div class="row">
+            <div class="ln">Main turbine shaft <span class="sub">(TURBINE category)</span></div>
+            <span class="pill ok">{{ tie!.turbineSpeedRpm.rpm }} RPM</span>
+          </div>
+          <p class="sub">last reading {{ tie!.turbineSpeedRpm.timestampUtc }}</p>
+        } @else {
+          <span class="pill nosource">NO SIGNAL</span>
+          <p class="sub">No TURBINE-category signal is recorded for this unit yet.</p>
+        }
+      </div>
+
+      <div class="panel gaps">
+        <div class="ph"><h2>Real Telemetry — Checked, Not Present</h2></div>
+        <div class="row"><div class="ln">Active power</div><span class="pill nosource">NO DATA IN THIS SYSTEM</span></div>
+        <div class="row"><div class="ln">Reactive power</div><span class="pill nosource">NO DATA IN THIS SYSTEM</span></div>
+        <div class="row"><div class="ln">Generator voltage</div><span class="pill nosource">NO DATA IN THIS SYSTEM</span></div>
+        <div class="row"><div class="ln">Power factor</div><span class="pill nosource">NO DATA IN THIS SYSTEM</span></div>
+      </div>
+
+      <div class="panel gaps">
+        <div class="ph"><h2>Grid Tie</h2><span class="tag">structurally separate from turbine speed</span></div>
+        <div class="row"><div class="ln">Grid frequency</div><span class="pill nosource">AWAITING TELEMETRY</span></div>
+        <div class="row"><div class="ln">Phase angle</div><span class="pill nosource">NO SOURCE</span></div>
+        <div class="row"><div class="ln">Breaker state</div><span class="pill nosource">NO SOURCE</span></div>
+        <div class="row"><div class="ln">Sync status</div><span class="pill nosource">NO SOURCE</span></div>
+      </div>
+    }
+  }
+</div>

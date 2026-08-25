@@ -1,0 +1,66 @@
+<div class="alarms-events">
+  <div class="panel note">
+    <span class="pill info">ALARMS &amp; EVENTS</span>
+    <p class="sub">
+      No decorative alarm generation here — the book's own source draws 11 pooled events at
+      random every 5 seconds; none of that is ported. Every alarm below comes from the real
+      fleet-wide endpoint. This system has one real threshold-check mechanism
+      (AlarmDefinition.Evaluate) but nothing invokes it automatically yet, so these alarms are
+      demo/test residue, not proof of live condition monitoring. Control Rods stay read-only
+      everywhere in this console — there is no SCRAM write path anywhere, so the book's own
+      "alarm fires before the effect happens" risk does not apply here. Acknowledge below is a
+      real write: it changes the alarm's own state, nothing more.
+    </p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching active alarms from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      <div class="panel summary">
+        <span class="pill info">ACTIVE ALARMS</span>
+        <h2>{{ totalCount }}</h2>
+        <p class="sub">across {{ loadedGroups.length }} severit{{ loadedGroups.length === 1 ? 'y' : 'ies' }}, fleet-wide</p>
+      </div>
+
+      @if (loadedGroups.length === 0) {
+        <div class="panel state-panel">
+          <span class="pill ok">NO ACTIVE ALARMS</span>
+          <p class="sub">No active alarms are recorded across the fleet.</p>
+        </div>
+      }
+
+      @for (group of loadedGroups; track group.severity) {
+        <div class="panel group">
+          <div class="ph"><h2>{{ group.severity }}</h2><span class="tag">{{ group.alarms.length }} alarms</span></div>
+          @for (alarm of group.alarms; track alarm.alarmEventId) {
+            <div class="row">
+              <div class="ln">
+                {{ alarm.message }}
+                <span class="sub">unit {{ alarm.unitId }} · raised {{ alarm.raisedAtUtc }}</span>
+              </div>
+              <button
+                type="button"
+                class="btn"
+                [disabled]="isAcknowledging(alarm.alarmEventId)"
+                (click)="acknowledge(alarm.alarmEventId)"
+              >
+                {{ isAcknowledging(alarm.alarmEventId) ? 'ACKNOWLEDGING…' : 'ACKNOWLEDGE' }}
+              </button>
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+</div>

@@ -92,18 +92,66 @@ export const routes: Routes = [
   { path: 'waste', title: 'Waste & Spent Fuel', data: { title: 'Waste & Spent Fuel', chapter: 18 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
 
   // Robotics & Vehicles group (2)
-  { path: 'robotics-overview', title: 'Robotics Fleet Overview', data: { title: 'Robotics Fleet Overview', chapter: 19 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'robotics-readiness', title: 'Mission Readiness', data: { title: 'Mission Readiness', chapter: 19 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Robotics & Vehicles (Ch. 19). Fleet Overview is fully real (robot
+  // status/health, no dose field anywhere in the domain). Mission
+  // Readiness is reshaped around the real recorded-assessment model
+  // (MissionReadinessAssessment/MissionReadinessItem) rather than the
+  // book's own live capability-matching engine over abstract mission
+  // types, which the real domain has no data to support -- see
+  // features/mission-readiness/mission-readiness.ts's own doc comment.
+  { path: 'robotics-overview', title: 'Robotics Fleet Overview', loadComponent: () => import('./features/robotics-fleet/robotics-fleet').then((m) => m.RoboticsFleetComponent) },
+  { path: 'robotics-readiness', title: 'Mission Readiness', loadComponent: () => import('./features/mission-readiness/mission-readiness').then((m) => m.MissionReadinessComponent) },
 
   // Zone Access group (2)
-  { path: 'access-presence', title: 'Live Presence', data: { title: 'Live Presence', chapter: 20 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'access-matrix', title: 'Permissions Matrix', data: { title: 'Permissions Matrix', chapter: 20 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Zone Access (Ch. 20) -- neither Permissions Matrix nor Live Presence
+  // has any real backing anywhere in this solution (no class-to-zone
+  // authorization, no presence/badge/entry-log concept, checked across
+  // every context's domain layer). Both routes point at the same
+  // real, honestly-labeled zone registry instead -- see
+  // features/zone-registry/zone-registry.ts's own doc comment.
+  { path: 'access-presence', title: 'Live Presence', data: { focusLabel: 'Live Presence' }, loadComponent: () => import('./features/zone-registry/zone-registry').then((m) => m.ZoneRegistryComponent) },
+  { path: 'access-matrix', title: 'Permissions Matrix', data: { focusLabel: 'Permissions Matrix' }, loadComponent: () => import('./features/zone-registry/zone-registry').then((m) => m.ZoneRegistryComponent) },
 
-  // remaining flat screens (16)
-  { path: 'power', title: 'Power & Grid', data: { title: 'Power & Grid', chapter: 21 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'rad', title: 'Radiation / Safety', data: { title: 'Radiation / Safety', chapter: 22 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'alarms', title: 'Alarms & Events', data: { title: 'Alarms & Events', chapter: 23 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'ai', title: 'AI Diagnostics', data: { title: 'AI Diagnostics', chapter: 24 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Power & Grid (Ch. 21) -- built on the same real, generic Instrumentation
+  // signals endpoint as the Reactor cluster, plus one newly-seeded real
+  // signal category (TURBINE), same mechanism as NEUTRONICS earlier. The
+  // book's own fix is structural: turbine shaft speed stays real; grid
+  // frequency, phase angle, breaker state, and sync status become a
+  // separate, unconnected field set -- see features/power-grid/grid-tie.ts's
+  // own guard comment for why no function may derive one from the other.
+  { path: 'power', title: 'Power & Grid', loadComponent: () => import('./features/power-grid/power-grid').then((m) => m.PowerGridComponent) },
+
+  // Radiation & Safety (Ch. 22) -- the safety banner is the book's own
+  // wording, unchanged; the book's own finding here is narrower (its
+  // Area Radiation Monitors table quietly scales 4 rows from 2 upstream
+  // signals). This system's real RadiationMonitor/RadiationReading model
+  // supports genuinely independent per-instrument monitors -- see
+  // features/radiation-safety/radiation-safety.ts's own doc comment.
+  { path: 'rad', title: 'Radiation / Safety', loadComponent: () => import('./features/radiation-safety/radiation-safety').then((m) => m.RadiationSafetyComponent) },
+
+  // Alarms & Events (Ch. 23) -- the book's own subject here is the
+  // aggregator itself: 11 decorative pooled events on a timer, mixed with
+  // a real #rod-scram trigger that fires before the rod it describes has
+  // actually moved. Neither the decorative generator nor that specific
+  // risk is ported: no timer here, and no SCRAM/rod-write path exists
+  // anywhere in this backend (Control Rods stay read-only everywhere) --
+  // see features/alarms-events/alarms-events.ts's own doc comment for the
+  // full investigation. Real list + a real acknowledge write, both
+  // already live and proven since the first BFF vertical slice.
+  { path: 'alarms', title: 'Alarms & Events', loadComponent: () => import('./features/alarms-events/alarms-events').then((m) => m.AlarmsEventsComponent) },
+
+  // AI Diagnostics (Ch. 24) -- the book's own DSLM advisory panel (ROADMAP ·
+  // PLANNED, not running in this build) survives unchanged. Its Predictive
+  // Diagnostics panel does not: the book colors a demo risk score with the
+  // real alarm table's own LED classes. This screen shows RootCause's real
+  // investigation-case history instead (via Reporting's projection,
+  // GetCaseSummariesForUnitQuery), deliberately styled apart from every
+  // alarm/safety panel -- see features/ai-diagnostics/ai-diagnostics.ts's
+  // own doc comment for the full investigation (ComponentRegistry absent,
+  // RootCause has no scored causal graph per ADR-005).
+  { path: 'ai', title: 'AI Diagnostics', loadComponent: () => import('./features/ai-diagnostics/ai-diagnostics').then((m) => m.AiDiagnosticsComponent) },
+
+  // remaining flat screens (12)
   { path: 'rlopt', title: 'Optimization (RL)', data: { title: 'Optimization (RL)', chapter: 25 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'trends', title: 'Trends & History', data: { title: 'Trends & History', chapter: 26 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'deps', title: 'System Dependencies', data: { title: 'System Dependencies', chapter: 27 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },

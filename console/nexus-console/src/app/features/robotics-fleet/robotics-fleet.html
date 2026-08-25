@@ -1,0 +1,53 @@
+<div class="robotics-fleet">
+  <div class="panel note">
+    <span class="pill info">ROBOTICS FLEET OVERVIEW</span>
+    <p class="sub">
+      Real robot status only: code, name, lifecycle status, and latest battery/communication
+      reading. No accumulated dose or radiation figure is shown — the real domain has no such
+      field anywhere on a robot or its health snapshots, unlike the book's own synthetic per-robot
+      dose readout.
+    </p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">LOADING</span>
+        <p>Fetching robot status from Nexus1.Bff…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill crit">UNREACHABLE</span>
+        <p>{{ errorMessage }}</p>
+      </div>
+    }
+    @case ('loaded') {
+      @if (loadedRobots.length === 0) {
+        <div class="panel state-panel">
+          <span class="pill nosource">NO ROBOTS</span>
+          <p class="sub">No robots are home-based at this unit.</p>
+        </div>
+      } @else {
+        <div class="panel robots">
+          <div class="ph"><h2>Robots</h2><span class="tag">{{ loadedRobots.length }} home-based here</span></div>
+          @for (r of loadedRobots; track r.robotCode) {
+            <div class="row">
+              <div class="ln">
+                {{ r.robotName }} <span class="sub">({{ r.robotCode }})</span>
+              </div>
+              <div class="figures">
+                <span class="pill info">{{ r.robotStatus }}</span>
+                @if (r.latestBatteryPercent !== null) {
+                  <span class="sub">{{ r.latestBatteryPercent }}% · {{ r.latestBatteryStatus }} · {{ r.latestCommunicationStatus }}</span>
+                } @else {
+                  <span class="pill nosource">NO HEALTH DATA</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+</div>
