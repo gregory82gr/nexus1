@@ -14,3 +14,16 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
     disconnect(): void {}
   };
 }
+
+// jsdom's `crypto` global has no `subtle` (Web Crypto API) implementation --
+// needed by features/audit/hash-chain.ts (Ch. 30) to compute real SHA-256
+// hashes. Node's own built-in webcrypto implements the same standard
+// interface; wired in only for the test environment, same "jsdom gap fix,
+// not application behavior" pattern as the ResizeObserver stub above. The
+// served application runs in a real browser, which has crypto.subtle
+// natively -- this never executes outside Jest.
+if (typeof globalThis.crypto?.subtle === 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { webcrypto } = require('node:crypto');
+  Object.defineProperty(globalThis, 'crypto', { value: webcrypto, configurable: true });
+}

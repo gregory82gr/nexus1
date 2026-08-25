@@ -1,0 +1,76 @@
+<div class="audit-log">
+  <div class="panel note">
+    <span class="pill nosource">EDGES: NO SERVER-SIDE CHAIN</span>
+    <p class="sub">
+      Checked directly: no hash-chain, seal, or tamper-evidence mechanism exists anywhere in this
+      backend. Real SHA-256 content hashes exist per Audit evidence record
+      (<code>EnvelopeSha256Hex</code>), but each is isolated — none reference a previous record.
+      The chain shown below is computed here, client-side, for the first time, from those real
+      hashes — not a re-derivation of a chain the server already built.
+    </p>
+    <p class="sub">
+      No actor/action column: checked directly across every context — no real "who did this, what
+      did they do" record is reachable today. Omitted entirely rather than invented.
+    </p>
+  </div>
+
+  <div class="panel lookup">
+    <div class="ph"><h2>Look Up an Analysis</h2><span class="tag">real per-analysis scoping — no fleet-wide listing exists</span></div>
+    <div class="lookup-row">
+      <input
+        type="text"
+        [value]="lookupAnalysisId()"
+        (input)="onLookupIdInput($any($event.target).value)"
+        placeholder="RootCause analysis id"
+      />
+      <button type="button" class="btn" (click)="lookup()" [disabled]="lookupState().status === 'loading'">
+        {{ lookupState().status === 'loading' ? 'LOOKING UP…' : 'LOOK UP' }}
+      </button>
+    </div>
+    @if (lookupState().status === 'error') {
+      <p class="sub error">{{ errorMessage }}</p>
+    }
+  </div>
+
+  @if (lastLookedUpId()) {
+    <div class="panel compliance">
+      <div class="ph"><h2>Compliance Review — analysis {{ lastLookedUpId() }}</h2></div>
+      @if (complianceReviews().length === 0) {
+        <p class="sub">No compliance review has been opened for this analysis.</p>
+      } @else {
+        @for (r of complianceReviews(); track r.complianceReviewId) {
+          <div class="row">
+            <div class="ln">Verdict: {{ r.verdict }}</div>
+            <div class="ln"><span class="pill nosource">{{ r.state }}</span><span class="sub">opened {{ r.openedAtUtc }}</span></div>
+          </div>
+        }
+      }
+    </div>
+  }
+
+  <div class="panel chain-panel">
+    <div class="ph">
+      <h2>Audit Log</h2>
+      @if (verification(); as v) {
+        <span class="pill" [class.ok]="v.ok" [class.crit]="!v.ok" data-badge="chain-status">{{ chainLabel }}</span>
+      }
+    </div>
+    @if (chain().length === 0) {
+      <p class="sub">No evidence looked up yet — look up a real analysis id above.</p>
+    } @else {
+      @for (entry of chain(); track entry.analysisId; let i = $index) {
+        <div class="row">
+          <div class="ln">
+            <span class="step">{{ i + 1 }}</span>
+            analysis {{ entry.analysisId }}
+            <span class="sub">{{ entry.recordedAtUtc }}</span>
+          </div>
+          <div class="ln">
+            <span class="sub">hash {{ entry.envelopeSha256Hex.slice(0, 12) }}…</span>
+            <span class="sub">seal {{ entry.seal.slice(0, 12) }}…</span>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>

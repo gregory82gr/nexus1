@@ -199,7 +199,16 @@ export const routes: Routes = [
   { path: 'twin', title: 'Digital Twin', data: { title: 'Digital Twin', chapter: 28 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'incident', title: 'Incident Analysis', data: { title: 'Incident Analysis', chapter: 29 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'rcgraph', title: 'Root Cause Graph', data: { title: 'Root Cause Graph', chapter: 29 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'audit', title: 'Compliance / Audit', data: { title: 'Compliance / Audit', chapter: 30 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Audit & Compliance (Ch. 30) -- the book's fictional seal function is
+  // Math.random() twice, referencing nothing; checked directly, no
+  // hash-chain/seal mechanism exists anywhere server-side either. Real
+  // per-record SHA-256 content hashes exist (Audit's own
+  // EnvelopeSha256Hex) but none reference a previous record -- chained
+  // here, client-side, for the first time, over real per-analysis
+  // lookups (no fleet-wide listing exists), labeled "verifies locally,
+  // not anchored," never "tamper-proof" -- see
+  // features/audit/audit-log.ts and hash-chain.ts's own doc comments.
+  { path: 'audit', title: 'Compliance / Audit', loadComponent: () => import('./features/audit/audit-log').then((m) => m.AuditLogComponent) },
   { path: 'sec', title: 'Security / Services', data: { title: 'Security / Services', chapter: 31 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'console', title: 'NX-Script Console', data: { title: 'NX-Script Console', chapter: 32 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'help', title: 'Help & Guide', data: { title: 'Help & Guide', chapter: 32 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },

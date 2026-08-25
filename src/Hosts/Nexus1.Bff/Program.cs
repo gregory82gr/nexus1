@@ -815,6 +815,16 @@ app.MapGet("/api/v1/audit/analyses/{analysisId:long}/evidence", async (long anal
 // codebase yet. Every real row this endpoint returns will read State:
 // "Pending". Same per-analysis scoping as Audit, for the same reason
 // (no UnitId anywhere; RootCause stays out-of-process per ADR-001).
+//
+// Ch.30 Audit & Compliance screen: this handler and its DTO already
+// existed, fully DI-wired, with no route ever mapped to it — a genuinely
+// thin addition, zero new Application-layer code.
+app.MapGet("/api/v1/compliance/analyses/{analysisId:long}/reviews", async (long analysisId, [FromServices] GetComplianceReviewsBySourceAnalysisIdQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new GetComplianceReviewsBySourceAnalysisIdQuery(analysisId), cancellationToken);
+    return Results.Ok(result.Value);
+});
+
 // Backend-only, no console screen: investigated against the Angular
 // companion book's full sitemap before building anything (see Program.cs's
 // EventManagement composition comment above for the full reasoning). These
