@@ -171,8 +171,19 @@ export const routes: Routes = [
   // the full investigation.
   { path: 'trends', title: 'Trends & History', loadComponent: () => import('./features/trends/trends').then((m) => m.TrendsComponent) },
 
-  // remaining flat screens (10)
-  { path: 'deps', title: 'System Dependencies', data: { title: 'System Dependencies', chapter: 27 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // System Dependencies (Ch. 27) -- the book's Graph tab (default, loads
+  // first) discloses nothing about its edge weights/delays, though
+  // Matrix and Chain both honestly call theirs illustrative. Fixed
+  // structurally: one disclosure banner at this component's own
+  // container level, above the tab switch, plus every edge typed
+  // `kind: 'illustrative-topology'` directly on the data. Node status:
+  // checked directly, only 3 of 12 nodes (Neutron Flux, Thermal Power,
+  // Turbine) have real signal backing anywhere; the other 9 render a
+  // visually distinct NO SOURCE treatment, never a fabricated colour --
+  // see features/dependencies/dependencies.ts's own doc comment.
+  { path: 'deps', title: 'System Dependencies', loadComponent: () => import('./features/dependencies/dependencies').then((m) => m.DependenciesComponent) },
+
+  // remaining flat screens (9)
   { path: 'components', title: 'Component Registry', data: { title: 'Component Registry', chapter: 28 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   // Digital Twin: never individually audited by the book's own Appendix A --
   // chapter number below is a placed-near-neighbor judgment call, not an

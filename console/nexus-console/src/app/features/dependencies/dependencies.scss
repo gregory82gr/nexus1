@@ -1,0 +1,96 @@
+.dependencies { display: flex; flex-direction: column; gap: 14px; }
+.banner .sub { margin-top: 6px; color: var(--text-dim); font-size: 11px; }
+.banner .pill { margin-right: 6px; }
+
+.tabbar { display: flex; gap: 6px; padding: 8px; }
+.tab {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+.tab.active { color: var(--cyan); border-color: var(--cyan); }
+
+.ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ph h2 { font-size: 13px; margin: 0; font-family: 'Chakra Petch', sans-serif; }
+.tag { color: var(--text-dim); font-size: 10px; }
+.sub { color: var(--text-dim); font-size: 11px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.row:last-child { border-bottom: none; }
+.ln { font-size: 12px; display: flex; align-items: center; gap: 8px; }
+.arrow { color: var(--text-dim); }
+.arrow.feedback { color: #a78bfa; }
+.step { color: var(--text-dim); font-size: 10px; width: 16px; }
+.note { margin-top: 8px; }
+
+.legend { margin-bottom: 10px; }
+
+// The actual node-link diagram: an SVG line layer plus absolutely-
+// positioned node cards sharing the same logical coordinate space
+// (dependency-graph.ts's NODE_POSITIONS), so lines always meet the
+// cards they connect regardless of the container's rendered size.
+.graph-canvas {
+  position: relative;
+  width: 100%;
+  height: 460px;
+}
+.graph-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.graph-svg line {
+  stroke: var(--text-dim);
+  opacity: 0.85;
+}
+.graph-svg line.feedback-line {
+  stroke: #a78bfa;
+  stroke-dasharray: 6 4;
+}
+
+// REAL and GAP nodes are made unmistakable from styling alone, not just
+// a shade of the same colour: solid border + flat background + LIVE
+// badge for real; dashed border + diagonal hatch pattern + NO SOURCE
+// badge for gap. A reader should never be able to mistake a no-source
+// node for a real-but-low one from the screenshot.
+.node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 110px;
+  padding: 8px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  z-index: 1;
+}
+.node-label { font-size: 10px; font-weight: 600; }
+.node-value { font-size: 14px; font-family: 'Chakra Petch', sans-serif; }
+
+.node.real {
+  border: 1px solid var(--green);
+  background: var(--panel-2);
+}
+.node.gap {
+  border: 1px dashed var(--line);
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--panel-2) 0px,
+    var(--panel-2) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+.matrix-scroll { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 10px; white-space: nowrap; }
+th, td { padding: 4px 8px; text-align: center; border: 1px solid var(--line); }
+th { color: var(--text-dim); font-weight: 500; }
+td.feedback { color: #a78bfa; }
