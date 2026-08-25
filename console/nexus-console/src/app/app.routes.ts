@@ -112,8 +112,16 @@ export const routes: Routes = [
   { path: 'access-presence', title: 'Live Presence', data: { focusLabel: 'Live Presence' }, loadComponent: () => import('./features/zone-registry/zone-registry').then((m) => m.ZoneRegistryComponent) },
   { path: 'access-matrix', title: 'Permissions Matrix', data: { focusLabel: 'Permissions Matrix' }, loadComponent: () => import('./features/zone-registry/zone-registry').then((m) => m.ZoneRegistryComponent) },
 
-  // remaining flat screens (16)
-  { path: 'power', title: 'Power & Grid', data: { title: 'Power & Grid', chapter: 21 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Power & Grid (Ch. 21) -- built on the same real, generic Instrumentation
+  // signals endpoint as the Reactor cluster, plus one newly-seeded real
+  // signal category (TURBINE), same mechanism as NEUTRONICS earlier. The
+  // book's own fix is structural: turbine shaft speed stays real; grid
+  // frequency, phase angle, breaker state, and sync status become a
+  // separate, unconnected field set -- see features/power-grid/grid-tie.ts's
+  // own guard comment for why no function may derive one from the other.
+  { path: 'power', title: 'Power & Grid', loadComponent: () => import('./features/power-grid/power-grid').then((m) => m.PowerGridComponent) },
+
+  // remaining flat screens (15)
   { path: 'rad', title: 'Radiation / Safety', data: { title: 'Radiation / Safety', chapter: 22 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'alarms', title: 'Alarms & Events', data: { title: 'Alarms & Events', chapter: 23 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'ai', title: 'AI Diagnostics', data: { title: 'AI Diagnostics', chapter: 24 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
