@@ -183,8 +183,16 @@ export const routes: Routes = [
   // see features/dependencies/dependencies.ts's own doc comment.
   { path: 'deps', title: 'System Dependencies', loadComponent: () => import('./features/dependencies/dependencies').then((m) => m.DependenciesComponent) },
 
-  // remaining flat screens (9)
-  { path: 'components', title: 'Component Registry', data: { title: 'Component Registry', chapter: 28 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Component Registry (Ch. 28) -- unlike every prior gap chapter, the
+  // book's own premise here is a REAL wear model (health from service
+  // years + SCRAM count + load), mis-disclosed only in placement. Checked
+  // directly: none of the three inputs are real/populated in this
+  // backend, and the book's own 11-12-component-per-unit premise is
+  // itself unsupported (1 real asset per unit, AssetComponent never
+  // populated). NO SOURCE, same shape as Ch.26's availability finding --
+  // see features/component-registry/component-registry.ts's own doc
+  // comment for the full investigation.
+  { path: 'components', title: 'Component Registry', loadComponent: () => import('./features/component-registry/component-registry').then((m) => m.ComponentRegistryComponent) },
   // Digital Twin: never individually audited by the book's own Appendix A --
   // chapter number below is a placed-near-neighbor judgment call, not an
   // asserted fact.

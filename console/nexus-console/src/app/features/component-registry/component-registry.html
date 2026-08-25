@@ -1,0 +1,59 @@
+<div class="component-registry">
+  <div class="panel note">
+    <span class="pill nosource">NO SOURCE — NO WEAR MODEL</span>
+    <p class="sub">
+      The book's own source has a genuine accelerated wear model here — health computed from real
+      accumulated service years, a real penalty per SCRAM cycle, and a load-sensitivity term — and
+      its only bug is where the "illustrative, accelerated model" disclosure lives. That premise
+      does not hold in this backend. Checked directly on all three real inputs the model would
+      need, and on the book's own component count, before assuming any of it carries over:
+    </p>
+  </div>
+
+  <div class="panel checks">
+    <div class="ph"><h2>Checked, and found absent</h2><span class="tag">3 of 3 model inputs</span></div>
+    <div class="row">
+      <div class="ln">Service years</div>
+      <span class="pill nosource">SCHEMA ONLY, UNPOPULATED</span>
+    </div>
+    <p class="sub">Asset.CommissionedAtUtc exists as a field but is nullable and left unset in the one asset ever seeded — not real data, and not even exposed by either existing Maintenance endpoint.</p>
+
+    <div class="row">
+      <div class="ln">SCRAM-cycle penalty</div>
+      <span class="pill nosource">NEVER OCCURS</span>
+    </div>
+    <p class="sub">AlarmSeverity.Trip exists as an enum value but has never once been used to raise a real alarm anywhere in this codebase — a count today would honestly always be zero.</p>
+
+    <div class="row">
+      <div class="ln">Load-sensitivity term</div>
+      <span class="pill nosource">NO SOURCE</span>
+    </div>
+    <p class="sub">Nothing in Maintenance ties to runtime/load data for this purpose at all.</p>
+
+    <div class="row">
+      <div class="ln">A combining formula itself</div>
+      <span class="pill nosource">NEVER COMPUTED</span>
+    </div>
+    <p class="sub">Every real write path is pass-through persistence — it stores a value already supplied, it never derives one from the inputs above.</p>
+  </div>
+
+  <div class="panel note">
+    <span class="pill nosource">COMPONENT COUNT — ALSO UNSUPPORTED</span>
+    <p class="sub">
+      The book describes 11 to 12 tracked components per unit. This solution's real seed data is
+      exactly one asset per unit; AssetComponent, the entity that would represent a sub-component
+      below it, is never populated anywhere in this codebase.
+    </p>
+  </div>
+
+  <div class="panel note">
+    <span class="pill info">NOT DUPLICATED HERE</span>
+    <p class="sub">
+      The one real, adjacent data this investigation did find — AssetCondition's human-assessed
+      health score, and DegradationRecord's mechanism/severity/trend-point count — already has two
+      honest homes: Rod Inspection (Ch. 16) and Ageing & Degradation (Ch. 18), both drawing on the
+      same single real asset. Showing it again here, framed as a registry, would duplicate an
+      existing screen rather than add a new real capability, so nothing is repeated on this screen.
+    </p>
+  </div>
+</div>
