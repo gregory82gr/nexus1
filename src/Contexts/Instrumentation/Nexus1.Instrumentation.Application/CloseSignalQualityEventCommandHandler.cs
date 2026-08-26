@@ -1,10 +1,11 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.Instrumentation.Domain;
 
 namespace Nexus1.Instrumentation.Application;
 
 public sealed class CloseSignalQualityEventCommandHandler(
-    IRepository<SignalQualityEvent, SignalQualityEventId> eventRepository, IUnitOfWork unitOfWork)
+    IRepository<SignalQualityEvent, SignalQualityEventId> eventRepository, [FromKeyedServices("Instrumentation")] IUnitOfWork unitOfWork)
     : ICommandHandler<CloseSignalQualityEventCommand>
 {
     public async Task<Result> Handle(CloseSignalQualityEventCommand command, CancellationToken cancellationToken)

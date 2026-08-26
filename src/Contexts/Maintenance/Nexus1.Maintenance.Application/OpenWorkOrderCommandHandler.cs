@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.Maintenance.Domain;
 
 namespace Nexus1.Maintenance.Application;
@@ -6,7 +7,7 @@ namespace Nexus1.Maintenance.Application;
 public sealed class OpenWorkOrderCommandHandler(
     IRepository<Asset, AssetId> assetRepository,
     IRepository<WorkOrder, WorkOrderId> workOrderRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("Maintenance")] IUnitOfWork unitOfWork,
     IIdGenerator idGenerator)
     : ICommandHandler<OpenWorkOrderCommand, long>
 {

@@ -1,10 +1,11 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.Robotics.Domain;
 
 namespace Nexus1.Robotics.Application;
 
 public sealed class DispatchMissionCommandHandler(
-    IRepository<Mission, MissionId> missionRepository, IUnitOfWork unitOfWork, IIdGenerator idGenerator)
+    IRepository<Mission, MissionId> missionRepository, [FromKeyedServices("Robotics")] IUnitOfWork unitOfWork, IIdGenerator idGenerator)
     : ICommandHandler<DispatchMissionCommand, long>
 {
     public async Task<Result<long>> Handle(DispatchMissionCommand command, CancellationToken cancellationToken)

@@ -32,7 +32,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<Incident, IncidentId>, EfRepository<Incident, IncidentId>>();
         services.AddScoped<IRepository<IncidentAction, IncidentActionId>, EfRepository<IncidentAction, IncidentActionId>>();
 
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("EventManagement");
 
         services.AddScoped<IEventWithAlarmsAndFloodFinder, EfEventWithAlarmsAndFloodFinder>();
         services.AddScoped<IEventTimelineFinder, EfEventTimelineFinder>();

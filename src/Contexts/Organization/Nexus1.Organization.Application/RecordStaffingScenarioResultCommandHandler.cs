@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.Organization.Domain;
 
 namespace Nexus1.Organization.Application;
@@ -7,7 +8,7 @@ public sealed class RecordStaffingScenarioResultCommandHandler(
     IRepository<StaffingScenario, StaffingScenarioId> scenarioRepository,
     IRepository<StaffingScenarioResult, StaffingScenarioResultId> resultRepository,
     IRepository<StaffingScenarioGap, StaffingScenarioGapId> gapRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("Organization")] IUnitOfWork unitOfWork,
     IIdGenerator idGenerator)
     : ICommandHandler<RecordStaffingScenarioResultCommand, int>
 {

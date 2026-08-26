@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.DigitalTwin.Domain;
 
 namespace Nexus1.DigitalTwin.Application;
@@ -6,7 +7,7 @@ namespace Nexus1.DigitalTwin.Application;
 public sealed class RecordTwinDivergenceCommandHandler(
     IRepository<TwinSnapshot, TwinSnapshotId> snapshotRepository,
     IRepository<TwinDivergence, TwinDivergenceId> divergenceRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("DigitalTwin")] IUnitOfWork unitOfWork,
     IIdGenerator idGenerator)
     : ICommandHandler<RecordTwinDivergenceCommand, long>
 {

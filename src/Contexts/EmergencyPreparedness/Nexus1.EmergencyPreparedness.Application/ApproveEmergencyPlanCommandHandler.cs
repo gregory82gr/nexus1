@@ -1,10 +1,11 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.EmergencyPreparedness.Domain;
 
 namespace Nexus1.EmergencyPreparedness.Application;
 
 public sealed class ApproveEmergencyPlanCommandHandler(
-    IRepository<EmergencyPlan, EmergencyPlanId> emergencyPlanRepository, IUnitOfWork unitOfWork, IIdGenerator idGenerator)
+    IRepository<EmergencyPlan, EmergencyPlanId> emergencyPlanRepository, [FromKeyedServices("EmergencyPreparedness")] IUnitOfWork unitOfWork, IIdGenerator idGenerator)
     : ICommandHandler<ApproveEmergencyPlanCommand, int>
 {
     public async Task<Result<int>> Handle(ApproveEmergencyPlanCommand command, CancellationToken cancellationToken)

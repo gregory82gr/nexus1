@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.Instrumentation.Domain;
 
 namespace Nexus1.Instrumentation.Application;
@@ -6,7 +7,7 @@ namespace Nexus1.Instrumentation.Application;
 public sealed class RecordMeasurementCommandHandler(
     IRepository<Signal, SignalId> signalRepository,
     IRepository<Measurement, MeasurementId> measurementRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("Instrumentation")] IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
     IIdGenerator idGenerator)
     : ICommandHandler<RecordMeasurementCommand, long>

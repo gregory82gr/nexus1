@@ -1,11 +1,12 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.RootCause.Domain;
 
 namespace Nexus1.RootCause.Application;
 
 public sealed class RejectHypothesisCommandHandler(
     IRepository<RootCauseAnalysis, RootCauseAnalysisId> repository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("RootCause")] IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider)
     : ICommandHandler<RejectHypothesisCommand>
 {

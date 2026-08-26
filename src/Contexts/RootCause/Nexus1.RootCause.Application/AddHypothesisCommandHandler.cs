@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Observability;
 using Nexus1.RootCause.Domain;
@@ -7,7 +8,7 @@ namespace Nexus1.RootCause.Application;
 
 public sealed class AddHypothesisCommandHandler(
     IRepository<RootCauseAnalysis, RootCauseAnalysisId> repository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("RootCause")] IUnitOfWork unitOfWork,
     IIdGenerator idGenerator)
     : ICommandHandler<AddHypothesisCommand, int>
 {

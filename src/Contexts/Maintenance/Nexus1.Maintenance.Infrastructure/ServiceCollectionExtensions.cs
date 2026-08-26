@@ -33,7 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<DegradationTrendPoint, DegradationTrendPointId>, EfRepository<DegradationTrendPoint, DegradationTrendPointId>>();
         services.AddScoped<IRepository<WorkOrder, WorkOrderId>, EfRepository<WorkOrder, WorkOrderId>>();
 
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("Maintenance");
 
         services.AddScoped<IAssetsByUnitFinder, EfAssetsByUnitFinder>();
         services.AddScoped<IOpenWorkOrdersFinder, EfOpenWorkOrdersFinder>();

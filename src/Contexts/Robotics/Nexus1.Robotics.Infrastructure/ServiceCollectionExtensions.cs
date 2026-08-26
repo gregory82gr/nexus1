@@ -32,7 +32,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<MissionReadinessAssessment, MissionReadinessAssessmentId>, EfRepository<MissionReadinessAssessment, MissionReadinessAssessmentId>>();
         services.AddScoped<IRepository<MissionReadinessItem, MissionReadinessItemId>, EfRepository<MissionReadinessItem, MissionReadinessItemId>>();
 
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("Robotics");
 
         services.AddScoped<IAvailableRobotsFinder, EfAvailableRobotsFinder>();
         services.AddScoped<ILatestHealthSnapshotFinder, EfLatestHealthSnapshotFinder>();

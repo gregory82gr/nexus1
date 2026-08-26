@@ -1,10 +1,11 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.RadiationMonitoring.Domain;
 
 namespace Nexus1.RadiationMonitoring.Application;
 
 public sealed class RegisterRadiationZoneCommandHandler(
-    IRepository<RadiationZone, RadiationZoneId> radiationZoneRepository, IUnitOfWork unitOfWork, IIdGenerator idGenerator)
+    IRepository<RadiationZone, RadiationZoneId> radiationZoneRepository, [FromKeyedServices("RadiationMonitoring")] IUnitOfWork unitOfWork, IIdGenerator idGenerator)
     : ICommandHandler<RegisterRadiationZoneCommand, int>
 {
     public async Task<Result<int>> Handle(RegisterRadiationZoneCommand command, CancellationToken cancellationToken)

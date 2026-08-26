@@ -1,11 +1,12 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.ReinforcementLearning.Domain;
 
 namespace Nexus1.ReinforcementLearning.Application;
 
 public sealed class RecordAdvisoryRecommendationCommandHandler(
     IRepository<AdvisoryRecommendation, AdvisoryRecommendationId> advisoryRecommendationRepository,
-    IUnitOfWork unitOfWork, IIdGenerator idGenerator)
+    [FromKeyedServices("ReinforcementLearning")] IUnitOfWork unitOfWork, IIdGenerator idGenerator)
     : ICommandHandler<RecordAdvisoryRecommendationCommand, long>
 {
     public async Task<Result<long>> Handle(RecordAdvisoryRecommendationCommand command, CancellationToken cancellationToken)

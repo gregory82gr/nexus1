@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.AlarmManagement.Domain;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Observability;
@@ -9,7 +10,7 @@ namespace Nexus1.AlarmManagement.Application;
 public sealed class DetectFloodCommandHandler(
     IAlarmEventFinder eventFinder,
     IRepository<AlarmFlood, AlarmFloodId> floodRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("AlarmManagement")] IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
     IIdGenerator idGenerator,
     IOutboxWriter outboxWriter)

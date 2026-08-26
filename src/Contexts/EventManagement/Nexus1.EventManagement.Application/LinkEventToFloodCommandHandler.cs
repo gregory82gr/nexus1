@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.EventManagement.Domain;
 
 namespace Nexus1.EventManagement.Application;
@@ -6,7 +7,7 @@ namespace Nexus1.EventManagement.Application;
 public sealed class LinkEventToFloodCommandHandler(
     IRepository<OperationalEvent, OperationalEventId> eventRepository,
     IRepository<EventFloodLink, EventFloodLinkId> linkRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("EventManagement")] IUnitOfWork unitOfWork,
     IIdGenerator idGenerator)
     : ICommandHandler<LinkEventToFloodCommand, long>
 {

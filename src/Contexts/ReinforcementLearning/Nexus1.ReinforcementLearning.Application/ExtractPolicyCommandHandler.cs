@@ -1,10 +1,11 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.ReinforcementLearning.Domain;
 
 namespace Nexus1.ReinforcementLearning.Application;
 
 public sealed class ExtractPolicyCommandHandler(
-    IRepository<Policy, PolicyId> policyRepository, IUnitOfWork unitOfWork, IIdGenerator idGenerator)
+    IRepository<Policy, PolicyId> policyRepository, [FromKeyedServices("ReinforcementLearning")] IUnitOfWork unitOfWork, IIdGenerator idGenerator)
     : ICommandHandler<ExtractPolicyCommand, int>
 {
     public async Task<Result<int>> Handle(ExtractPolicyCommand command, CancellationToken cancellationToken)

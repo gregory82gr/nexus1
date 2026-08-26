@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.Security.Domain;
 
 namespace Nexus1.Security.Application;
@@ -7,7 +8,7 @@ public sealed class AssignRoleToUserCommandHandler(
     IRepository<ApplicationUser, ApplicationUserId> userRepository,
     IRepository<ApplicationRole, ApplicationRoleId> roleRepository,
     IUserRoleWriter userRoleWriter,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("Security")] IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider)
     : ICommandHandler<AssignRoleToUserCommand>
 {

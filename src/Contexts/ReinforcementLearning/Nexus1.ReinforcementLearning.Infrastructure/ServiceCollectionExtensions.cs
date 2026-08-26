@@ -42,7 +42,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<AdvisorySession, AdvisorySessionId>, EfRepository<AdvisorySession, AdvisorySessionId>>();
         services.AddScoped<IRepository<AdvisoryRecommendation, AdvisoryRecommendationId>, EfRepository<AdvisoryRecommendation, AdvisoryRecommendationId>>();
 
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("ReinforcementLearning");
 
         services.AddScoped<IPolicyEntryCountFinder, EfPolicyEntryCountFinder>();
         services.AddScoped<IFinalQTableEntryCountFinder, EfFinalQTableEntryCountFinder>();

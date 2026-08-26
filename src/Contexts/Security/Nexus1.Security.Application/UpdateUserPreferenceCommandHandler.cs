@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.Security.Domain;
 
 namespace Nexus1.Security.Application;
@@ -6,7 +7,7 @@ namespace Nexus1.Security.Application;
 public sealed class UpdateUserPreferenceCommandHandler(
     IRepository<ApplicationUser, ApplicationUserId> userRepository,
     IRepository<UserPreference, ApplicationUserId> preferenceRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("Security")] IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider)
     : ICommandHandler<UpdateUserPreferenceCommand>
 {

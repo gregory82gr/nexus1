@@ -1,8 +1,9 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Nexus1.CorePlatform.Application;
 
-public sealed class UpdateAppSettingValueCommandHandler(IAppSettingFinder appSettingFinder, IUnitOfWork unitOfWork)
+public sealed class UpdateAppSettingValueCommandHandler(IAppSettingFinder appSettingFinder, [FromKeyedServices("CorePlatform")] IUnitOfWork unitOfWork)
     : ICommandHandler<UpdateAppSettingValueCommand>
 {
     public async Task<Result> Handle(UpdateAppSettingValueCommand command, CancellationToken cancellationToken)
