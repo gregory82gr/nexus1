@@ -1,0 +1,30 @@
+.security { display: flex; flex-direction: column; gap: 14px; }
+.ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 12px; }
+.ph h2 { font-size: 13px; margin: 0; font-family: 'Chakra Petch', sans-serif; }
+.tag { color: var(--text-dim); font-size: 10px; }
+.sub { color: var(--text-dim); font-size: 11px; margin-bottom: 8px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: none; }
+.ln { font-size: 12px; display: flex; align-items: center; gap: 8px; }
+.state-panel { max-width: 320px; }
+
+// Real status LED -- deliberately its own class, not .pill, mirroring
+// the book's own vocabulary for this exact screen (data-svc/data-field
+// attributes, a .led element) since here it happens to align with real
+// behavior: this LED can genuinely change colour, driven by a real
+// per-context health-check result, unlike the book's own hollow markup.
+.led {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 3px;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  border: 1px solid var(--line);
+}
+.led.ok { border-color: var(--green); color: var(--green); background: rgba(61, 220, 132, 0.13); }
+.led.warn { border-color: var(--amber); color: var(--amber); background: rgba(255, 176, 0, 0.13); }
+.led.crit { border-color: var(--red); color: var(--red); background: rgba(255, 59, 70, 0.14); }
+
+.fact-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.fact-list li { font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.fact-list li:last-child { border-bottom: none; }

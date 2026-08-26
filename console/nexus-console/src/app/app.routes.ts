@@ -209,7 +209,18 @@ export const routes: Routes = [
   // not anchored," never "tamper-proof" -- see
   // features/audit/audit-log.ts and hash-chain.ts's own doc comments.
   { path: 'audit', title: 'Compliance / Audit', loadComponent: () => import('./features/audit/audit-log').then((m) => m.AuditLogComponent) },
-  { path: 'sec', title: 'Security / Services', data: { title: 'Security / Services', chapter: 31 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Security & Services (Ch. 31) -- the book's own Microservice Health
+  // and OT Security Posture panels are 12 status lights with no
+  // computation behind any of them. Checked directly: neither of the
+  // book's own "genuinely live" signals (telemetry rate, twin sync lag)
+  // has real data here either. Built a different real thing instead: a
+  // "Context Health" panel over the real, already-registered
+  // DbContextHealthCheck<T> per composed context (a new GET
+  // /health/contexts endpoint), explicitly labeled DB connectivity, not
+  // service-level monitoring. OT Security Posture and Network Zones stay
+  // pure static documentation -- see features/security/security.ts's own
+  // doc comment for the full investigation.
+  { path: 'sec', title: 'Security / Services', loadComponent: () => import('./features/security/security').then((m) => m.SecurityComponent) },
   { path: 'console', title: 'NX-Script Console', data: { title: 'NX-Script Console', chapter: 32 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'help', title: 'Help & Guide', data: { title: 'Help & Guide', chapter: 32 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   // About: also never individually audited (Appendix A) -- same judgment-call caveat as Digital Twin.

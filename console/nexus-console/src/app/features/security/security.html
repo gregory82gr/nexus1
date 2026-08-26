@@ -1,0 +1,69 @@
+<div class="security">
+  <div class="panel context-health" data-panel="context-health">
+    <div class="ph"><h2>Context Health</h2><span class="pill nosource">DB CONNECTIVITY CHECK — NOT SERVICE-LEVEL MONITORING</span></div>
+    <p class="sub">
+      Real per-context database reachability (connect + pending-migration check), for whichever
+      contexts this host actually composes. A green light here means only "this context's database
+      answered" — never message-processing health, queue depth, or business-logic health, none of
+      which this backend can compute for anything.
+    </p>
+
+    @switch (contextHealthState().status) {
+      @case ('loading') {
+        <div class="panel state-panel">
+          <span class="pill info">LOADING</span>
+          <p>Fetching real context health from Nexus1.Bff…</p>
+        </div>
+      }
+      @case ('error') {
+        <div class="panel state-panel hot">
+          <span class="pill crit">UNREACHABLE</span>
+          <p>{{ contextHealthErrorMessage }}</p>
+        </div>
+      }
+      @case ('loaded') {
+        @for (r of loadedContextHealth; track r.contextName) {
+          <div class="row" [attr.data-svc]="r.contextName">
+            <div class="ln">{{ r.contextName }}</div>
+            <div class="ln">
+              <span class="sub">{{ r.durationMs.toFixed(1) }}ms</span>
+              <span class="led" data-field="status" [class.ok]="toneOf(r.status) === 'ok'" [class.warn]="toneOf(r.status) === 'warn'" [class.crit]="toneOf(r.status) === 'crit'">{{ r.status }}</span>
+            </div>
+          </div>
+        }
+      }
+    }
+  </div>
+
+  <div class="panel ot-posture" data-panel="ot-posture">
+    <div class="ph"><h2>OT Security Posture</h2><span class="tag">design facts, not a live attestation</span></div>
+    <p class="sub">
+      No LEDs, no "Zero-Trust" tag: checked directly, none of these 6 controls has any real
+      backing anywhere in this codebase — this is the intended architecture, described honestly,
+      not something currently being checked. A real security-operations feed (IDS output, HSM
+      attestation, live MFA enforcement logs) is out of scope.
+    </p>
+    <ul class="fact-list">
+      <li>Network — segmented</li>
+      <li>HSM — sealed key storage</li>
+      <li>MFA — enforced at login</li>
+      <li>IDS — deployed</li>
+      <li>Audit trail — streamed to log</li>
+      <li>Safety layer — isolated by design</li>
+    </ul>
+  </div>
+
+  <div class="panel network-zones" data-panel="network-zones">
+    <div class="ph"><h2>Network Zones</h2><span class="tag">static architecture documentation</span></div>
+    <ul class="fact-list">
+      <li>L0/L1 Safety — air-gapped</li>
+      <li>L2 Control — read-only tap</li>
+      <li>L3 Supervisory — platform</li>
+      <li>L4 Enterprise — analytics</li>
+    </ul>
+    <p class="sub">
+      Data flows up the zones through one-way gateways; no command path flows back down to the
+      safety layer.
+    </p>
+  </div>
+</div>
