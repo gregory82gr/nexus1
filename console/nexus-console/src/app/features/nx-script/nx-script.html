@@ -1,0 +1,33 @@
+<div class="nx-script">
+  <div class="panel">
+    <div class="ph"><h2>NX-Script Console</h2><span class="pill nosource">READ-ONLY QUERY CONSOLE — NO ACT VERBS</span></div>
+    <p class="sub">
+      Currently selected unit: <strong data-field="selected-unit">u{{ selectedUnitId() }}</strong>. Running
+      <code>select uX</code> here changes the unit every other screen that reads the shared selection reads too —
+      not local to this console.
+    </p>
+
+    <div class="cmd-row">
+      <input
+        #cmdInput
+        class="cmd-input"
+        type="text"
+        placeholder="get power / get fleet.power / select u1 / scram"
+        (keydown.enter)="run(cmdInput.value); cmdInput.value = ''"
+      />
+      <button type="button" class="run-btn" (click)="run(cmdInput.value); cmdInput.value = ''">Run</button>
+    </div>
+
+    <div class="history" data-field="history">
+      @for (entry of history(); track $index) {
+        <div class="entry">
+          <div class="cmd-line"><span class="prompt">&gt;</span> {{ entry.command }}</div>
+          <div class="output-line">{{ entry.output }}</div>
+        </div>
+      }
+      @if (history().length === 0) {
+        <p class="sub">No commands run yet this session.</p>
+      }
+    </div>
+  </div>
+</div>

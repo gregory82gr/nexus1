@@ -221,8 +221,20 @@ export const routes: Routes = [
   // pure static documentation -- see features/security/security.ts's own
   // doc comment for the full investigation.
   { path: 'sec', title: 'Security / Services', loadComponent: () => import('./features/security/security').then((m) => m.SecurityComponent) },
-  { path: 'console', title: 'NX-Script Console', data: { title: 'NX-Script Console', chapter: 32 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'help', title: 'Help & Guide', data: { title: 'Help & Guide', chapter: 32 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // NX-Script Console (Ch. 32) -- unlike every prior gap chapter, the
+  // book's own premise here needed no fabrication correction, only real
+  // investigation of which of the Phase-0 demo's 14 named signals this
+  // backend can actually back: 2 real (power, and period/kin_power off
+  // the same real per-unit Instrumentation signal Reactor Kinetics
+  // already polls), 11 total absences, each refused with its own
+  // specific reason rather than a generic message or a fabricated value
+  // -- see features/nx-script/signal-catalog.ts. `select uX` writes
+  // through the real, already-existing (if previously unwritten-to)
+  // PlantStateService, console-wide, not local to this screen.
+  { path: 'console', title: 'NX-Script Console', loadComponent: () => import('./features/nx-script/nx-script').then((m) => m.NxScriptComponent) },
+  // Help & Guide (Ch. 32) -- pure static scope text, no correction
+  // needed per the book, no backend call.
+  { path: 'help', title: 'Help & Guide', loadComponent: () => import('./features/help/help').then((m) => m.HelpComponent) },
   // About: also never individually audited (Appendix A) -- same judgment-call caveat as Digital Twin.
   { path: 'about', title: 'About', data: { title: 'About', chapter: 32 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
 

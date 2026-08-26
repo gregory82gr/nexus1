@@ -1,0 +1,37 @@
+.nx-script { display: flex; flex-direction: column; gap: 14px; }
+.ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 12px; }
+.ph h2 { font-size: 13px; margin: 0; font-family: 'Chakra Petch', sans-serif; }
+.sub { color: var(--text-dim); font-size: 11px; margin-bottom: 8px; }
+.sub code { color: var(--cyan); }
+
+.cmd-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.cmd-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: 'Chakra Petch', monospace;
+  font-size: 12px;
+  padding: 8px 10px;
+}
+.cmd-input:focus { outline: none; border-color: var(--cyan-deep); }
+.run-btn {
+  background: rgba(34, 211, 238, 0.12);
+  color: var(--cyan);
+  border: 1px solid var(--cyan-deep);
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.run-btn:hover { background: rgba(34, 211, 238, 0.2); }
+
+.history { display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto; }
+.entry { border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.entry:last-child { border-bottom: none; }
+.cmd-line { font-size: 12px; font-family: 'Chakra Petch', monospace; color: var(--text); }
+.cmd-line .prompt { color: var(--cyan); margin-right: 6px; }
+.output-line { font-size: 12px; font-family: 'Chakra Petch', monospace; color: var(--text-dim); margin-top: 2px; white-space: pre-wrap; }
