@@ -4,3 +4,9 @@
 *.xlsx binary
 *.png binary
 *.jpg binary
+
+# Ch. 34: shell scripts run inside Linux containers -- CRLF (which
+# core.autocrlf=true would otherwise check out as, on Windows) breaks the
+# #!/bin/sh shebang and any `set -eu`/parameter-expansion line under a
+# Linux shell. Force LF regardless of the cloning platform.
+*.sh text eol=lf
