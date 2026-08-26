@@ -1,0 +1,27 @@
+.digital-twin { display: flex; flex-direction: column; gap: 14px; }
+.ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 12px; }
+.ph h2 { font-size: 13px; margin: 0; font-family: 'Chakra Petch', sans-serif; }
+.tag { color: var(--text-dim); font-size: 10px; }
+.sub { color: var(--text-dim); font-size: 11px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: none; }
+.ln { font-size: 12px; display: flex; align-items: center; gap: 8px; }
+.state-panel { padding: 8px 0; }
+
+.twin-row {
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  padding: 6px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+}
+.twin-row:hover { background: rgba(34, 211, 238, 0.06); }
+.twin-row.selected { background: rgba(34, 211, 238, 0.12); border-left: 2px solid var(--cyan); padding-left: 6px; }

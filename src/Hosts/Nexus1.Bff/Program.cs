@@ -508,6 +508,39 @@ app.MapGet("/api/v1/digital-twin/units/{id:int}", async (int id, [FromServices] 
     return Results.Ok(result.Value);
 });
 
+// Digital Twin screen (Appendix A follow-up): fleet-wide reconciliation
+// table -- three thin routes wrapping handlers already registered above
+// (AddDigitalTwinApplication), zero new backend logic. Checked directly
+// before adding these: no per-unit divergence query exists anywhere in
+// this context -- IActiveTwinFinder.GetActiveTwinsForUnitAsync's own doc
+// comment names the real four-hop join (TwinDivergence -> TwinSnapshot ->
+// TwinRuntimeSession -> TwinModelVersion -> TwinModel.UnitId) no existing
+// query performs, and OpenDivergenceDto itself carries no unit reference.
+// So divergences are exposed fleet-wide only, here, never silently
+// narrowed to look per-unit -- the frontend's own screen labels this
+// explicitly, matching this route's own real shape.
+app.MapGet("/api/v1/digital-twin/fleet", async ([FromServices] GetActiveTwinsForFleetQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new GetActiveTwinsForFleetQuery(), cancellationToken);
+    return Results.Ok(result.Value);
+});
+
+// Real SignalBinding join (TwinModel/TwinVariable -> Instrumentation.Signal,
+// real FK per ADR-020), scoped by twin code -- not per-unit directly, but
+// a unit's twin code is reachable via the fleet route above, a real
+// two-step join, not a fabricated one.
+app.MapGet("/api/v1/digital-twin/twins/{twinCode}/signals", async (string twinCode, [FromServices] TraceModelVariableToSignalQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new TraceModelVariableToSignalQuery(twinCode), cancellationToken);
+    return Results.Ok(result.Value);
+});
+
+app.MapGet("/api/v1/digital-twin/divergences", async ([FromServices] GetOpenDivergencesQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new GetOpenDivergencesQuery(), cancellationToken);
+    return Results.Ok(result.Value);
+});
+
 // Radiation & Safety screen: per-unit ambient monitor readings and zone
 // classification (ADR-030 follow-up slice). Does NOT include personnel dose
 // data (DoseAlert/PersonDoseReading/Dosimeter) — a named gap, not an

@@ -4,7 +4,7 @@
 :root {
   /* surfaces */
   --bg: #070b0c;        --bg-grid: #0d1517;
-  --panel: #0c1416;     --panel-2: #0f1a1d;
+  --panel: #0c1416;     --panel-2: #0f1a1d; // real project addition beyond the book's Appendix E.1 list -- used for panel gradient backgrounds (see styles/_panels.scss)
 
   /* structure */
   --line: #1a2a2e;      --line-hot: #26464d;

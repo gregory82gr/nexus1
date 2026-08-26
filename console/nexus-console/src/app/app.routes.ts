@@ -193,10 +193,15 @@ export const routes: Routes = [
   // see features/component-registry/component-registry.ts's own doc
   // comment for the full investigation.
   { path: 'components', title: 'Component Registry', loadComponent: () => import('./features/component-registry/component-registry').then((m) => m.ComponentRegistryComponent) },
-  // Digital Twin: never individually audited by the book's own Appendix A --
-  // chapter number below is a placed-near-neighbor judgment call, not an
-  // asserted fact.
-  { path: 'twin', title: 'Digital Twin', data: { title: 'Digital Twin', chapter: 28 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Digital Twin (Appendix A follow-up) -- a fleet-wide reconciliation
+  // table (model fidelity, signals mirrored, per-signal deviation),
+  // explicitly distinct from Plant 3D View's (Ch. 8) per-unit twin state.
+  // Path stays 'twin' (not 'digital-twin') -- matching this route table's
+  // own stated discipline of keeping every path identical to index.html's
+  // original data-p value; the feature folder is named digital-twin/,
+  // the URL is not. See features/digital-twin/digital-twin.ts's own doc
+  // comment for the full investigation.
+  { path: 'twin', title: 'Digital Twin', loadComponent: () => import('./features/digital-twin/digital-twin').then((m) => m.DigitalTwinComponent) },
   { path: 'incident', title: 'Incident Analysis', data: { title: 'Incident Analysis', chapter: 29 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'rcgraph', title: 'Root Cause Graph', data: { title: 'Root Cause Graph', chapter: 29 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   // Audit & Compliance (Ch. 30) -- the book's fictional seal function is
@@ -235,8 +240,9 @@ export const routes: Routes = [
   // Help & Guide (Ch. 32) -- pure static scope text, no correction
   // needed per the book, no backend call.
   { path: 'help', title: 'Help & Guide', loadComponent: () => import('./features/help/help').then((m) => m.HelpComponent) },
-  // About: also never individually audited (Appendix A) -- same judgment-call caveat as Digital Twin.
-  { path: 'about', title: 'About', data: { title: 'About', chapter: 32 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // About (Appendix A follow-up) -- pure static scope text, same pattern
+  // as Help & Guide, no backend call.
+  { path: 'about', title: 'About', loadComponent: () => import('./features/about/about').then((m) => m.AboutComponent) },
 
   { path: '**', redirectTo: 'overview' },
 ];
