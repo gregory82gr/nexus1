@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.AlarmManagement.Domain;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Observability;
@@ -8,7 +9,7 @@ namespace Nexus1.AlarmManagement.Application;
 public sealed class EvaluateReadingCommandHandler(
     IAlarmDefinitionFinder definitionFinder,
     IRepository<AlarmEvent, AlarmEventId> eventRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("AlarmManagement")] IUnitOfWork unitOfWork,
     IIdGenerator idGenerator)
     : ICommandHandler<EvaluateReadingCommand, int>
 {

@@ -34,7 +34,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<EmergencyResource, EmergencyResourceId>, EfRepository<EmergencyResource, EmergencyResourceId>>();
         services.AddScoped<IRepository<ResourceReadinessCheck, ResourceReadinessCheckId>, EfRepository<ResourceReadinessCheck, ResourceReadinessCheckId>>();
 
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("EmergencyPreparedness");
 
         services.AddScoped<ISiteActivePlansFinder, EfSiteActivePlansFinder>();
         services.AddScoped<IExercisesWithCorrectiveObservationsFinder, EfExercisesWithCorrectiveObservationsFinder>();

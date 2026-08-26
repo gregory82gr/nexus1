@@ -1,0 +1,33 @@
+<div class="help">
+  <div class="panel">
+    <div class="ph"><h2>Help &amp; Guide</h2><span class="pill nosource">STATIC REFERENCE — NO BACKEND CALL</span></div>
+    <p class="sub">
+      This console is a demonstration/portfolio build layered on a real, intentionally partial .NET backend. It has
+      no control authority over any real plant: every write path in this build is exactly one endpoint (alarm
+      acknowledgement), and every other screen is read-only. Where a screen's underlying data does not exist yet,
+      it says so directly rather than showing an invented value — that discipline is this console's actual subject,
+      more than any single reading is.
+    </p>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2>Screen reference</h2></div>
+    <ul class="fact-list">
+      <li><strong>Plant Overview / Plant Fleet</strong> — real per-unit power and cross-context status, aggregated from whichever contexts respond.</li>
+      <li><strong>Reactor cluster (Core, Control Rods, Neutronics, Coolant/TH, Steam &amp; Secondary, Kinetics)</strong> — one real generic signal feed per unit; Kinetics additionally derives reactor period from two consecutive real readings.</li>
+      <li><strong>Training Mode</strong> — a genuinely simulated reactor model for drills, entirely separate from every live-telemetry screen.</li>
+      <li><strong>Alarms &amp; Events</strong> — the real alarm list and the one real write action this console exposes, acknowledgement.</li>
+      <li><strong>Radiation / Safety, Power &amp; Grid, Robotics, Asset/Inspection screens</strong> — each built from whatever this backend genuinely tracks for that domain; absent fields are named, not filled in.</li>
+      <li><strong>Security / Services</strong> — real per-context database connectivity, explicitly not service-level health.</li>
+      <li><strong>NX-Script Console</strong> — a read-only query interpreter over this same console state. It recognizes 14 named signals; most resolve to an honest "not tracked" refusal rather than a fabricated value. Act verbs (set, scram, hold, step, wait) are refused by design; acknowledge is refused as a real capability this console does not expose here. <code>select uX</code> changes the active unit for every screen on this console, not just this one.</li>
+    </ul>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2>Scope</h2></div>
+    <p class="sub">
+      Advisory and illustrative only. Nothing in this console issues a command to any real plant equipment, and no
+      screen should be read as an operational safety system.
+    </p>
+  </div>
+</div>

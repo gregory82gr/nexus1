@@ -1,9 +1,10 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.Security.Domain;
 
 namespace Nexus1.Security.Application;
 
-public sealed class UnlockUserCommandHandler(IRepository<ApplicationUser, ApplicationUserId> userRepository, IUnitOfWork unitOfWork)
+public sealed class UnlockUserCommandHandler(IRepository<ApplicationUser, ApplicationUserId> userRepository, [FromKeyedServices("Security")] IUnitOfWork unitOfWork)
     : ICommandHandler<UnlockUserCommand>
 {
     public async Task<Result> Handle(UnlockUserCommand command, CancellationToken cancellationToken)

@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
             connectionString, sql => sql.MigrationsHistoryTable("__EFMigrationsHistory_RootCause")));
 
         services.AddScoped<IRepository<RootCauseAnalysis, RootCauseAnalysisId>, RootCauseAnalysisRepository>();
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("RootCause");
         services.AddScoped<IOutboxWriter, EfOutboxWriter>();
         services.AddScoped<OutboxRelay>();
         services.AddHostedService<OutboxPublisherBackgroundService>();

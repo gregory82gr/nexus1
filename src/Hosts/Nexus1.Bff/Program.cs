@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Nexus1.AlarmManagement.Application;
 using Nexus1.AlarmManagement.Infrastructure;
 using Nexus1.AlarmManagement.Infrastructure.Persistence;
@@ -438,6 +439,34 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => fa
 // Readiness: can this host actually reach every database it composes.
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = _ => true });
 
+// Ch.31 Security & Services screen: the console's own book claims a
+// "Microservice Health" panel with six always-green services. Checked
+// directly before building anything real to back it: no telemetry
+// ingestion rate and no digital-twin sync-lag signal exist anywhere in
+// this backend (both total absences, same shape as Ch.26/28's own
+// findings) -- neither of the book's own "genuinely live" rows has real
+// data here either. What IS real: DbContextHealthCheck<T>, already
+// registered per composed context above, already backing /health/ready
+// -- but only as ASP.NET Core's default AGGREGATE plain-text status, not
+// a per-context breakdown. This endpoint is that breakdown, named and
+// labeled honestly: real per-context database CONNECTIVITY reachability
+// (CanConnectAsync + pending-migration check, exactly what
+// DbContextHealthCheck already does), never service-level monitoring
+// (message processing, queue depth, business logic) -- the console's own
+// frontend doc comment carries this same distinction, not just this one.
+// Reflects whichever contexts are actually composed in THIS running
+// instance (IsContextEnabled above), real context names, never the
+// book's fictional six service names.
+app.MapGet("/health/contexts", async ([FromServices] HealthCheckService healthCheckService, CancellationToken cancellationToken) =>
+{
+    var report = await healthCheckService.CheckHealthAsync(cancellationToken);
+    var results = report.Entries
+        .Select(entry => new ContextHealthResult(ContextNameForCheckName(entry.Key), entry.Value.Status.ToString(), entry.Value.Duration.TotalMilliseconds))
+        .OrderBy(r => r.ContextName, StringComparer.Ordinal)
+        .ToList();
+    return Results.Ok(results);
+});
+
 // Fleet-overview screen: minimal summary per unit (ADR-030).
 app.MapGet("/api/v1/reactor-fleet/units", async ([FromServices] GetUnitsQueryHandler handler, CancellationToken cancellationToken) =>
 {
@@ -815,6 +844,16 @@ app.MapGet("/api/v1/audit/analyses/{analysisId:long}/evidence", async (long anal
 // codebase yet. Every real row this endpoint returns will read State:
 // "Pending". Same per-analysis scoping as Audit, for the same reason
 // (no UnitId anywhere; RootCause stays out-of-process per ADR-001).
+//
+// Ch.30 Audit & Compliance screen: this handler and its DTO already
+// existed, fully DI-wired, with no route ever mapped to it — a genuinely
+// thin addition, zero new Application-layer code.
+app.MapGet("/api/v1/compliance/analyses/{analysisId:long}/reviews", async (long analysisId, [FromServices] GetComplianceReviewsBySourceAnalysisIdQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new GetComplianceReviewsBySourceAnalysisIdQuery(analysisId), cancellationToken);
+    return Results.Ok(result.Value);
+});
+
 // Backend-only, no console screen: investigated against the Angular
 // companion book's full sitemap before building anything (see Program.cs's
 // EventManagement composition comment above for the full reasoning). These
@@ -919,5 +958,43 @@ static async Task<(T? Data, string? Error)> SafeCallAsync<T>(Func<Task<T?>> call
         return (default, ex.Message);
     }
 }
+
+/// <summary>
+/// Real context name (e.g. "ReactorFleet"), never the check's own
+/// lowercase-hyphenated registration key ("reactorfleet-db") and never
+/// one of the book's fictional service names. The pairing below mirrors
+/// the exact 16 <c>AddCheck&lt;DbContextHealthCheck&lt;T&gt;&gt;("x-db")</c>
+/// calls above one-for-one -- not an independent guess at naming.
+/// </summary>
+static string ContextNameForCheckName(string checkName) => checkName switch
+{
+    "reactorfleet-db" => "ReactorFleet",
+    "alarmmanagement-db" => "AlarmManagement",
+    "digitaltwin-db" => "DigitalTwin",
+    "radiationmonitoring-db" => "RadiationMonitoring",
+    "reporting-db" => "Reporting",
+    "robotics-db" => "Robotics",
+    "instrumentation-db" => "Instrumentation",
+    "organization-db" => "Organization",
+    "security-db" => "Security",
+    "maintenance-db" => "Maintenance",
+    "coreplatform-db" => "CorePlatform",
+    "audit-db" => "Audit",
+    "compliance-db" => "Compliance",
+    "eventmanagement-db" => "EventManagement",
+    "emergencypreparedness-db" => "EmergencyPreparedness",
+    "reinforcementlearning-db" => "ReinforcementLearning",
+    _ => checkName,
+};
+
+/// <summary>
+/// DurationMs is real per-check timing (CanConnectAsync + pending-migration
+/// check), not a placeholder. Status is the real ASP.NET Core
+/// HealthStatus.ToString() value ("Healthy"/"Degraded"/"Unhealthy") for
+/// THIS check alone -- database connectivity reachability, never
+/// service-level (message processing, queue depth, business logic)
+/// health, which this backend has no way to compute for anything.
+/// </summary>
+internal sealed record ContextHealthResult(string ContextName, string Status, double DurationMs);
 
 internal sealed record AcknowledgeAlarmRequest(Guid AcknowledgedByUserId);

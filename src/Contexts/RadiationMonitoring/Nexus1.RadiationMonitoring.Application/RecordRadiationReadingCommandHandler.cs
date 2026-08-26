@@ -1,10 +1,11 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.RadiationMonitoring.Domain;
 
 namespace Nexus1.RadiationMonitoring.Application;
 
 public sealed class RecordRadiationReadingCommandHandler(
-    IRepository<RadiationReading, RadiationReadingId> radiationReadingRepository, IUnitOfWork unitOfWork,
+    IRepository<RadiationReading, RadiationReadingId> radiationReadingRepository, [FromKeyedServices("RadiationMonitoring")] IUnitOfWork unitOfWork,
     IIdGenerator idGenerator)
     : ICommandHandler<RecordRadiationReadingCommand, long>
 {

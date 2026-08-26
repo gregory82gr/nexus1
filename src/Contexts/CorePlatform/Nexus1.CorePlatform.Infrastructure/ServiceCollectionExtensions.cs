@@ -27,7 +27,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<EngineeringUnit, EngineeringUnitId>, EfRepository<EngineeringUnit, EngineeringUnitId>>();
         services.AddScoped<IRepository<DeploymentVersion, DeploymentVersionId>, EfRepository<DeploymentVersion, DeploymentVersionId>>();
 
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("CorePlatform");
 
         services.AddScoped<IAppSettingFinder, EfAppSettingFinder>();
         services.AddScoped<IFeatureFlagFinder, EfFeatureFlagFinder>();

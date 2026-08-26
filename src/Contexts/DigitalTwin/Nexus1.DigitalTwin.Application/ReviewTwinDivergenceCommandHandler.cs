@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.DigitalTwin.Domain;
 
 namespace Nexus1.DigitalTwin.Application;
@@ -6,7 +7,7 @@ namespace Nexus1.DigitalTwin.Application;
 public sealed class ReviewTwinDivergenceCommandHandler(
     IRepository<TwinDivergence, TwinDivergenceId> divergenceRepository,
     IRepository<TwinDivergenceReview, TwinDivergenceReviewId> reviewRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("DigitalTwin")] IUnitOfWork unitOfWork,
     IIdGenerator idGenerator)
     : ICommandHandler<ReviewTwinDivergenceCommand, long>
 {

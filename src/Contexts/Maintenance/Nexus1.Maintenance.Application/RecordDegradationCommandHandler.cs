@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.Maintenance.Domain;
 
 namespace Nexus1.Maintenance.Application;
@@ -7,7 +8,7 @@ public sealed class RecordDegradationCommandHandler(
     IRepository<Asset, AssetId> assetRepository,
     IRepository<DegradationRecord, DegradationRecordId> degradationRepository,
     IRepository<DegradationTrendPoint, DegradationTrendPointId> trendPointRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("Maintenance")] IUnitOfWork unitOfWork,
     IIdGenerator idGenerator)
     : ICommandHandler<RecordDegradationCommand, long>
 {

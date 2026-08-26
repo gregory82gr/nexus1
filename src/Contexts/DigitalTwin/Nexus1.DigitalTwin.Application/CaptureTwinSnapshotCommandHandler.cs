@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.DigitalTwin.Domain;
 
 namespace Nexus1.DigitalTwin.Application;
@@ -7,7 +8,7 @@ public sealed class CaptureTwinSnapshotCommandHandler(
     IRepository<TwinRuntimeSession, TwinRuntimeSessionId> sessionRepository,
     IRepository<TwinSnapshot, TwinSnapshotId> snapshotRepository,
     IRepository<TwinSnapshotValue, TwinSnapshotValueId> snapshotValueRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("DigitalTwin")] IUnitOfWork unitOfWork,
     IIdGenerator idGenerator)
     : ICommandHandler<CaptureTwinSnapshotCommand, long>
 {

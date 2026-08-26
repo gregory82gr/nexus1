@@ -37,7 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<TwinDivergence, TwinDivergenceId>, EfRepository<TwinDivergence, TwinDivergenceId>>();
         services.AddScoped<IRepository<TwinDivergenceReview, TwinDivergenceReviewId>, EfRepository<TwinDivergenceReview, TwinDivergenceReviewId>>();
 
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("DigitalTwin");
 
         services.AddScoped<IActiveTwinFinder, EfActiveTwinFinder>();
         services.AddScoped<IModelVariableSignalTraceFinder, EfModelVariableSignalTraceFinder>();

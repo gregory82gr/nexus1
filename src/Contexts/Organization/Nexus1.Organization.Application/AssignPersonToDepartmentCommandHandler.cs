@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.Organization.Domain;
 
 namespace Nexus1.Organization.Application;
@@ -7,7 +8,7 @@ public sealed class AssignPersonToDepartmentCommandHandler(
     IRepository<Person, PersonId> personRepository,
     IRepository<Department, DepartmentId> departmentRepository,
     IRepository<DepartmentAssignment, DepartmentAssignmentId> assignmentRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("Organization")] IUnitOfWork unitOfWork,
     IIdGenerator idGenerator,
     IDateTimeProvider dateTimeProvider)
     : ICommandHandler<AssignPersonToDepartmentCommand, int>

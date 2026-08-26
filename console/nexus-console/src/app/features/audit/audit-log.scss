@@ -1,0 +1,36 @@
+.audit-log { display: flex; flex-direction: column; gap: 14px; }
+.note .sub { margin-top: 6px; color: var(--text-dim); font-size: 11px; }
+.note code { color: var(--text); background: var(--panel-2); padding: 1px 4px; border-radius: 3px; }
+.ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ph h2 { font-size: 13px; margin: 0; font-family: 'Chakra Petch', sans-serif; }
+.tag { color: var(--text-dim); font-size: 10px; }
+.sub { color: var(--text-dim); font-size: 11px; }
+.sub.error { color: var(--red); margin-top: 8px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.row:last-child { border-bottom: none; }
+.ln { font-size: 12px; display: flex; align-items: center; gap: 8px; }
+.step { color: var(--text-dim); font-size: 10px; width: 16px; }
+
+.lookup-row { display: flex; gap: 8px; }
+.lookup-row input {
+  flex: 1;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+}
+.btn {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: 0.4; cursor: default; }

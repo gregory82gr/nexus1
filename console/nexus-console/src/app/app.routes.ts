@@ -199,10 +199,42 @@ export const routes: Routes = [
   { path: 'twin', title: 'Digital Twin', data: { title: 'Digital Twin', chapter: 28 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'incident', title: 'Incident Analysis', data: { title: 'Incident Analysis', chapter: 29 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
   { path: 'rcgraph', title: 'Root Cause Graph', data: { title: 'Root Cause Graph', chapter: 29 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'audit', title: 'Compliance / Audit', data: { title: 'Compliance / Audit', chapter: 30 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'sec', title: 'Security / Services', data: { title: 'Security / Services', chapter: 31 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'console', title: 'NX-Script Console', data: { title: 'NX-Script Console', chapter: 32 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'help', title: 'Help & Guide', data: { title: 'Help & Guide', chapter: 32 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  // Audit & Compliance (Ch. 30) -- the book's fictional seal function is
+  // Math.random() twice, referencing nothing; checked directly, no
+  // hash-chain/seal mechanism exists anywhere server-side either. Real
+  // per-record SHA-256 content hashes exist (Audit's own
+  // EnvelopeSha256Hex) but none reference a previous record -- chained
+  // here, client-side, for the first time, over real per-analysis
+  // lookups (no fleet-wide listing exists), labeled "verifies locally,
+  // not anchored," never "tamper-proof" -- see
+  // features/audit/audit-log.ts and hash-chain.ts's own doc comments.
+  { path: 'audit', title: 'Compliance / Audit', loadComponent: () => import('./features/audit/audit-log').then((m) => m.AuditLogComponent) },
+  // Security & Services (Ch. 31) -- the book's own Microservice Health
+  // and OT Security Posture panels are 12 status lights with no
+  // computation behind any of them. Checked directly: neither of the
+  // book's own "genuinely live" signals (telemetry rate, twin sync lag)
+  // has real data here either. Built a different real thing instead: a
+  // "Context Health" panel over the real, already-registered
+  // DbContextHealthCheck<T> per composed context (a new GET
+  // /health/contexts endpoint), explicitly labeled DB connectivity, not
+  // service-level monitoring. OT Security Posture and Network Zones stay
+  // pure static documentation -- see features/security/security.ts's own
+  // doc comment for the full investigation.
+  { path: 'sec', title: 'Security / Services', loadComponent: () => import('./features/security/security').then((m) => m.SecurityComponent) },
+  // NX-Script Console (Ch. 32) -- unlike every prior gap chapter, the
+  // book's own premise here needed no fabrication correction, only real
+  // investigation of which of the Phase-0 demo's 14 named signals this
+  // backend can actually back: 2 real (power, and period/kin_power off
+  // the same real per-unit Instrumentation signal Reactor Kinetics
+  // already polls), 11 total absences, each refused with its own
+  // specific reason rather than a generic message or a fabricated value
+  // -- see features/nx-script/signal-catalog.ts. `select uX` writes
+  // through the real, already-existing (if previously unwritten-to)
+  // PlantStateService, console-wide, not local to this screen.
+  { path: 'console', title: 'NX-Script Console', loadComponent: () => import('./features/nx-script/nx-script').then((m) => m.NxScriptComponent) },
+  // Help & Guide (Ch. 32) -- pure static scope text, no correction
+  // needed per the book, no backend call.
+  { path: 'help', title: 'Help & Guide', loadComponent: () => import('./features/help/help').then((m) => m.HelpComponent) },
   // About: also never individually audited (Appendix A) -- same judgment-call caveat as Digital Twin.
   { path: 'about', title: 'About', data: { title: 'About', chapter: 32 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
 

@@ -1,10 +1,11 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.ReinforcementLearning.Domain;
 
 namespace Nexus1.ReinforcementLearning.Application;
 
 public sealed class RecordTrainingRunCommandHandler(
-    IRepository<TrainingRun, TrainingRunId> trainingRunRepository, IUnitOfWork unitOfWork, IIdGenerator idGenerator)
+    IRepository<TrainingRun, TrainingRunId> trainingRunRepository, [FromKeyedServices("ReinforcementLearning")] IUnitOfWork unitOfWork, IIdGenerator idGenerator)
     : ICommandHandler<RecordTrainingRunCommand, int>
 {
     public async Task<Result<int>> Handle(RecordTrainingRunCommand command, CancellationToken cancellationToken)

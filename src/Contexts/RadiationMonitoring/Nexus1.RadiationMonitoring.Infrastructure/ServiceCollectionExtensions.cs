@@ -37,7 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<DoseLimit, DoseLimitId>, EfRepository<DoseLimit, DoseLimitId>>();
         services.AddScoped<IRepository<DoseAlert, DoseAlertId>, EfRepository<DoseAlert, DoseAlertId>>();
 
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("RadiationMonitoring");
 
         services.AddScoped<IActiveRadiationZonesFinder, EfActiveRadiationZonesFinder>();
         services.AddScoped<IMonitorsWithCalibrationDueFinder, EfMonitorsWithCalibrationDueFinder>();

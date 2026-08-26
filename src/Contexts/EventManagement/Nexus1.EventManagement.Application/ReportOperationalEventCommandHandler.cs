@@ -1,10 +1,11 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.EventManagement.Domain;
 
 namespace Nexus1.EventManagement.Application;
 
 public sealed class ReportOperationalEventCommandHandler(
-    IRepository<OperationalEvent, OperationalEventId> eventRepository, IUnitOfWork unitOfWork, IIdGenerator idGenerator)
+    IRepository<OperationalEvent, OperationalEventId> eventRepository, [FromKeyedServices("EventManagement")] IUnitOfWork unitOfWork, IIdGenerator idGenerator)
     : ICommandHandler<ReportOperationalEventCommand, long>
 {
     public async Task<Result<long>> Handle(ReportOperationalEventCommand command, CancellationToken cancellationToken)

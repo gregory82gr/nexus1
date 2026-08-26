@@ -37,7 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<AlarmFlood, AlarmFloodId>, EfRepository<AlarmFlood, AlarmFloodId>>();
         services.AddScoped<IAlarmDefinitionFinder, EfAlarmDefinitionFinder>();
         services.AddScoped<IAlarmEventFinder, EfAlarmEventFinder>();
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("AlarmManagement");
         services.AddScoped<IOutboxWriter, EfOutboxWriter>();
 
         if (enableOutboxRelay)

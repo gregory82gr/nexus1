@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.ReactorFleet.Domain;
 
 namespace Nexus1.ReactorFleet.Application;
@@ -6,7 +7,7 @@ namespace Nexus1.ReactorFleet.Application;
 public sealed class RecordUnitPowerSnapshotCommandHandler(
     IRepository<Unit, UnitId> unitRepository,
     IRepository<UnitPowerSnapshot, UnitPowerSnapshotId> snapshotRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("ReactorFleet")] IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
     IIdGenerator idGenerator)
     : ICommandHandler<RecordUnitPowerSnapshotCommand, long>

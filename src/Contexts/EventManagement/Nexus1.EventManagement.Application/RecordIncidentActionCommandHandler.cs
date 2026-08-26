@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.EventManagement.Domain;
 
 namespace Nexus1.EventManagement.Application;
@@ -6,7 +7,7 @@ namespace Nexus1.EventManagement.Application;
 public sealed class RecordIncidentActionCommandHandler(
     IRepository<Incident, IncidentId> incidentRepository,
     IRepository<IncidentAction, IncidentActionId> actionRepository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("EventManagement")] IUnitOfWork unitOfWork,
     IIdGenerator idGenerator)
     : ICommandHandler<RecordIncidentActionCommand, long>
 {

@@ -47,7 +47,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<StaffingScenarioResult, StaffingScenarioResultId>, EfRepository<StaffingScenarioResult, StaffingScenarioResultId>>();
         services.AddScoped<IRepository<StaffingScenarioGap, StaffingScenarioGapId>, EfRepository<StaffingScenarioGap, StaffingScenarioGapId>>();
 
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("Organization");
 
         services.AddScoped<ISitePlantHierarchyFinder, EfSitePlantHierarchyFinder>();
         services.AddScoped<IPersonOrganizationContextFinder, EfPersonOrganizationContextFinder>();

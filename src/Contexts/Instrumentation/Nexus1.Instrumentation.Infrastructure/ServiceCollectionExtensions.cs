@@ -31,7 +31,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<Measurement, MeasurementId>, EfRepository<Measurement, MeasurementId>>();
         services.AddScoped<IRepository<SignalQualityEvent, SignalQualityEventId>, EfRepository<SignalQualityEvent, SignalQualityEventId>>();
 
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("Instrumentation");
 
         services.AddScoped<IActiveHistorizedSignalFinder, EfActiveHistorizedSignalFinder>();
         services.AddScoped<ILatestMeasurementFinder, EfLatestMeasurementFinder>();

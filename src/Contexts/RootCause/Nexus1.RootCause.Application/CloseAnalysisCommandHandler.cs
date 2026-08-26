@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Observability;
 using Nexus1.Contracts.RootCause;
@@ -8,7 +9,7 @@ namespace Nexus1.RootCause.Application;
 
 public sealed class CloseAnalysisCommandHandler(
     IRepository<RootCauseAnalysis, RootCauseAnalysisId> repository,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("RootCause")] IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
     IOutboxWriter outboxWriter,
     NexusRuntimeMetrics metrics)

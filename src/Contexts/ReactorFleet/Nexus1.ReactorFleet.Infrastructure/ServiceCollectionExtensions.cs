@@ -20,7 +20,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IRepository<Unit, UnitId>, EfRepository<Unit, UnitId>>();
         services.AddScoped<IRepository<UnitPowerSnapshot, UnitPowerSnapshotId>, EfRepository<UnitPowerSnapshot, UnitPowerSnapshotId>>();
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("ReactorFleet");
 
         services.AddScoped<IUnitFleetFinder, EfUnitFleetFinder>();
 

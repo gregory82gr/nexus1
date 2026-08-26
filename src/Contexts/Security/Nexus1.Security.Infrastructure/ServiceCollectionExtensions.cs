@@ -23,7 +23,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<Permission, PermissionId>, EfRepository<Permission, PermissionId>>();
         services.AddScoped<IRepository<UserPreference, ApplicationUserId>, EfRepository<UserPreference, ApplicationUserId>>();
 
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("Security");
 
         services.AddScoped<IUserRoleWriter, EfUserRoleWriter>();
         services.AddScoped<IRolePermissionWriter, EfRolePermissionWriter>();

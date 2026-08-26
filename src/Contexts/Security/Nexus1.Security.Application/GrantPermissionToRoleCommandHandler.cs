@@ -1,4 +1,5 @@
 using Nexus1.BuildingBlocks.Application;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus1.Security.Domain;
 
 namespace Nexus1.Security.Application;
@@ -7,7 +8,7 @@ public sealed class GrantPermissionToRoleCommandHandler(
     IRepository<ApplicationRole, ApplicationRoleId> roleRepository,
     IRepository<Permission, PermissionId> permissionRepository,
     IRolePermissionWriter rolePermissionWriter,
-    IUnitOfWork unitOfWork,
+    [FromKeyedServices("Security")] IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider)
     : ICommandHandler<GrantPermissionToRoleCommand>
 {
