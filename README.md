@@ -17,13 +17,31 @@ made, the ADR recording it is here too.
 
 ## Companion book series
 
-| Volume | Covers |
-|---|---|
-| *From Schema to System* — Schema Atlas | Domain modeling, the full 17-sector data backbone |
-| *From Flow to Services* | EF Core mapping, modular monolith architecture |
-| *From Services to Runtime* (Parts 1–4) | Distributed slice, messaging, OpenTelemetry, the BFF layer this repo tracks live |
-| *From Trial to Policy* | The ReinforcementLearning sector — tabular Q-learning, advisory-only |
-| *From Flood to Cause* | RootCause's future causal-graph / RAG advisory phase (not yet built — see Roadmap) |
+**Author:** Grigorios Kyriakos Agathangelidis (Γρηγόριος Κυριάκος Αγαθαγγελίδης)
+
+The NEXUS-1 Companion Series comprises 19 volumes (all available on [Leanpub](https://leanpub.com/u/grigorios-kyriakos-agathangelidis)):
+
+| # | Title | Covers |
+|---|-------|--------|
+| 1 | *From Grid to Core* | Reverse-engineering approach to reactor kinetics — from the switchyard to the core |
+| 2 | *From Flood to Cause* | Deterministic, auditable root-cause analysis with causal engine + LLM explanation |
+| 3 | *From Trial to Policy* | Interpretable reinforcement learning with Q-table, live NEXUS-1 console |
+| 4 | *From Schema to System* — Schema Atlas | Domain modeling, the full 17-sector data backbone |
+| 5 | *From Entity to Context* | EF Core Code First configuration atlas — one entity, one mapping file |
+| 6 | *From Domain to Twin* | Domain-Driven Design from zero, applied to NEXUS-1 |
+| 7 | *From Table to Twin* | SQL Server and EF Core backbone — by hand and from code |
+| 8 | *From Blueprint to Core* | Clean Architecture, DDD, CQRS — zero database, zero web server, 50 green tests |
+| 9 | *From Context to Flow* | Advanced DDD: domain events, outbox, sagas, anti-corruption layers, eventual consistency |
+| 10 | *From Core to Contract* | Infrastructure and API layers: EF Core, repositories, outbox, JWT |
+| 11 | *From Contract to Container* | Containerization, CI, SQL Server on every test run, honest deployment |
+| 12 | *From Services to Runtime* | Microservices with owned truth, stable contracts, idempotent messages, controlled failure |
+| 13 | *From File to Framework* | Angular companion — ports a 5,900-line console into a real application |
+| 14 | *From Flow to Proof* | Distributed-system promises → explicit models, properties, counterexamples, evidence |
+| 15 | *From Flow to Services* | Discovering true microservice boundaries with DDD, APIs, messaging, sagas |
+| 16 | *From Queue to Core* | Stochastic foundation: birth–death chains, master equations, delayed neutrons, point kinetics |
+| 17 | *From Runtime to Distribution — Volume I* | Scaling the runtime, distributed deployment patterns, and multi-node orchestration |
+| 18 | *From Runtime to Distribution — Volume II* | Advanced distribution: consensus, service discovery, and production-grade resilience |
+| 19 | *From Certainty to Calibration* | Revisiting architectural decisions, recalibrating the system for long-term reliability |
 
 The books are written to match this repository's actual state at time of writing, and
 are updated as the backend evolves. If you find a mismatch, the code is authoritative.
@@ -78,20 +96,21 @@ suite before moving to the next.
 
 - ✅ **Phase 1** — distributed slice, complete.
 - ✅ **Phase 2** — all 11 remaining sectors, complete. 869/869 tests passing.
-- ✅ **BFF layer** — in progress, vertical-slice by vertical-slice (see below).
-- 🔜 **Angular UI** — planned once BFF coverage is sufficient; will reuse the
-  companion Angular book's screens/design system with a purpose-built API contract
-  (not the Angular book's own backend contract — see `ADR-030`).
-- 🔜 **RAG-based root-cause advisory** ("From Flood to Cause") — a large future phase,
-  not started; would reopen `ADR-005`'s deliberate RootCause minimal-scope decision.
+- ✅ **BFF layer** — complete for all vertical slices except RootCause (pending).
+- ✅ **Angular UI** — complete for all screens except RootCause; reuses the companion Angular book's screens/design system with a purpose-built API contract (ADR-030).
+- 🔜 **RootCause UI & BFF slice** — the remaining piece; currently in progress to reach full coverage.
+- 🔜 **RAG-based root-cause advisory ("From Flood to Cause")** — currently in **analysis phase**; design and feasibility studies are underway. Implementation has not started.
 
 ### BFF layer
 
-`Nexus1.Bff` is being built as a series of proven, evidence-backed vertical slices —
+`Nexus1.Bff` has been built as a series of proven, evidence-backed vertical slices —
 each one composes a context's existing Application layer in-process, shapes an
 endpoint around a real screen from the companion Angular book, and is verified against
-a real database before being considered done. Screens that don't map to anything real
-in the domain model are named as gaps rather than faked.
+a real database before being considered done. **All slices are now complete except for
+RootCause**, which is the final piece.
+
+The table below lists the planned slices for reference; all except RootCause are
+finished.
 
 | # | Slice | Notes |
 |---|---|---|
@@ -107,7 +126,7 @@ in the domain model are named as gaps rather than faked.
 | 10 | Security | RBAC only — no physical/zone-access concept |
 | 11 | Maintenance | Ageing/Degradation real; Decommissioning/Waste don't exist |
 | 12 | CorePlatform | Software/lookup metadata — not a physical component registry |
-| 13+ | Audit, Compliance, EventManagement, EmergencyPreparedness, ReinforcementLearning, RootCause | In progress |
+| 13+ | Audit, Compliance, EventManagement, EmergencyPreparedness, ReinforcementLearning, RootCause | All completed except RootCause (in progress) |
 
 A dev-mode subset-composition capability lets the BFF host start with only the
 contexts a given session needs, roughly halving startup memory cost during
@@ -150,27 +169,7 @@ Full ADR log lives in [`/docs/adr`](./docs/adr).
 ## Getting started
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/gregory82gr/nexus1
 cd nexus1
 dotnet build
 dotnet test
-```
-
-Each context's database is created via its own EF Core migrations; see
-[`/docs/setup.md`](./docs/setup.md) for the full local-dev bring-up sequence
-(LocalDB, the `nexus1_app` scoped login, and per-context connection strings).
-
-To run the BFF layer in dev mode against a subset of contexts:
-
-```bash
-# see /src/Hosts/Nexus1.Bff/README.md for the full option
-export BffContexts__Enabled__0=ReactorFleet
-export BffContexts__Enabled__1=AlarmManagement
-dotnet run --project src/Hosts/Nexus1.Bff
-```
-
----
-
-## License
-
-See [`LICENSE`](./LICENSE).
