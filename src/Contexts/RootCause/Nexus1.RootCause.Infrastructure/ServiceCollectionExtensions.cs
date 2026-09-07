@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.RootCause.Application;
+using Nexus1.RootCause.Application.Diagnosis;
 using Nexus1.RootCause.Domain;
+using Nexus1.RootCause.Infrastructure.Diagnosis;
 using Nexus1.RootCause.Infrastructure.Messaging;
 using Nexus1.RootCause.Infrastructure.Persistence;
 
@@ -34,6 +36,20 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<RetryDispatcher>();
         services.AddHostedService<RetryDispatcherBackgroundService>();
+
+        // Fixed-incident diagnosis walking skeleton (ADR-032) -- the four LLM-free
+        // seams, the audit seal, the run store, and the runner that composes them.
+        // The natural-language generation step (Nexus1.RootCause.Explain) is
+        // deliberately absent and not registered here: it waits on the served
+        // model, and this pipeline validates a supplied DraftAnswer identically
+        // whether it comes from a fixture or, later, that model.
+        services.AddScoped<IGraphWalker, EfGraphWalker>();
+        services.AddScoped<ITelemetryCorroborator, EfTelemetryCorroborator>();
+        services.AddScoped<IRetriever, EfRetriever>();
+        services.AddScoped<IAntiHallucinationValidator, RegistryAntiHallucinationValidator>();
+        services.AddScoped<IAuditChainWriter, Sha256AuditChainWriter>();
+        services.AddScoped<IDiagnosisRunStore, EfDiagnosisRunStore>();
+        services.AddScoped<FixedIncidentDiagnosisRunner>();
 
         return services;
     }

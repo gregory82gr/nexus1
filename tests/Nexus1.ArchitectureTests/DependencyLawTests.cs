@@ -199,6 +199,57 @@ public class DependencyLawTests
     }
 
     /// <summary>
+    /// The One-Truth Pipeline's engine side is deterministic and LLM-free by
+    /// construction (ADR-032): the served model sits behind a single deferred
+    /// generation stage, and every other seam — graph walk, telemetry
+    /// corroboration, retrieval, H3/H4 validation, the audit seal — decides
+    /// without it. This pins that guarantee as a build-breaking fact: no src
+    /// project may carry a served-model / LLM package, with exactly one future
+    /// exception — Nexus1.RootCause.Explain, the deferred project that will own
+    /// the Semantic Kernel + Ollama wiring and nothing else. If that project is
+    /// ever added, it is the only place these packages may appear; if a served-
+    /// model package leaks into the engine projects, this fails.
+    /// </summary>
+    [Fact]
+    public void No_project_except_the_deferred_Explain_project_references_a_served_model_package()
+    {
+        // Matched case-insensitively against each PackageReference's Include name.
+        string[] servedModelPackageMarkers =
+        [
+            "SemanticKernel", "Ollama", "LlamaSharp", "OpenAI", "Azure.AI", "Onnx",
+            "Microsoft.ML", "TorchSharp", "Anthropic",
+        ];
+
+        const string allowedProject = "Nexus1.RootCause.Explain";
+
+        var srcRoot = Path.Combine(FindRepoRoot(), "src");
+        var violations = new List<string>();
+
+        foreach (var path in Directory.EnumerateFiles(srcRoot, "*.csproj", SearchOption.AllDirectories))
+        {
+            var project = Path.GetFileNameWithoutExtension(path);
+            if (project == allowedProject)
+            {
+                continue;
+            }
+
+            var packages = XDocument.Load(path)
+                .Descendants("PackageReference")
+                .Select(e => (string?)e.Attribute("Include") ?? string.Empty);
+
+            violations.AddRange(
+                from package in packages
+                where servedModelPackageMarkers.Any(marker => package.Contains(marker, StringComparison.OrdinalIgnoreCase))
+                select $"{project} -> {package}");
+        }
+
+        Assert.True(violations.Count == 0,
+            "The deterministic engine side must stay LLM-free: no src project may reference a served-model / LLM " +
+            $"package except the deferred {allowedProject} project (ADR-032). Violations:\n" +
+            string.Join('\n', violations));
+    }
+
+    /// <summary>
     /// ADR-001-amend's original "no Contracts.ReactorFleet needed, consumption is
     /// in-process" claim was wrong (ADR-004) — this pins the fix so it can't
     /// silently regress. Redundant with the general cross-context rules above
