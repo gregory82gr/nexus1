@@ -426,6 +426,18 @@ if (IsContextEnabled("ReinforcementLearning"))
     healthChecksBuilder.AddCheck<DbContextHealthCheck<ReinforcementLearningDbContext>>("reinforcementlearning-db");
 }
 
+// ADR-035: the BFF's first outbound hop. RootCause is a separate deployable
+// (ADR-001) never composed in-process; the BFF reaches its diagnosis route over
+// HTTP via this typed client. Timeout is generous over the Host's measured
+// 26-94s CPU-inference latency (ADR-034) so a legitimate slow run is never severed.
+var rootCauseHostBaseUrl = builder.Configuration["Services:RootCauseHost"]
+    ?? throw new InvalidOperationException("Missing Services:RootCauseHost configuration (the RootCause.Host base URL, ADR-035).");
+builder.Services.AddHttpClient("RootCauseHost", client =>
+{
+    client.BaseAddress = new Uri(rootCauseHostBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(180);
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -974,6 +986,40 @@ app.MapGet("/api/v1/reinforcement-learning/recommendations", async ([FromService
 {
     var result = await handler.Handle(new GetClampedRecommendationsQuery(), cancellationToken);
     return Results.Ok(result.Value);
+});
+
+// ADR-035: thin proxy to RootCause.Host's diagnosis route -- a real network hop,
+// not in-process composition. Relays the Host's status + body + content-type
+// verbatim (200 incl. a first-class abstention, 404, relayed 503). If the Host
+// itself cannot be reached (connection refused, or the 180s timeout), returns 502
+// Bad Gateway -- distinct from a relayed 503. No RootCause code runs here; this
+// lambda only forwards the call and relays the response.
+app.MapPost("/api/v1/root-cause/incidents/{incidentId}/diagnoses", async (
+    string incidentId,
+    [FromServices] IHttpClientFactory httpClientFactory,
+    [FromServices] ILoggerFactory loggerFactory,
+    CancellationToken cancellationToken) =>
+{
+    var client = httpClientFactory.CreateClient("RootCauseHost");
+    try
+    {
+        using var upstream = await client.PostAsync(
+            $"/api/v1/root-cause/incidents/{Uri.EscapeDataString(incidentId)}/diagnoses",
+            content: null,
+            cancellationToken);
+
+        var body = await upstream.Content.ReadAsStringAsync(cancellationToken);
+        var contentType = upstream.Content.Headers.ContentType?.ToString() ?? "application/json";
+        return Results.Content(body, contentType, null, (int)upstream.StatusCode);
+    }
+    catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+    {
+        loggerFactory.CreateLogger("Bff.RootCauseProxy").LogError(ex, "RootCause.Host unreachable for {IncidentId}", incidentId);
+        return Results.Problem(
+            title: "RootCause.Host is unreachable",
+            detail: ex.Message,
+            statusCode: StatusCodes.Status502BadGateway);
+    }
 });
 
 app.Run();
