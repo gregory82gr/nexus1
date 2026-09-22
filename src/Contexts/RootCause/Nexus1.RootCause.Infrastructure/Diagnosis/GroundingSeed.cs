@@ -1,3 +1,4 @@
+using Nexus1.RootCause.Application.Diagnosis;
 using Nexus1.RootCause.Domain.Grounding;
 using Nexus1.RootCause.Infrastructure.Persistence;
 
@@ -27,12 +28,14 @@ namespace Nexus1.RootCause.Infrastructure.Diagnosis;
 /// </summary>
 public static class GroundingSeed
 {
-    public const string IncidentId = "EVT-2026-0418";
+    // Incident identity is owned by FixedIncident (Application) -- the single
+    // source of truth these seeded rows must agree with (ADR-034).
+    public static string IncidentId => FixedIncident.IncidentId;
 
-    public const int UnitId = 1;
+    public static int UnitId => FixedIncident.UnitId;
 
     /// <summary>Physical onset of the origin fault (historian anchor), chosen so the trip onset lands on the book's 17:12:14.</summary>
-    public static readonly DateTime FloodStartUtc = new(2026, 4, 18, 17, 9, 52, DateTimeKind.Utc);
+    public static DateTime FloodStartUtc => FixedIncident.FloodStartUtc;
 
     // Stable component ids for the fixture -- also the historian ChannelId for
     // each node (one channel per component in the skeleton).
@@ -47,8 +50,8 @@ public static class GroundingSeed
     public const int Bus2A = 9;        // 4kV bus voltage transient -- learned contributor
     public const int Ft7 = 10;         // flow sensor FT-7 -- correlation-flagged, ruled out
 
-    /// <summary>The flood: every component that raised at least one alarm (FT-7 raised none -- it was correlation-flagged and cross-checked healthy). Fourteen alarms across these nine nodes.</summary>
-    public static readonly IReadOnlyList<int> AlarmedComponentIds = [Fv104, Sg1Level, FwPump2A, Pump2ABearing, LoopFlow, CoreT, ReactorTrip, Rcp1B, Bus2A];
+    /// <summary>The flood: every component that raised at least one alarm (FT-7 raised none -- it was correlation-flagged and cross-checked healthy). Fourteen alarms across these nine nodes. Owned by FixedIncident; the local component-id constants above are [1..9] in the same order.</summary>
+    public static IReadOnlyList<int> AlarmedComponentIds => FixedIncident.AlarmedComponentIds;
 
     public static IReadOnlyList<Component> Components() =>
     [

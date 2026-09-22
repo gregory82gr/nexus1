@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.RootCause.Application;
 using Nexus1.RootCause.Application.Diagnosis;
@@ -57,6 +58,31 @@ public static class ServiceCollectionExtensions
         // Ollama-backed implementations (ADR-033).
         services.AddScoped<IEmbedder, NoOpEmbedder>();
         services.AddScoped<IExplainer, NoOpExplainer>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Binds the grounding/retrieval seams (EfRetriever, RegistryAntiHallucinationValidator)
+    /// to a READ-ONLY RootCauseDbContext built from <paramref name="readOnlyConnectionString"/>
+    /// (the nexus1_explain login, H7), while every write seam keeps the default
+    /// read-write context. Call after AddRootCauseInfrastructure and AddRootCauseExplain
+    /// so these replacements win. The keyed context is disposed per request scope by
+    /// the container. Recorded in ADR-034; the split is proven live via
+    /// sys.dm_exec_sessions. If a write seam were ever handed this context, the
+    /// write would fail loudly with a permission error rather than silently succeed.
+    /// </summary>
+    public static IServiceCollection AddRootCauseReadOnlyRetrieval(this IServiceCollection services, string readOnlyConnectionString)
+    {
+        services.AddKeyedScoped<RootCauseDbContext>("readonly", (_, _) =>
+            new RootCauseDbContext(new DbContextOptionsBuilder<RootCauseDbContext>()
+                .UseSqlServer(readOnlyConnectionString).Options));
+
+        services.Replace(ServiceDescriptor.Scoped<IRetriever>(sp =>
+            new EfRetriever(sp.GetRequiredKeyedService<RootCauseDbContext>("readonly"), sp.GetRequiredService<IEmbedder>())));
+
+        services.Replace(ServiceDescriptor.Scoped<IAntiHallucinationValidator>(sp =>
+            new RegistryAntiHallucinationValidator(sp.GetRequiredKeyedService<RootCauseDbContext>("readonly"))));
 
         return services;
     }

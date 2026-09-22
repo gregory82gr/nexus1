@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Mvc;
 using Nexus1.BuildingBlocks.Application;
 using Nexus1.BuildingBlocks.Messaging;
 using Nexus1.RootCause.Application;
+using Nexus1.RootCause.Application.Diagnosis;
+using Nexus1.RootCause.Explain;
 using Nexus1.RootCause.Infrastructure;
 using Nexus1.RootCause.Infrastructure.Persistence;
 using Nexus1.ServiceDefaults;
@@ -28,16 +31,70 @@ builder.Services.AddNexusMessaging(rabbitMqOptions);
 builder.Services.AddRootCauseApplication();
 builder.Services.AddRootCauseInfrastructure(rootCauseConnectionString);
 
+// Served-model stage (ADR-033) + the split read-only retrieval connection (ADR-034).
+// The engine keeps the read-write nexus1_app connection above; retrieval + the H3/H4
+// validator run through the read-only nexus1_explain connection (H7); the model
+// itself has no database access at all.
+var ollamaOptions = new OllamaOptions
+{
+    Endpoint = new Uri(builder.Configuration["Ollama:Endpoint"] ?? "http://127.0.0.1:11434"),
+    ChatModelId = builder.Configuration["Ollama:ChatModel"] ?? "nexus-dslm",
+    EmbeddingModelId = builder.Configuration["Ollama:EmbeddingModel"] ?? "nomic-embed-text",
+};
+builder.Services.AddRootCauseExplain(ollamaOptions);
+
+var rootCauseExplainConnectionString = builder.Configuration.GetConnectionString("RootCauseExplainDb")
+    ?? throw new InvalidOperationException("Missing ConnectionStrings:RootCauseExplainDb configuration (the read-only nexus1_explain login, ADR-034).");
+builder.Services.AddRootCauseReadOnlyRetrieval(rootCauseExplainConnectionString);
+
 builder.Services
     .AddHealthChecks()
     .AddCheck<DbContextHealthCheck<RootCauseDbContext>>("rootcause-db");
 
 var app = builder.Build();
 
+// Explicit dev provisioning (ADR-034): `dotnet run -- provision` seeds the fixture
+// and populates corpus embeddings, then exits -- it never runs on a normal start,
+// so the request path assumes real data already exists rather than fabricating it.
+if (args.Contains("provision", StringComparer.OrdinalIgnoreCase))
+{
+    var provisionLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("RootCause.Provisioning");
+    await Nexus1.RootCause.Host.Provisioning.RunAsync(app.Services, provisionLogger, CancellationToken.None);
+    return;
+}
+
 // Liveness: process is up, no dependency checks (ADR-007).
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 
 // Readiness: can this host actually reach its database.
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = _ => true });
+
+// Run the fixed-incident One-Truth Pipeline and return its sealed result (ADR-034).
+// Synchronous (CPU inference is 26-70s). An abstention is a first-class 200; an
+// unknown incident is 404; genuine infrastructure failure (model unreachable, DB
+// down) is 503 -- never a fabricated verdict. This lambda is transport only: it
+// dispatches to the Application handler and maps the Result to HTTP status.
+app.MapPost("/api/v1/root-cause/incidents/{incidentId}/diagnoses", async (
+    string incidentId,
+    [FromServices] RunFixedIncidentDiagnosisCommandHandler handler,
+    [FromServices] ILoggerFactory loggerFactory,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var result = await handler.Handle(new RunFixedIncidentDiagnosisCommand(incidentId), cancellationToken);
+        return result.IsSuccess
+            ? Results.Ok(result.Value)
+            : Results.NotFound(new { error = result.Error });
+    }
+    catch (Exception ex)
+    {
+        loggerFactory.CreateLogger("RootCause.Diagnosis").LogError(ex, "Diagnosis pipeline failed for {IncidentId}", incidentId);
+        return Results.Problem(
+            title: "Diagnosis pipeline could not run",
+            detail: ex.Message,
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
 
 app.Run();
