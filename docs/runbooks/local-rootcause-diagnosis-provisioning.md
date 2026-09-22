@@ -62,3 +62,20 @@ sqlcmd -S "(localdb)\mssqllocaldb" -d RootCauseDb -U nexus1_explain -P "Nexus1Ex
 
 Then start the host normally (`dotnet run --project src/Hosts/Nexus1.RootCause.Host`)
 and POST to the route.
+
+## Optional: keep the model warm (reduce cold-start latency)
+
+Cold qwen2.5:3b CPU inference is ~93–130 s (model load + first generation); warm calls
+are ~20 s. The Host's chat-model call timeout is 150 s (ADR-033 addendum) so a cold
+call succeeds, just slowly. To make cold-starts *rare* in practice, keep the model
+resident by setting Ollama's own keep-alive on the **Ollama process** (not Host code) —
+e.g. keep it loaded for 30 minutes:
+
+```powershell
+$env:OLLAMA_KEEP_ALIVE = "30m"   # or "-1" to keep loaded indefinitely
+# (set before starting `ollama serve`, or user-level for persistence)
+```
+
+This is an optional ops-level lever, complementary to the 150 s timeout floor — it does
+not eliminate the first cold call after an Ollama (re)start, only makes subsequent calls
+warm. No Host change is involved.

@@ -25,8 +25,18 @@ public sealed class SemanticKernelExplainer : IExplainer
 
     public SemanticKernelExplainer(OllamaOptions options)
     {
+        // A dedicated, long-lived HttpClient with a timeout sized for cold CPU
+        // inference (ADR-033 addendum), replacing the connector's default 100s
+        // HttpClient that cold qwen2.5:3b loads collide with. This explainer is a
+        // singleton, so one client for its lifetime is correct (no socket churn).
+        var httpClient = new HttpClient
+        {
+            BaseAddress = options.Endpoint,
+            Timeout = options.RequestTimeout,
+        };
+
         var builder = Kernel.CreateBuilder();
-        builder.AddOllamaChatCompletion(options.ChatModelId, options.Endpoint);
+        builder.AddOllamaChatCompletion(options.ChatModelId, httpClient);
         _kernel = builder.Build();
 
         _settings = new OllamaPromptExecutionSettings

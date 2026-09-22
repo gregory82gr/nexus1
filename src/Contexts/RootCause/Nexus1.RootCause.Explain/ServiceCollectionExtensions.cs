@@ -17,6 +17,16 @@ public sealed record OllamaOptions
     public string ChatModelId { get; init; } = "nexus-dslm";
 
     public string EmbeddingModelId { get; init; } = "nomic-embed-text";
+
+    /// <summary>
+    /// Timeout for the chat-model call (ADR-033 addendum). Default 150s -- above the
+    /// observed 93-110s cold qwen2.5:3b CPU inference, and below the BFF's 180s outer
+    /// bound (ADR-035) so the Host times out first and returns its own clean 503
+    /// rather than the BFF cutting off a Host still working. The SK Ollama connector's
+    /// default HttpClient uses 100s, which cold inference collides with; this replaces
+    /// it. Does not apply to embeddings (nomic calls are sub-second).
+    /// </summary>
+    public TimeSpan RequestTimeout { get; init; } = TimeSpan.FromSeconds(150);
 }
 
 public static class ServiceCollectionExtensions

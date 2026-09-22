@@ -40,6 +40,8 @@ var ollamaOptions = new OllamaOptions
     Endpoint = new Uri(builder.Configuration["Ollama:Endpoint"] ?? "http://127.0.0.1:11434"),
     ChatModelId = builder.Configuration["Ollama:ChatModel"] ?? "nexus-dslm",
     EmbeddingModelId = builder.Configuration["Ollama:EmbeddingModel"] ?? "nomic-embed-text",
+    RequestTimeout = TimeSpan.FromSeconds(
+        double.TryParse(builder.Configuration["Ollama:RequestTimeoutSeconds"], out var ollamaTimeoutSeconds) ? ollamaTimeoutSeconds : 150),
 };
 builder.Services.AddRootCauseExplain(ollamaOptions);
 

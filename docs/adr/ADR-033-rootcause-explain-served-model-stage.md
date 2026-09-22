@@ -162,3 +162,43 @@ calibration replaces the hand-set floor).
 - Air-gap loopback + zero-egress capture.
 
 See `artifacts/evidence/2026-09-22-rootcause-explain-airgapped-e2e.md`.
+
+---
+
+## Addendum (2026-09-22): chat-model call timeout raised to 150s
+
+**Context.** The BFF→RootCause hop evidence run (ADR-035) surfaced a real edge: the
+Semantic Kernel Ollama connector's `AddOllamaChatCompletion(modelId, Uri)` overload
+builds its `OllamaApiClient` over a **default HttpClient with a 100s timeout**, and a
+**cold** qwen2.5:3b CPU load + inference (~93–130s) sits right at that boundary. One
+cold call legitimately exceeded 100s and the Host returned a 503 ("HttpClient.Timeout
+of 100 seconds elapsing"), which the BFF correctly relayed. The pipeline was not
+wrong — it was cut off by too tight a timeout.
+
+**Decision.** `SemanticKernelExplainer` now builds a dedicated long-lived `HttpClient`
+(`BaseAddress = Endpoint`, `Timeout = OllamaOptions.RequestTimeout`, default **150s**)
+and passes it to the `AddOllamaChatCompletion(modelId, HttpClient)` overload,
+replacing the connector's default 100s client. The explainer is a singleton, so one
+client for its lifetime is correct. The timeout is configurable via
+`Ollama:RequestTimeoutSeconds`.
+
+**Why 150s, and the ordering.** 150s is ~40s above the observed 110s cold worst case
+and, crucially, **below the BFF's 180s** outer timeout (ADR-035). So if inference ever
+exceeds 150s, the **Host** times out first and returns its own clean 503 (which the
+BFF relays) — rather than the BFF cutting off a Host that is still working (which would
+surface as the BFF's 502). Host 150s < BFF 180s keeps the 502-vs-relayed-503
+distinction honest.
+
+**Not changed.** The embedder's HttpClient is left at its default — nomic-embed-text
+calls are sub-second. No route, incident, or BFF change.
+
+**Optional complementary ops lever (not Host code).** Setting `OLLAMA_KEEP_ALIVE`
+(e.g. `30m` or `-1`) on the Ollama process keeps the model resident so cold-starts are
+rare in practice — it does not eliminate the first cold call after an Ollama restart,
+which is why the 150s timeout is the floor. Documented in
+`docs/runbooks/local-rootcause-diagnosis-provisioning.md`.
+
+**Evidence.** A forced cold start (`ollama stop nexus-dslm`) then the same call that
+previously 503'd at ~102s now returns 200 at the real cold latency (under 150s), both
+direct to the Host and through the BFF. See
+`artifacts/evidence/2026-09-22-rootcause-host-cold-timeout-hardening.md`.
