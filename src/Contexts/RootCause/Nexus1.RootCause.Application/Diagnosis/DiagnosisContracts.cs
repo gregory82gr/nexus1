@@ -37,6 +37,20 @@ public sealed record DraftAnswer(string CauseTag, IReadOnlyList<string> Entities
 public sealed record Validation(bool Ok, string? Reason);
 
 /// <summary>
+/// The explain stage's result: either a structured draft to validate, or an
+/// abstention with a named reason (H8) -- the model declined, or its output could
+/// not be parsed into the H5 schema. Never both.
+/// </summary>
+public sealed record ExplainOutcome(DraftAnswer? Draft, string? AbstainReason)
+{
+    public bool Abstained => AbstainReason is not null;
+
+    public static ExplainOutcome Answer(DraftAnswer draft) => new(draft, null);
+
+    public static ExplainOutcome Abstain(string reason) => new(null, reason);
+}
+
+/// <summary>
 /// The engine's outcome for one run: either a verdict (origin tag) with its
 /// ranked candidates and the retrieved citations, or an abstention with a
 /// named reason -- never both, matching this project's Inconclusive-is-never-a-

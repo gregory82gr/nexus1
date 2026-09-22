@@ -49,7 +49,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAntiHallucinationValidator, RegistryAntiHallucinationValidator>();
         services.AddScoped<IAuditChainWriter, Sha256AuditChainWriter>();
         services.AddScoped<IDiagnosisRunStore, EfDiagnosisRunStore>();
+        services.AddScoped<EmbeddingIngestor>();
         services.AddScoped<FixedIncidentDiagnosisRunner>();
+
+        // LLM-free defaults: the semantic path stays dormant and generation
+        // honestly abstains until AddRootCauseExplain replaces these with the
+        // Ollama-backed implementations (ADR-033).
+        services.AddScoped<IEmbedder, NoOpEmbedder>();
+        services.AddScoped<IExplainer, NoOpExplainer>();
 
         return services;
     }

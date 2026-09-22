@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The ONE project allowed to depend on a served language model (ADR-033).
+    Semantic Kernel + the Ollama connector live here and nowhere else; the
+    DependencyLawTests served-model-package rule fails the build if they leak
+    into any other src project. The Ollama connector is experimental, so its
+    SKEXP diagnostics are suppressed here (and only here).
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);SKEXP0001;SKEXP0070</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nexus1.RootCause.Application\Nexus1.RootCause.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SemanticKernel" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" />
+    <!-- Microsoft.Extensions.DependencyInjection.Abstractions is provided transitively
+         by Semantic Kernel (at its own required version); referencing it directly at
+         the solution's net8 pin (8.0.2) triggers an NU1605 downgrade against SK's
+         newer transitive requirement, so it is intentionally not referenced here. -->
+  </ItemGroup>
+
+  <!-- OllamaSharp's Roslyn analyzer is stripped centrally in Directory.Build.targets. -->
+
+</Project>

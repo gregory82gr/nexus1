@@ -32,6 +32,6 @@ public sealed class CorpusChunk
     /// <summary>Honest provenance of this chunk -- the book worked example, named as such.</summary>
     public required string SourceLabel { get; init; }
 
-    /// <summary>float[] as JSON; null until the embedding model is available (deferred LLM half).</summary>
-    public string? EmbeddingJson { get; init; }
+    /// <summary>float[] as JSON; null until the embedding model is available. Settable: the embedding ingestor populates it at provisioning time (ADR-033).</summary>
+    public string? EmbeddingJson { get; set; }
 }

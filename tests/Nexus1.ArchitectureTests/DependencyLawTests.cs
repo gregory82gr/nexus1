@@ -47,6 +47,16 @@ public class DependencyLawTests
             return ("Host", null);
         }
 
+        // The served-model project (ADR-033) is a RootCause adapter that owns the
+        // Semantic Kernel + Ollama dependencies. It binds by the same dependency
+        // law as Infrastructure (its own context's Application/Domain, shared
+        // kernel, contracts) — and is the sole name the served-model-package rule
+        // below exempts.
+        if (projectName == "Nexus1.RootCause.Explain")
+        {
+            return ("Infrastructure", "RootCause");
+        }
+
         var parts = projectName.Split('.');
         if (parts.Length == 3 && parts[0] == "Nexus1" && parts[2] is "Domain" or "Application" or "Infrastructure")
         {

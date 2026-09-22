@@ -27,12 +27,17 @@ namespace Nexus1.RootCause.Infrastructure.Diagnosis;
 /// single-unit (the book's one worked example), so the filter is a structural
 /// placeholder rather than a discriminator yet (ADR-032).
 /// </summary>
-public sealed class EfRetriever(RootCauseDbContext db) : IRetriever
+public sealed class EfRetriever(RootCauseDbContext db, IEmbedder embedder) : IRetriever
 {
     private const int TopK = 8;
 
-    /// <summary>H2 relevance floor for the semantic path: a cosine below this is "nothing to ground on".</summary>
-    private const double RelevanceFloor = 0.75;
+    /// <summary>
+    /// H2 relevance floor for the semantic path: a cosine below this is "nothing
+    /// to ground on". Tuned to nomic-embed-text's cosine range with document/query
+    /// task prefixes (ADR-033); a demonstrator value, not a production-calibrated
+    /// one (that would come from the H9 evaluation set).
+    /// </summary>
+    private const double RelevanceFloor = 0.5;
 
     public async Task<IReadOnlyList<Passage>> RetrieveAsync(string queryText, string tagText, int unitId, CancellationToken cancellationToken)
     {
@@ -53,9 +58,10 @@ public sealed class EfRetriever(RootCauseDbContext db) : IRetriever
             }
         }
 
-        // Semantic: C#-cosine over populated embeddings, floored at H2. Dormant
-        // until embeddings and a query vector exist; the path is real, not faked.
-        var queryEmbedding = EmbedQuery(queryText);
+        // Semantic: C#-cosine over populated embeddings, floored at H2. The query
+        // vector comes from the injected embedder -- the NoOp default returns null
+        // (dormant), the Ollama-backed one (Explain) returns a real vector.
+        var queryEmbedding = await embedder.EmbedAsync(queryText, EmbedKind.Query, cancellationToken);
         if (queryEmbedding is not null)
         {
             var semantic = chunks
@@ -79,14 +85,6 @@ public sealed class EfRetriever(RootCauseDbContext db) : IRetriever
             .Select(c => new Passage(c.ChunkId, c.Body, c.SourceLabel, c.TrustTier))
             .ToList();
     }
-
-    /// <summary>
-    /// The query embedding comes from the embedding model, which is part of the
-    /// deferred LLM half; until it is wired, there is no query vector and the
-    /// semantic path stays dormant. Returning null here is honest ("no embedder
-    /// yet"), not a stub that fabricates a vector.
-    /// </summary>
-    private static IReadOnlyList<double>? EmbedQuery(string queryText) => null;
 
     private static IReadOnlyList<double>? ParseEmbedding(string? embeddingJson) =>
         string.IsNullOrEmpty(embeddingJson) ? null : JsonSerializer.Deserialize<double[]>(embeddingJson);

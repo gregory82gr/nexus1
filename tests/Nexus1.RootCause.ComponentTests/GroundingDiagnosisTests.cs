@@ -85,7 +85,7 @@ public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
         await SeedAsync();
         await using var db = CreateDbContext();
 
-        var passages = await new EfRetriever(db).RetrieveAsync("feedwater valve cascade", "FV-104", GroundingSeed.UnitId, CancellationToken.None);
+        var passages = await new EfRetriever(db, new NoOpEmbedder()).RetrieveAsync("feedwater valve cascade", "FV-104", GroundingSeed.UnitId, CancellationToken.None);
 
         Assert.NotEmpty(passages);
         Assert.All(passages, p => Assert.Contains("From Flood to Cause", p.SourceLabel));
@@ -99,7 +99,7 @@ public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
         await SeedAsync();
         await using var db = CreateDbContext();
 
-        var passages = await new EfRetriever(db).RetrieveAsync("unrelated", "XV-999", GroundingSeed.UnitId, CancellationToken.None);
+        var passages = await new EfRetriever(db, new NoOpEmbedder()).RetrieveAsync("unrelated", "XV-999", GroundingSeed.UnitId, CancellationToken.None);
 
         Assert.Empty(passages);
     }
@@ -204,7 +204,7 @@ public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
         await using var db = CreateDbContext();
         var draft = await GoodDraftAsync(db);
 
-        var result = await BuildRunner(db).RunAsync(Incident, draft, CancellationToken.None);
+        var result = await BuildRunner(db, draft).RunAsync(Incident, CancellationToken.None);
 
         Assert.False(result.Abstained);
         Assert.Equal("FV-104", result.Verdict);
@@ -229,7 +229,7 @@ public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
 
         await using var db = CreateDbContext();
         var draft = await GoodDraftAsync(db);
-        var result = await BuildRunner(db).RunAsync(Incident, draft, CancellationToken.None);
+        var result = await BuildRunner(db, draft).RunAsync(Incident, CancellationToken.None);
 
         Assert.True(result.Abstained);
         Assert.Null(result.Verdict);
@@ -247,7 +247,7 @@ public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
 
         await using var db = CreateDbContext();
         var draft = new DraftAnswer("FV-104", ["FV-104"], []);
-        var result = await BuildRunner(db).RunAsync(Incident, draft, CancellationToken.None);
+        var result = await BuildRunner(db, draft).RunAsync(Incident, CancellationToken.None);
 
         Assert.True(result.Abstained);
         Assert.Contains("no grounding", result.AbstainReason);
@@ -261,7 +261,7 @@ public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
         var citable = await FirstChunkIdAsync(db);
         var draft = new DraftAnswer("FV-104", ["FV-999"], [new Claim("bogus", citable)]);
 
-        var result = await BuildRunner(db).RunAsync(Incident, draft, CancellationToken.None);
+        var result = await BuildRunner(db, draft).RunAsync(Incident, CancellationToken.None);
 
         Assert.True(result.Abstained);
         Assert.Contains("validation failed", result.AbstainReason);
@@ -275,7 +275,7 @@ public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
         await using var db = CreateDbContext();
         var draft = new DraftAnswer("FV-104", ["FV-104"], [new Claim("uncited", CitationChunkId: 999999)]);
 
-        var result = await BuildRunner(db).RunAsync(Incident, draft, CancellationToken.None);
+        var result = await BuildRunner(db, draft).RunAsync(Incident, CancellationToken.None);
 
         Assert.True(result.Abstained);
         Assert.Contains("validation failed", result.AbstainReason);
@@ -290,15 +290,25 @@ public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
         await GroundingSeed.SeedAsync(db);
     }
 
-    private FixedIncidentDiagnosisRunner BuildRunner(RootCauseDbContext db) =>
+    // A fixture explainer standing in for the served model -- the real Ollama-
+    // backed pipeline is proven separately in OllamaExplainPipelineTests (gated on
+    // a live Ollama). These component tests prove the deterministic engine +
+    // validation + seal + abstention logic against the real database.
+    private FixedIncidentDiagnosisRunner BuildRunner(RootCauseDbContext db, DraftAnswer draft) =>
         new(
             new EfGraphWalker(db),
             new EfTelemetryCorroborator(db),
-            new EfRetriever(db),
+            new EfRetriever(db, new NoOpEmbedder()),
+            new FixtureExplainer(ExplainOutcome.Answer(draft)),
             new RegistryAntiHallucinationValidator(db),
             new Sha256AuditChainWriter(db, Clock),
             new EfDiagnosisRunStore(db),
             Clock);
+
+    private sealed class FixtureExplainer(ExplainOutcome outcome) : IExplainer
+    {
+        public Task<ExplainOutcome> ExplainAsync(IncidentContext ctx, string originTag, IReadOnlyList<Passage> passages, CancellationToken cancellationToken) => Task.FromResult(outcome);
+    }
 
     private static async Task<DraftAnswer> GoodDraftAsync(RootCauseDbContext db)
     {

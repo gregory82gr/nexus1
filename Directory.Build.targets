@@ -1,0 +1,18 @@
+<Project>
+
+  <!--
+    OllamaSharp (pulled transitively by Microsoft.SemanticKernel.Connectors.Ollama,
+    used only by Nexus1.RootCause.Explain and its test consumers) ships a Roslyn
+    source generator built against a newer compiler than the pinned .NET 8 SDK's
+    (CS9057). Nothing in this repo needs OllamaSharp's analyzers, and analyzer
+    assets flow across ProjectReferences, so strip them for every project before
+    compile. Path-matched, so it is a no-op wherever OllamaSharp is not present.
+  -->
+  <Target Name="RemoveOllamaSharpAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)"
+                Condition="$([System.String]::Copy('%(Analyzer.FullPath)').ToLower().Contains('ollamasharp'))" />
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -5,13 +5,14 @@ using Nexus1.RootCause.Domain.Grounding;
 namespace Nexus1.RootCause.UnitTests;
 
 /// <summary>
-/// Proves the runner's composition and veto logic (ADR-032) in isolation, with
-/// in-memory fakes for every seam -- no database, no broker, no model. Each of
-/// the four grounding gates gets its own abstention proof, the happy path
-/// reaches a verdict, and every run (verdict or abstention) is both persisted
-/// and sealed into the audit chain. This is the engine side only; the supplied
-/// DraftAnswer stands in for the deferred served model and is validated the
-/// same way regardless of origin.
+/// Proves the runner's composition and veto logic (ADR-032, ADR-033) in
+/// isolation, with in-memory fakes for every seam -- no database, no broker, no
+/// model. The graph walk decides, two grounding gates then the model then H3/H4
+/// each get a veto; the happy path reaches a verdict, and every abstention path
+/// (no origin, telemetry, corpus, the model declining, validation) yields a named
+/// reason with no verdict. Every run is persisted and sealed. The fake explainer
+/// stands in for the served model exactly as the real Ollama-backed one is
+/// composed -- validated identically.
 /// </summary>
 public class FixedIncidentDiagnosisRunnerTests
 {
@@ -37,11 +38,12 @@ public class FixedIncidentDiagnosisRunnerTests
             walk: WalkWithOrigin,
             corroboration: new Corroboration(true, "fits"),
             passages: OnePassage,
+            explain: ExplainOutcome.Answer(GoodDraft),
             validation: new Validation(true, null),
             store: store,
             audit: audit);
 
-        var result = await runner.RunAsync(Incident, GoodDraft, CancellationToken.None);
+        var result = await runner.RunAsync(Incident, CancellationToken.None);
 
         Assert.False(result.Abstained);
         Assert.Equal("FV-104", result.Verdict);
@@ -51,58 +53,87 @@ public class FixedIncidentDiagnosisRunnerTests
         Assert.Equal("FV-104", store.SavedRun!.Verdict);
         Assert.Equal(2, store.SavedCandidates!.Count); // both ranked candidates persisted, ruled-out kept
         Assert.NotNull(audit.LastPayload);
+        Assert.Contains("FV-104 actuator latency initiated the cascade", audit.LastPayload); // the model's own answer is sealed (H10)
     }
 
     [Fact]
-    public async Task No_origin_from_the_walk_abstains()
+    public async Task No_origin_from_the_walk_abstains_before_the_model()
     {
         var store = new FakeStore();
+        var explainer = new FakeExplainer(ExplainOutcome.Answer(GoodDraft));
         var runner = Build(
             walk: new GraphWalkResult([new RankedCandidate(4, "PB-2A", "proximate", 0.20, 0.5)]),
             corroboration: new Corroboration(true, "fits"),
             passages: OnePassage,
+            explainer: explainer,
             validation: new Validation(true, null),
             store: store);
 
-        var result = await runner.RunAsync(Incident, GoodDraft, CancellationToken.None);
+        var result = await runner.RunAsync(Incident, CancellationToken.None);
 
         Assert.True(result.Abstained);
         Assert.Null(result.Verdict);
         Assert.Contains("no origin", result.AbstainReason);
         Assert.Empty(result.Citations);
+        Assert.False(explainer.WasCalled); // never reached the model
         Assert.Equal("EVT-2026-0418", store.SavedRun!.IncidentId); // abstention still recorded
     }
 
     [Fact]
-    public async Task Failed_telemetry_corroboration_abstains()
+    public async Task Failed_telemetry_corroboration_abstains_before_the_model()
     {
+        var explainer = new FakeExplainer(ExplainOutcome.Answer(GoodDraft));
         var runner = Build(
             walk: WalkWithOrigin,
             corroboration: new Corroboration(false, "missing historian data for component 6"),
             passages: OnePassage,
+            explainer: explainer,
             validation: new Validation(true, null));
 
-        var result = await runner.RunAsync(Incident, GoodDraft, CancellationToken.None);
+        var result = await runner.RunAsync(Incident, CancellationToken.None);
 
         Assert.True(result.Abstained);
         Assert.Contains("telemetry corroboration failed", result.AbstainReason);
         Assert.Contains("missing historian data", result.AbstainReason);
         Assert.Empty(result.Citations);
+        Assert.False(explainer.WasCalled);
     }
 
     [Fact]
-    public async Task Empty_corpus_retrieval_abstains()
+    public async Task Empty_corpus_retrieval_abstains_before_the_model()
     {
+        var explainer = new FakeExplainer(ExplainOutcome.Answer(GoodDraft));
         var runner = Build(
             walk: WalkWithOrigin,
             corroboration: new Corroboration(true, "fits"),
             passages: [],
+            explainer: explainer,
             validation: new Validation(true, null));
 
-        var result = await runner.RunAsync(Incident, GoodDraft, CancellationToken.None);
+        var result = await runner.RunAsync(Incident, CancellationToken.None);
 
         Assert.True(result.Abstained);
         Assert.Contains("no grounding", result.AbstainReason);
+        Assert.False(explainer.WasCalled);
+    }
+
+    [Fact]
+    public async Task Model_declining_abstains_with_its_reason()
+    {
+        var runner = Build(
+            walk: WalkWithOrigin,
+            corroboration: new Corroboration(true, "fits"),
+            passages: OnePassage,
+            explain: ExplainOutcome.Abstain("insufficient grounding in context"),
+            validation: new Validation(true, null));
+
+        var result = await runner.RunAsync(Incident, CancellationToken.None);
+
+        Assert.True(result.Abstained);
+        Assert.Null(result.Verdict);
+        Assert.Contains("explain abstained", result.AbstainReason);
+        Assert.Contains("insufficient grounding", result.AbstainReason);
+        Assert.Single(result.Citations); // the retrieved passages are still shown
     }
 
     [Fact]
@@ -112,9 +143,10 @@ public class FixedIncidentDiagnosisRunnerTests
             walk: WalkWithOrigin,
             corroboration: new Corroboration(true, "fits"),
             passages: OnePassage,
+            explain: ExplainOutcome.Answer(GoodDraft),
             validation: new Validation(false, "unknown entity FV-999"));
 
-        var result = await runner.RunAsync(Incident, GoodDraft, CancellationToken.None);
+        var result = await runner.RunAsync(Incident, CancellationToken.None);
 
         Assert.True(result.Abstained);
         Assert.Contains("validation failed", result.AbstainReason);
@@ -127,12 +159,15 @@ public class FixedIncidentDiagnosisRunnerTests
         Corroboration corroboration,
         IReadOnlyList<Passage> passages,
         Validation validation,
+        ExplainOutcome? explain = null,
+        FakeExplainer? explainer = null,
         FakeStore? store = null,
         FakeAudit? audit = null) =>
         new(
             new FakeWalker(walk),
             new FakeCorroborator(corroboration),
             new FakeRetriever(passages),
+            explainer ?? new FakeExplainer(explain ?? ExplainOutcome.Abstain("no draft configured")),
             new FakeValidator(validation),
             audit ?? new FakeAudit(),
             store ?? new FakeStore(),
@@ -151,6 +186,17 @@ public class FixedIncidentDiagnosisRunnerTests
     private sealed class FakeRetriever(IReadOnlyList<Passage> result) : IRetriever
     {
         public Task<IReadOnlyList<Passage>> RetrieveAsync(string queryText, string tagText, int unitId, CancellationToken cancellationToken) => Task.FromResult(result);
+    }
+
+    private sealed class FakeExplainer(ExplainOutcome outcome) : IExplainer
+    {
+        public bool WasCalled { get; private set; }
+
+        public Task<ExplainOutcome> ExplainAsync(IncidentContext ctx, string originTag, IReadOnlyList<Passage> passages, CancellationToken cancellationToken)
+        {
+            WasCalled = true;
+            return Task.FromResult(outcome);
+        }
     }
 
     private sealed class FakeValidator(Validation result) : IAntiHallucinationValidator
