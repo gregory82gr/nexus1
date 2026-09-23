@@ -1,0 +1,19 @@
+.incident-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .panel.summary .top-cause {
+    font-size: 1.2rem;
+    margin: 6px 0;
+
+    strong {
+      text-transform: none;
+    }
+  }
+
+  a.link {
+    display: inline-block;
+    margin-top: 8px;
+  }
+}

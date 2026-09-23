@@ -1,0 +1,51 @@
+<div class="incident-summary">
+  <div class="panel header">
+    <h2>Incident Analysis — {{ incidentId }}</h2>
+    <p class="sub">
+      This summary reads the same root-cause computation the Root Cause screen uses — there is exactly
+      one place the answer is produced, so the two screens cannot disagree. No independent hypothesis is
+      authored here.
+    </p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">RUNNING</span>
+        <p>Running diagnosis — up to about two minutes on the first run.</p>
+      </div>
+    }
+    @case ('ready') {
+      <div class="panel summary">
+        <span class="pill info">TOP CAUSE</span>
+        <p class="top-cause">
+          <strong data-field="top-cause-name">{{ topCause()?.tag }}</strong>
+          — {{ topCause()?.role }} —
+          <span data-field="top-cause-pct">{{ topPct() }}</span>
+        </p>
+        <p class="sub">Illustrative confidence. This is the origin the causal ranking blames, not the loudest symptom.</p>
+        <a class="link" data-field="see-full" [routerLink]="seeFullGraphLink">See the full Root Cause analysis →</a>
+      </div>
+    }
+    @case ('abstained') {
+      <div class="panel state-panel">
+        <span class="pill info">INCONCLUSIVE — NO VERDICT</span>
+        <p data-field="abstain-reason">The pipeline abstained. Reason: {{ abstainReason() }}</p>
+        <p class="sub">The engine declined to name a cause rather than guess — a first-class outcome, not an error.</p>
+      </div>
+    }
+    @case ('unknown') {
+      <div class="panel state-panel">
+        <span class="pill nosource">NO DIAGNOSIS AVAILABLE</span>
+        <p>No diagnosis available for this incident.</p>
+        <p class="sub">The diagnosis engine currently serves only {{ incidentId }}.</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill nosource">SERVICE UNAVAILABLE</span>
+        <p data-field="error">{{ errorMessage() }}</p>
+      </div>
+    }
+  }
+</div>

@@ -202,8 +202,8 @@ export const routes: Routes = [
   // the URL is not. See features/digital-twin/digital-twin.ts's own doc
   // comment for the full investigation.
   { path: 'twin', title: 'Digital Twin', loadComponent: () => import('./features/digital-twin/digital-twin').then((m) => m.DigitalTwinComponent) },
-  { path: 'incident', title: 'Incident Analysis', data: { title: 'Incident Analysis', chapter: 29 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
-  { path: 'rcgraph', title: 'Root Cause Graph', data: { title: 'Root Cause Graph', chapter: 29 }, loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.PlaceholderComponent) },
+  { path: 'incident', title: 'Incident Analysis', loadComponent: () => import('./features/incident/incident-summary').then((m) => m.IncidentSummaryComponent) },
+  { path: 'rcgraph', title: 'Root Cause Graph', loadComponent: () => import('./features/root-cause/root-cause').then((m) => m.RootCauseComponent) },
   // Audit & Compliance (Ch. 30) -- the book's fictional seal function is
   // Math.random() twice, referencing nothing; checked directly, no
   // hash-chain/seal mechanism exists anywhere server-side either. Real
