@@ -1,0 +1,30 @@
+.root-cause {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .panel.verdict h3 {
+    margin: 4px 0 0;
+    font-size: 1.6rem;
+  }
+
+  table.candidates {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      text-align: left;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    td.role {
+      text-transform: capitalize;
+    }
+  }
+
+  .panel.provenance code {
+    word-break: break-all;
+  }
+}

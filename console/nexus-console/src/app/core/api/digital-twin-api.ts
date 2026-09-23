@@ -21,6 +21,45 @@ export interface UnitTwinState {
   isAuthoritative: boolean;
 }
 
+// Digital Twin screen (Appendix A follow-up): the three routes Program.cs
+// added alongside the per-unit one above, mirroring ActiveTwinDto,
+// ModelVariableSignalTraceDto, and OpenDivergenceDto exactly. See
+// features/digital-twin/digital-twin.ts's own doc comment for the
+// investigation these three shapes were traced from.
+export interface ActiveTwin {
+  unitCode: string;
+  twinCode: string;
+  modelType: string;
+  status: string;
+  fidelity: string;
+}
+
+export interface ModelVariableSignalTrace {
+  twinCode: string;
+  modelVariable: string;
+  signalTag: string;
+  bindingRole: string;
+  bindingStatus: string;
+}
+
+// Real modeled-vs-measured delta per signal (OpenDivergenceDto) -- fleet-wide
+// only. No per-unit variant exists anywhere in this backend: reaching a
+// specific unit's divergences requires a real four-hop join
+// (TwinDivergence -> TwinSnapshot -> TwinRuntimeSession -> TwinModelVersion
+// -> TwinModel.UnitId) that no existing query performs -- checked directly,
+// not assumed. This interface carries no unit field because the real DTO
+// doesn't either.
+export interface OpenDivergence {
+  detectedAtUtc: string;
+  signalTag: string;
+  modelVariable: string | null;
+  modeledValue: number;
+  measuredValue: number;
+  deltaValue: number;
+  severity: string;
+  status: string;
+}
+
 const BFF_BASE_URL = 'http://localhost:5103';
 
 @Injectable({ providedIn: 'root' })
@@ -38,5 +77,17 @@ export class DigitalTwinApi {
   // this client was written to expect a single object.
   getUnitTwinStates(unitId: number): Observable<UnitTwinState[]> {
     return this.http.get<UnitTwinState[]>(`${BFF_BASE_URL}/api/v1/digital-twin/units/${unitId}`);
+  }
+
+  getFleetTwins(): Observable<ActiveTwin[]> {
+    return this.http.get<ActiveTwin[]>(`${BFF_BASE_URL}/api/v1/digital-twin/fleet`);
+  }
+
+  getSignalTrace(twinCode: string): Observable<ModelVariableSignalTrace[]> {
+    return this.http.get<ModelVariableSignalTrace[]>(`${BFF_BASE_URL}/api/v1/digital-twin/twins/${encodeURIComponent(twinCode)}/signals`);
+  }
+
+  getDivergences(): Observable<OpenDivergence[]> {
+    return this.http.get<OpenDivergence[]>(`${BFF_BASE_URL}/api/v1/digital-twin/divergences`);
   }
 }

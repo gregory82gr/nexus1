@@ -1,0 +1,54 @@
+# ============================================================================
+# Ch. 34 "Build, Theming, and Deployment" -- STANDALONE FRAGMENT, not a full
+# stack. Read this before using it.
+#
+# (a) NEVER BUILT OR RUN in this environment. `docker build`/`docker
+#     compose up` need more local disk and RAM than is available here --
+#     confirmed directly (not assumed) and recorded with the real numbers
+#     in artifacts/evidence/2026-08-26-frontend-ch34-build-deploy-slice.md.
+#     Verified by static review only: `docker compose config` (parse-only,
+#     no daemon required) plus a manual line-by-line Dockerfile review.
+#     This is a named, disclosed boundary, not an oversight -- the same
+#     discipline as every other deferred item in this project.
+#
+# (b) NOT attached to any real backend stack, because none exists in this
+#     repo. The book's own Ch. 34 premise assumes an EXISTING db -> migrator
+#     -> api compose.yml that this chapter merely extends with a fourth
+#     "console" service -- checked directly before writing this file: zero
+#     docker-compose.yml, zero Dockerfile, zero .yml/.yaml file of any kind
+#     exists anywhere else in this solution. This project's own CLAUDE.md
+#     already names why: "Docker / Docker Compose for local reproducible
+#     runtime (introduced later, per book Ch. 55 -- not needed for the
+#     first compile gate)" -- the backend's own compose stack is itself a
+#     named, deferred milestone, not something to fabricate here. The `api`
+#     service below is a commented-out placeholder for when that milestone
+#     lands; no `db`/`migrator`/`api` service is defined in this file.
+#
+# (c) The API_BASE_URL wired in below has no real effect on this app's
+#     runtime behavior yet either -- see docker/entrypoint-runtime-
+#     config.sh's own doc comment: every core/api/*.ts client still
+#     hardcodes its BFF URL as a build-time constant (a pre-existing gap
+#     since the book's own Ch. 5, never revisited in this port). The
+#     entrypoint script itself is real, correct plumbing; what it produces,
+#     nothing in this app reads yet.
+# ============================================================================
+services:
+  console:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nexus1-console:local
+    ports:
+      - "8080:80"
+    environment:
+      # Real value once a backend compose stack exists; placeholder today --
+      # nothing named "api" is defined in this file or anywhere else in the
+      # repo (see header (b)).
+      - API_BASE_URL=http://api:8081
+    # depends_on:
+    #   api:
+    #     condition: service_healthy
+    # Commented out on purpose: uncomment and point at the real service
+    # name once the backend's own db -> migrator -> api stack (book Ch. 55)
+    # exists in this repo. Left in place so the next session that DOES
+    # build that stack sees exactly where this service expects to attach.

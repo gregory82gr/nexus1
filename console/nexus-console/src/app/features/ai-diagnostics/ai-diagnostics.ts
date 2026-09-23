@@ -29,10 +29,19 @@ import { PlantStateService } from '../../core/state/plant-state';
 //    causal graph, NO per-component risk concept, and NO confidence value
 //    anywhere -- confirmed by reading every entity in
 //    Nexus1.RootCause.Domain. The example interaction below is kept, and
-//    marked ILLUSTRATIVE ONLY: it does not imply this system can produce a
-//    cited explanation today, and no citation-generation, grounding, or
-//    RAG pipeline of any kind is built here -- that remains a distinct,
-//    future scope decision (a later book phase), not opened by this slice.
+//    marked ILLUSTRATIVE ONLY: this screen answers no free-form questions and
+//    produces no cited explanation itself.
+//
+//    Update (2026-09-23, Ch. 29 reconciliation): the tail of point 2 as
+//    originally written -- "no citation-generation, grounding, or RAG pipeline
+//    of any kind is built here" -- is no longer true. The Root Cause slice
+//    (Ch. 29, commit 66e1491) wired a real grounding-and-citation pipeline (the
+//    One-Truth Pipeline, ADR-032..ADR-035) that produces a cited root-cause
+//    explanation for the single fixed incident EVT-2026-0418, on the Root Cause
+//    screen. It is NOT a general capability and is NOT invoked by this AI
+//    Diagnostics screen; the rendered copy below was corrected to say exactly
+//    that (a scoped pipeline exists, not the general advisory this screen
+//    describes).
 //
 // What IS real and shown below: RootCause's actual investigation-case
 // history for the selected unit (an alarm flood opened a case; eventually a

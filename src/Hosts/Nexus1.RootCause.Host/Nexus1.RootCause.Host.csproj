@@ -10,6 +10,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Contexts\RootCause\Nexus1.RootCause.Application\Nexus1.RootCause.Application.csproj" />
     <ProjectReference Include="..\..\Contexts\RootCause\Nexus1.RootCause.Infrastructure\Nexus1.RootCause.Infrastructure.csproj" />
+    <!-- Composition root composes the served-model stage (ADR-033/ADR-034). This is
+         a ProjectReference, not a served-model PackageReference, so the
+         ArchitectureTests served-model-package rule still holds. -->
+    <ProjectReference Include="..\..\Contexts\RootCause\Nexus1.RootCause.Explain\Nexus1.RootCause.Explain.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\Nexus1.BuildingBlocks.Application\Nexus1.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\Nexus1.ServiceDefaults\Nexus1.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\Nexus1.BuildingBlocks.Messaging\Nexus1.BuildingBlocks.Messaging.csproj" />

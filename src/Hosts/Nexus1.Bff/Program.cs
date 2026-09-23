@@ -426,6 +426,18 @@ if (IsContextEnabled("ReinforcementLearning"))
     healthChecksBuilder.AddCheck<DbContextHealthCheck<ReinforcementLearningDbContext>>("reinforcementlearning-db");
 }
 
+// ADR-035: the BFF's first outbound hop. RootCause is a separate deployable
+// (ADR-001) never composed in-process; the BFF reaches its diagnosis route over
+// HTTP via this typed client. Timeout is generous over the Host's measured
+// 26-94s CPU-inference latency (ADR-034) so a legitimate slow run is never severed.
+var rootCauseHostBaseUrl = builder.Configuration["Services:RootCauseHost"]
+    ?? throw new InvalidOperationException("Missing Services:RootCauseHost configuration (the RootCause.Host base URL, ADR-035).");
+builder.Services.AddHttpClient("RootCauseHost", client =>
+{
+    client.BaseAddress = new Uri(rootCauseHostBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(180);
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -505,6 +517,39 @@ app.MapPost("/api/v1/alarm-management/alarms/{id:long}/acknowledge", async (
 app.MapGet("/api/v1/digital-twin/units/{id:int}", async (int id, [FromServices] GetUnitTwinStateQueryHandler handler, CancellationToken cancellationToken) =>
 {
     var result = await handler.Handle(new GetUnitTwinStateQuery(id), cancellationToken);
+    return Results.Ok(result.Value);
+});
+
+// Digital Twin screen (Appendix A follow-up): fleet-wide reconciliation
+// table -- three thin routes wrapping handlers already registered above
+// (AddDigitalTwinApplication), zero new backend logic. Checked directly
+// before adding these: no per-unit divergence query exists anywhere in
+// this context -- IActiveTwinFinder.GetActiveTwinsForUnitAsync's own doc
+// comment names the real four-hop join (TwinDivergence -> TwinSnapshot ->
+// TwinRuntimeSession -> TwinModelVersion -> TwinModel.UnitId) no existing
+// query performs, and OpenDivergenceDto itself carries no unit reference.
+// So divergences are exposed fleet-wide only, here, never silently
+// narrowed to look per-unit -- the frontend's own screen labels this
+// explicitly, matching this route's own real shape.
+app.MapGet("/api/v1/digital-twin/fleet", async ([FromServices] GetActiveTwinsForFleetQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new GetActiveTwinsForFleetQuery(), cancellationToken);
+    return Results.Ok(result.Value);
+});
+
+// Real SignalBinding join (TwinModel/TwinVariable -> Instrumentation.Signal,
+// real FK per ADR-020), scoped by twin code -- not per-unit directly, but
+// a unit's twin code is reachable via the fleet route above, a real
+// two-step join, not a fabricated one.
+app.MapGet("/api/v1/digital-twin/twins/{twinCode}/signals", async (string twinCode, [FromServices] TraceModelVariableToSignalQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new TraceModelVariableToSignalQuery(twinCode), cancellationToken);
+    return Results.Ok(result.Value);
+});
+
+app.MapGet("/api/v1/digital-twin/divergences", async ([FromServices] GetOpenDivergencesQueryHandler handler, CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new GetOpenDivergencesQuery(), cancellationToken);
     return Results.Ok(result.Value);
 });
 
@@ -941,6 +986,40 @@ app.MapGet("/api/v1/reinforcement-learning/recommendations", async ([FromService
 {
     var result = await handler.Handle(new GetClampedRecommendationsQuery(), cancellationToken);
     return Results.Ok(result.Value);
+});
+
+// ADR-035: thin proxy to RootCause.Host's diagnosis route -- a real network hop,
+// not in-process composition. Relays the Host's status + body + content-type
+// verbatim (200 incl. a first-class abstention, 404, relayed 503). If the Host
+// itself cannot be reached (connection refused, or the 180s timeout), returns 502
+// Bad Gateway -- distinct from a relayed 503. No RootCause code runs here; this
+// lambda only forwards the call and relays the response.
+app.MapPost("/api/v1/root-cause/incidents/{incidentId}/diagnoses", async (
+    string incidentId,
+    [FromServices] IHttpClientFactory httpClientFactory,
+    [FromServices] ILoggerFactory loggerFactory,
+    CancellationToken cancellationToken) =>
+{
+    var client = httpClientFactory.CreateClient("RootCauseHost");
+    try
+    {
+        using var upstream = await client.PostAsync(
+            $"/api/v1/root-cause/incidents/{Uri.EscapeDataString(incidentId)}/diagnoses",
+            content: null,
+            cancellationToken);
+
+        var body = await upstream.Content.ReadAsStringAsync(cancellationToken);
+        var contentType = upstream.Content.Headers.ContentType?.ToString() ?? "application/json";
+        return Results.Content(body, contentType, null, (int)upstream.StatusCode);
+    }
+    catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+    {
+        loggerFactory.CreateLogger("Bff.RootCauseProxy").LogError(ex, "RootCause.Host unreachable for {IncidentId}", incidentId);
+        return Results.Problem(
+            title: "RootCause.Host is unreachable",
+            detail: ex.Message,
+            statusCode: StatusCodes.Status502BadGateway);
+    }
 });
 
 app.Run();

@@ -1,0 +1,84 @@
+<div class="digital-twin">
+  <div class="panel" data-panel="fleet-twins">
+    <div class="ph"><h2>Active Twins</h2><span class="tag">fleet-wide, model fidelity</span></div>
+    @switch (fleetState().status) {
+      @case ('loading') {
+        <div class="state-panel"><span class="pill info">LOADING</span></div>
+      }
+      @case ('error') {
+        <div class="state-panel hot"><span class="pill crit">UNREACHABLE</span><p class="sub">{{ fleetErrorMessage }}</p></div>
+      }
+      @case ('loaded') {
+        @if (loadedTwins.length === 0) {
+          <div class="state-panel"><span class="pill ok">NO ACTIVE TWINS</span></div>
+        }
+        @for (twin of loadedTwins; track twin.twinCode) {
+          <button type="button" class="row twin-row" [class.selected]="selectedTwinCode === twin.twinCode" (click)="selectTwin(twin.twinCode)">
+            <div class="ln">{{ twin.unitCode }} <span class="sub">({{ twin.twinCode }})</span></div>
+            <div class="ln">{{ twin.modelType }}</div>
+            <span class="pill info">{{ twin.status }}</span>
+            <span class="pill" [class.ok]="twin.fidelity === 'Validated'" [class.warn]="twin.fidelity !== 'Validated'">{{ twin.fidelity }}</span>
+          </button>
+        }
+      }
+    }
+  </div>
+
+  <div class="panel" data-panel="signal-trace">
+    <div class="ph"><h2>Signals Mirrored</h2><span class="tag">select a twin above</span></div>
+    @switch (traceState().status) {
+      @case ('idle') {
+        <p class="sub">Select an active twin to trace its mirrored signals.</p>
+      }
+      @case ('loading') {
+        <div class="state-panel"><span class="pill info">LOADING</span></div>
+      }
+      @case ('error') {
+        <div class="state-panel hot"><span class="pill crit">UNREACHABLE</span><p class="sub">{{ traceErrorMessage }}</p></div>
+      }
+      @case ('loaded') {
+        @if (loadedTrace.length === 0) {
+          <div class="state-panel"><span class="pill nosource">NO SIGNAL BINDINGS</span></div>
+        }
+        @for (trace of loadedTrace; track trace.signalTag) {
+          <div class="row">
+            <div class="ln">{{ trace.modelVariable }} <span class="sub">&rarr; {{ trace.signalTag }}</span></div>
+            <span class="tag">{{ trace.bindingRole }}</span>
+            <span class="pill info">{{ trace.bindingStatus }}</span>
+          </div>
+        }
+      }
+    }
+  </div>
+
+  <div class="panel hot" data-panel="divergences">
+    <div class="ph"><h2>Open Divergences</h2><span class="pill warn">FLEET-WIDE &mdash; NOT PER-UNIT</span></div>
+    <p class="sub">
+      Modeled-vs-measured deviation per signal, across the whole fleet. This cannot be filtered or joined to a
+      specific unit today: doing so needs a real four-hop join (divergence &rarr; snapshot &rarr; runtime session
+      &rarr; model version &rarr; unit) that no query in this backend performs yet &mdash; a named gap, not
+      something this screen narrows silently to look per-unit.
+    </p>
+    @switch (divergenceState().status) {
+      @case ('loading') {
+        <div class="state-panel"><span class="pill info">LOADING</span></div>
+      }
+      @case ('error') {
+        <div class="state-panel hot"><span class="pill crit">UNREACHABLE</span><p class="sub">{{ divergenceErrorMessage }}</p></div>
+      }
+      @case ('loaded') {
+        @if (loadedDivergences.length === 0) {
+          <div class="state-panel"><span class="pill ok">NO OPEN DIVERGENCES</span></div>
+        }
+        @for (d of loadedDivergences; track d.signalTag + d.detectedAtUtc) {
+          <div class="row">
+            <div class="ln">{{ d.signalTag }} <span class="sub">{{ d.modelVariable ?? 'unbound' }} &middot; {{ d.detectedAtUtc }}</span></div>
+            <div class="ln">modeled {{ d.modeledValue }} / measured {{ d.measuredValue }} <span class="sub">(&Delta; {{ d.deltaValue }})</span></div>
+            <span class="pill" [class.crit]="d.severity === 'Critical'" [class.warn]="d.severity !== 'Critical'">{{ d.severity }}</span>
+            <span class="tag">{{ d.status }}</span>
+          </div>
+        }
+      }
+    }
+  </div>
+</div>

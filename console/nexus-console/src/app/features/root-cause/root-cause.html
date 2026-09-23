@@ -1,0 +1,93 @@
+<div class="root-cause">
+  <div class="panel header">
+    <h2>Root Cause — {{ incidentId }}</h2>
+    <p class="sub">
+      The engineered causal verdict for this incident, computed by the RootCause diagnosis pipeline
+      (the engine decides the origin, the served model explains it, H3/H4 validates, and the result is
+      sealed into a tamper-evident audit chain). Confidence figures are <strong>illustrative</strong> —
+      derived from the engineered graph's edge weights, not probabilities identified from plant data.
+    </p>
+  </div>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <div class="panel state-panel">
+        <span class="pill info">RUNNING</span>
+        <p>Running diagnosis — this can take up to about two minutes on the first run (cold model load), then roughly twenty seconds while the model stays warm.</p>
+      </div>
+    }
+    @case ('ready') {
+      <div class="panel verdict">
+        <span class="pill info">VERDICT — ORIGIN CAUSE</span>
+        <h3 data-field="verdict">{{ result()!.verdict }}</h3>
+        <p class="sub">The origin the causal ranking blames, distinct from the loudest symptom. Confidence is illustrative.</p>
+      </div>
+
+      <div class="panel ranked">
+        <h3>Ranked candidates</h3>
+        <table class="candidates">
+          <thead>
+            <tr><th>Component</th><th>Role</th><th>Illustrative weight</th><th>Coverage</th></tr>
+          </thead>
+          <tbody>
+            @for (candidate of result()!.candidates; track candidate.tag) {
+              <tr>
+                <td data-field="candidate-tag">{{ candidate.tag }}</td>
+                <td class="role">{{ candidate.role }}</td>
+                <td>{{ pct(candidate.weight) }}</td>
+                <td>{{ pct(candidate.coverage) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <p class="sub">Weights and coverage are illustrative figures from the engineered graph — not plant-identified probabilities.</p>
+      </div>
+
+      <div class="panel citations">
+        <h3>Grounding citations</h3>
+        <ul>
+          @for (citation of citations(); track citation.chunkId) {
+            <li data-field="citation">{{ citation.sourceLabel }}</li>
+          }
+        </ul>
+      </div>
+
+      <div class="panel provenance">
+        <p class="sub">Sealed into the audit chain — hash <code data-field="audit-hash">{{ auditHash() }}</code></p>
+      </div>
+
+      <div class="panel note graph-pending">
+        <span class="pill nosource">GRAPH VISUALIZATION — PENDING A BACKEND ENDPOINT</span>
+        <p class="sub">
+          The fault-tree graph (Figure 29.1) is not drawn here. The diagnosis route returns the ranked
+          verdict and its citations, not the graph topology (nodes, edges, delay windows, layer kinds).
+          Drawing the graph honestly needs a backend topology endpoint, which does not exist yet — so no
+          graph is shown, rather than a hand-authored one that could silently drift from the real engine.
+        </p>
+      </div>
+    }
+    @case ('abstained') {
+      <div class="panel state-panel">
+        <span class="pill info">INCONCLUSIVE — NO VERDICT</span>
+        <p data-field="abstain-reason">The pipeline abstained. Reason: {{ abstainReason() }}</p>
+        <p class="sub">
+          An abstention is a first-class outcome, not an error: the engine declined to name a cause
+          rather than guess. It was still recorded — audit hash <code>{{ auditHash() }}</code>.
+        </p>
+      </div>
+    }
+    @case ('unknown') {
+      <div class="panel state-panel">
+        <span class="pill nosource">NO DIAGNOSIS AVAILABLE</span>
+        <p>No diagnosis available for this incident.</p>
+        <p class="sub">The diagnosis engine currently serves only {{ incidentId }}.</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="panel state-panel hot">
+        <span class="pill nosource">SERVICE UNAVAILABLE</span>
+        <p data-field="error">{{ errorMessage() }}</p>
+      </div>
+    }
+  }
+</div>

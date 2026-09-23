@@ -56,6 +56,242 @@ namespace Nexus1.RootCause.Infrastructure.Persistence.Migrations
                     b.ToTable("AnalysisHypothesis", "RootCause");
                 });
 
+            modelBuilder.Entity("Nexus1.RootCause.Domain.Grounding.AuditEntry", b =>
+                {
+                    b.Property<long>("Seq")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Seq"));
+
+                    b.Property<string>("Hash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nchar(64)")
+                        .IsFixedLength();
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PrevHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nchar(64)")
+                        .IsFixedLength();
+
+                    b.Property<DateTime>("TimestampUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Seq")
+                        .HasName("PK_RootCause_Audit");
+
+                    b.ToTable("Audit", "RootCause");
+                });
+
+            modelBuilder.Entity("Nexus1.RootCause.Domain.Grounding.Candidate", b =>
+                {
+                    b.Property<long>("DiagnosisRunId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("ComponentId")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("Coverage")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)");
+
+                    b.Property<double>("Weight")
+                        .HasColumnType("float");
+
+                    b.HasKey("DiagnosisRunId", "ComponentId")
+                        .HasName("PK_RootCause_Candidate");
+
+                    b.HasIndex("ComponentId");
+
+                    b.ToTable("Candidate", "RootCause");
+                });
+
+            modelBuilder.Entity("Nexus1.RootCause.Domain.Grounding.Component", b =>
+                {
+                    b.Property<int>("ComponentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AlarmCount")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("HealthScore")
+                        .HasColumnType("float");
+
+                    b.Property<string>("IllustrativeRole")
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)");
+
+                    b.Property<double?>("IllustrativeWeight")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("Tag")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("UnitId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ComponentId")
+                        .HasName("PK_RootCause_Component");
+
+                    b.HasIndex("Tag")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_RootCause_Component_Tag");
+
+                    b.ToTable("Component", "RootCause");
+                });
+
+            modelBuilder.Entity("Nexus1.RootCause.Domain.Grounding.CorpusChunk", b =>
+                {
+                    b.Property<long>("ChunkId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ChunkId"));
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DocId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmbeddingJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SourceLabel")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<byte>("TrustTier")
+                        .HasColumnType("tinyint");
+
+                    b.HasKey("ChunkId")
+                        .HasName("PK_RootCause_Corpus");
+
+                    b.ToTable("Corpus", "RootCause");
+                });
+
+            modelBuilder.Entity("Nexus1.RootCause.Domain.Grounding.DiagnosisRun", b =>
+                {
+                    b.Property<long>("DiagnosisRunId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("DiagnosisRunId"));
+
+                    b.Property<string>("AbstainReason")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("CorpusVersion")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("IncidentId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Verdict")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("DiagnosisRunId")
+                        .HasName("PK_RootCause_DiagnosisRun");
+
+                    b.HasIndex("IncidentId")
+                        .HasDatabaseName("IX_RootCause_DiagnosisRun_IncidentId");
+
+                    b.ToTable("DiagnosisRun", "RootCause");
+                });
+
+            modelBuilder.Entity("Nexus1.RootCause.Domain.Grounding.Edge", b =>
+                {
+                    b.Property<int>("EdgeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EdgeId"));
+
+                    b.Property<int>("DelayMaxSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DelayMinSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FromComponentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)");
+
+                    b.Property<string>("SourceRef")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("ToComponentId")
+                        .HasColumnType("int");
+
+                    b.HasKey("EdgeId")
+                        .HasName("PK_RootCause_Edge");
+
+                    b.HasIndex("FromComponentId")
+                        .HasDatabaseName("IX_RootCause_Edge_FromComponentId");
+
+                    b.HasIndex("ToComponentId");
+
+                    b.ToTable("Edge", "RootCause");
+                });
+
+            modelBuilder.Entity("Nexus1.RootCause.Domain.Grounding.HistorianSample", b =>
+                {
+                    b.Property<int>("ChannelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("TimestampUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte>("Quality")
+                        .HasColumnType("tinyint");
+
+                    b.Property<double>("Value")
+                        .HasColumnType("float");
+
+                    b.HasKey("ChannelId", "TimestampUtc")
+                        .HasName("PK_RootCause_Historian");
+
+                    b.ToTable("Historian", "RootCause");
+                });
+
             modelBuilder.Entity("Nexus1.RootCause.Domain.HypothesisEvidence", b =>
                 {
                     b.Property<int>("Id")
@@ -375,6 +611,40 @@ namespace Nexus1.RootCause.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_RootCause_AnalysisHypothesis_RootCauseAnalysisId");
+                });
+
+            modelBuilder.Entity("Nexus1.RootCause.Domain.Grounding.Candidate", b =>
+                {
+                    b.HasOne("Nexus1.RootCause.Domain.Grounding.Component", null)
+                        .WithMany()
+                        .HasForeignKey("ComponentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_RootCause_Candidate_ComponentId");
+
+                    b.HasOne("Nexus1.RootCause.Domain.Grounding.DiagnosisRun", null)
+                        .WithMany()
+                        .HasForeignKey("DiagnosisRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_RootCause_Candidate_DiagnosisRunId");
+                });
+
+            modelBuilder.Entity("Nexus1.RootCause.Domain.Grounding.Edge", b =>
+                {
+                    b.HasOne("Nexus1.RootCause.Domain.Grounding.Component", null)
+                        .WithMany()
+                        .HasForeignKey("FromComponentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_RootCause_Edge_FromComponentId");
+
+                    b.HasOne("Nexus1.RootCause.Domain.Grounding.Component", null)
+                        .WithMany()
+                        .HasForeignKey("ToComponentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_RootCause_Edge_ToComponentId");
                 });
 
             modelBuilder.Entity("Nexus1.RootCause.Domain.HypothesisEvidence", b =>
