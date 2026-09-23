@@ -9,6 +9,7 @@ import { RootCauseComponent } from '../root-cause/root-cause';
 import { DiagnosisResponse } from '../../core/api/root-cause-diagnosis-api';
 
 const URL = 'http://localhost:5103/api/v1/root-cause/incidents/EVT-2026-0418/diagnoses';
+const GRAPH_URL = 'http://localhost:5103/api/v1/root-cause/incidents/EVT-2026-0418/graph';
 
 const verdictResponse: DiagnosisResponse = {
   diagnosisRunId: 7,
@@ -48,7 +49,10 @@ describe('IncidentSummaryComponent', () => {
     // Both screens read the same RootCauseService -- one shared fetch, one answer.
     const graph = TestBed.createComponent(RootCauseComponent);
     const summary = TestBed.createComponent(IncidentSummaryComponent);
-    httpMock.expectOne(URL).flush(verdictResponse); // exactly one network run for both screens
+    httpMock.expectOne(URL).flush(verdictResponse); // exactly one diagnosis run for both screens
+    // RootCauseComponent also fetches the graph topology (its own fast endpoint);
+    // satisfy it so httpMock.verify() passes. Not the subject of this test.
+    httpMock.expectOne(GRAPH_URL).flush({ incidentId: 'EVT-2026-0418', nodes: [], edges: [] });
     graph.detectChanges();
     summary.detectChanges();
 

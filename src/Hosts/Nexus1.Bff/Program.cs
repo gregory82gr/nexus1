@@ -1022,6 +1022,36 @@ app.MapPost("/api/v1/root-cause/incidents/{incidentId}/diagnoses", async (
     }
 });
 
+// ADR-036: thin proxy for the read-only causal-graph topology -- same pass-through
+// pattern as the diagnosis proxy above, GET this time. Relays status + body +
+// content-type verbatim (200, relayed 404); 502 if the Host is unreachable.
+app.MapGet("/api/v1/root-cause/incidents/{incidentId}/graph", async (
+    string incidentId,
+    [FromServices] IHttpClientFactory httpClientFactory,
+    [FromServices] ILoggerFactory loggerFactory,
+    CancellationToken cancellationToken) =>
+{
+    var client = httpClientFactory.CreateClient("RootCauseHost");
+    try
+    {
+        using var upstream = await client.GetAsync(
+            $"/api/v1/root-cause/incidents/{Uri.EscapeDataString(incidentId)}/graph",
+            cancellationToken);
+
+        var body = await upstream.Content.ReadAsStringAsync(cancellationToken);
+        var contentType = upstream.Content.Headers.ContentType?.ToString() ?? "application/json";
+        return Results.Content(body, contentType, null, (int)upstream.StatusCode);
+    }
+    catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+    {
+        loggerFactory.CreateLogger("Bff.RootCauseGraphProxy").LogError(ex, "RootCause.Host graph unreachable for {IncidentId}", incidentId);
+        return Results.Problem(
+            title: "RootCause.Host is unreachable",
+            detail: ex.Message,
+            statusCode: StatusCodes.Status502BadGateway);
+    }
+});
+
 app.Run();
 
 /// <summary>Runs one section's call, converting a thrown exception into an error message rather than letting it fail the whole composed response.</summary>

@@ -99,4 +99,18 @@ app.MapPost("/api/v1/root-cause/incidents/{incidentId}/diagnoses", async (
     }
 });
 
+// Read-only causal-graph topology for the incident (ADR-036) -- the nodes and
+// edges the console draws as Figure 29.1. GET (no writes, no engine run); reads
+// the seeded Component/Edge via nexus1_app. EVT-2026-0418 only; else 404.
+app.MapGet("/api/v1/root-cause/incidents/{incidentId}/graph", async (
+    string incidentId,
+    [FromServices] GetIncidentGraphQueryHandler handler,
+    CancellationToken cancellationToken) =>
+{
+    var result = await handler.Handle(new GetIncidentGraphQuery(incidentId), cancellationToken);
+    return result.IsSuccess
+        ? Results.Ok(result.Value)
+        : Results.NotFound(new { error = result.Error });
+});
+
 app.Run();

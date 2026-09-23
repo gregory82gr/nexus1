@@ -9,6 +9,69 @@
     </p>
   </div>
 
+  <div class="panel graph">
+    <div class="ph"><h3>Causal fault-propagation graph — Figure 29.1</h3></div>
+    @switch (graphState().status) {
+      @case ('loading') {
+        <p class="sub">Loading the engineered graph…</p>
+      }
+      @case ('error') {
+        <p class="sub">The graph topology endpoint is unavailable.</p>
+      }
+      @case ('ready') {
+        <div class="graph-canvas">
+          <svg
+            class="rc-graph-svg"
+            [attr.viewBox]="'0 0 ' + viewBoxWidth + ' ' + viewBoxHeight"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            <defs>
+              <marker id="rc-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--text-dim)" />
+              </marker>
+            </defs>
+            @for (e of renderEdges(); track e.fromTag + '-' + e.toTag) {
+              <line
+                class="rc-edge"
+                [attr.data-kind]="e.kind"
+                [attr.data-edge]="e.fromTag + '-' + e.toTag"
+                [attr.x1]="e.x1" [attr.y1]="e.y1" [attr.x2]="e.x2" [attr.y2]="e.y2"
+                marker-end="url(#rc-arrow)"
+              />
+              @if (e.label) {
+                <text class="rc-edge-label" [attr.x]="e.labelX" [attr.y]="e.labelY" text-anchor="middle">{{ e.label }}</text>
+              }
+            }
+            @for (n of renderNodes(); track n.node.componentId) {
+              <g
+                class="rc-node"
+                [attr.data-tag]="n.node.tag"
+                [attr.data-role]="n.role"
+                [attr.transform]="'translate(' + n.x + ',' + n.y + ')'"
+              >
+                <rect class="rc-node-box" x="-46" y="-24" width="92" height="48" rx="6" />
+                <text class="rc-node-tag" text-anchor="middle" y="-3">{{ n.node.tag }}</text>
+                <text class="rc-node-meta" text-anchor="middle" y="15">{{ n.node.status }}</text>
+              </g>
+            }
+          </svg>
+        </div>
+        <ul class="graph-legend">
+          <li class="kind-backbone">backbone (fault-tree)</li>
+          <li class="kind-learned">learned (data-informed)</li>
+          <li class="kind-artefact">artefact (EMI-class)</li>
+          <li class="kind-rejected">rejected / ruled-out</li>
+        </ul>
+        <p class="sub">
+          Solid = engineered backbone; dashed violet = data-informed weight; dashed orange = artefact
+          (unused in this incident); struck grey = a candidate the engine ruled out, kept visible. Delay
+          windows label each walkable edge. Drawn from the real seeded topology; the on-screen positions
+          are presentation only.
+        </p>
+      }
+    }
+  </div>
+
   @switch (state().status) {
     @case ('loading') {
       <div class="panel state-panel">
@@ -54,16 +117,6 @@
 
       <div class="panel provenance">
         <p class="sub">Sealed into the audit chain — hash <code data-field="audit-hash">{{ auditHash() }}</code></p>
-      </div>
-
-      <div class="panel note graph-pending">
-        <span class="pill nosource">GRAPH VISUALIZATION — PENDING A BACKEND ENDPOINT</span>
-        <p class="sub">
-          The fault-tree graph (Figure 29.1) is not drawn here. The diagnosis route returns the ranked
-          verdict and its citations, not the graph topology (nodes, edges, delay windows, layer kinds).
-          Drawing the graph honestly needs a backend topology endpoint, which does not exist yet — so no
-          graph is shown, rather than a hand-authored one that could silently drift from the real engine.
-        </p>
       </div>
     }
     @case ('abstained') {
