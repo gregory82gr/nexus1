@@ -50,6 +50,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAntiHallucinationValidator, RegistryAntiHallucinationValidator>();
         services.AddScoped<IAuditChainWriter, Sha256AuditChainWriter>();
         services.AddScoped<IDiagnosisRunStore, EfDiagnosisRunStore>();
+        services.AddScoped<IIncidentGraphReader, EfIncidentGraphReader>();
         services.AddScoped<EmbeddingIngestor>();
         services.AddScoped<FixedIncidentDiagnosisRunner>();
 

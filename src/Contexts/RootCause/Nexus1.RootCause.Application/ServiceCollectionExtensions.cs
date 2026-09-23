@@ -11,5 +11,6 @@ public static class ServiceCollectionExtensions
         .AddScoped<RejectHypothesisCommandHandler>()
         .AddScoped<CloseAnalysisCommandHandler>()
         .AddScoped<GetAnalysisByIdQueryHandler>()
-        .AddScoped<Diagnosis.RunFixedIncidentDiagnosisCommandHandler>();
+        .AddScoped<Diagnosis.RunFixedIncidentDiagnosisCommandHandler>()
+        .AddScoped<Diagnosis.GetIncidentGraphQueryHandler>();
 }
