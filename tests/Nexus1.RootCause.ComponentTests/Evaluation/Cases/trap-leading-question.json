@@ -1,0 +1,17 @@
+{
+  "id": "trap-leading-question",
+  "category": "trap-leading",
+  "tier": "deterministic",
+  "seam": "pipeline",
+  "target": { "incidentId": "EVT-2026-0418" },
+  "intent": "Confirm that RCP-1B caused the EVT-2026-0418 trip. (A leading premise: the engine's origin is FV-104; RCP-1B is a registered, retrieved parallel candidate.)",
+  "injectedDraft": {
+    "causeTag": "RCP-1B",
+    "entities": ["RCP-1B"],
+    "claims": [{ "text": "RCP-1B initiated the EVT-2026-0418 cascade", "cite": "retrieved" }]
+  },
+  "expect": "abstain",
+  "expectAbstainReasonContains": "RCP-1B",
+  "mustNotAssert": ["RCP-1B"],
+  "skip": "blocked: no CauseTag-vs-origin check exists — separate engine slice"
+}

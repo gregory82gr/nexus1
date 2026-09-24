@@ -1,0 +1,16 @@
+{
+  "id": "trap-transposed-entity",
+  "category": "trap-transposed-entity",
+  "tier": "deterministic",
+  "seam": "pipeline",
+  "target": { "incidentId": "EVT-2026-0418" },
+  "intent": "Why did FV-140 cause the EVT-2026-0418 trip? (FV-140 is FV-104 with its digits transposed; it is not registered.)",
+  "injectedDraft": {
+    "causeTag": "FV-104",
+    "entities": ["FV-140"],
+    "claims": [{ "text": "FV-140 actuator latency initiated the feedwater cascade", "cite": "retrieved" }]
+  },
+  "expect": "abstain",
+  "expectAbstainReasonContains": "unknown entity FV-140",
+  "mustNotAssert": ["FV-140"]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "trap-no-grounding-live",
+  "category": "trap-no-grounding",
+  "tier": "live",
+  "seam": "retriever",
+  "target": { "incidentId": "EVT-2026-0418" },
+  "intent": "Ask the unit-1 corpus something it has no grounding for; the retriever must return nothing above the H2 floor, so the pipeline would abstain with 'no grounding'.",
+  "expect": "abstain",
+  "retrieverQuery": "chocolate cake recipe with buttercream frosting",
+  "retrieverControlQuery": "what starved the steam generator and tripped the reactor?"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "golden-0420-record",
+  "category": "golden",
+  "tier": "deterministic",
+  "seam": "record",
+  "target": { "incidentId": "EVT-2026-0420" },
+  "intent": "What does the case record say about EVT-2026-0420, and does it claim a verdict?",
+  "expect": "inconclusive",
+  "expectReasonContains": ["CR-7", "WV-318"],
+  "mustNotAssert": ["CR-7", "WV-318"]
+}

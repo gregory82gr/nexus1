@@ -22,6 +22,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- H9 evaluation cases (ADR-041): data, loaded from the output directory at test time. -->
+  <ItemGroup>
+    <None Include="Evaluation\Cases\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.RootCause.Infrastructure\Nexus1.RootCause.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.RootCause.Application\Nexus1.RootCause.Application.csproj" />

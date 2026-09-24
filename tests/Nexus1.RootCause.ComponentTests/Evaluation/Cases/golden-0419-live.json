@@ -1,0 +1,13 @@
+{
+  "id": "golden-0419-live",
+  "category": "golden",
+  "tier": "live",
+  "seam": "pipeline",
+  "target": { "incidentId": "EVT-2026-0419" },
+  "intent": "Was the EVT-2026-0419 flood a real excursion, and what caused it? (Real nexus-dslm + nomic-embed-text.)",
+  "expect": "verdict_or_safe_abstain",
+  "expectVerdict": "BKR-2A",
+  "mustNotAssert": ["FT-9", "LOF-1", "FV-104"],
+  "mustCite": ["Ch.5"],
+  "mustNotCite": ["Ch.1-2"]
+}

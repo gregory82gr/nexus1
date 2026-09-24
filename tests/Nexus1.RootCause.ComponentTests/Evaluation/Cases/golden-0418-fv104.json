@@ -1,0 +1,21 @@
+{
+  "id": "golden-0418-fv104",
+  "category": "golden",
+  "tier": "deterministic",
+  "seam": "pipeline",
+  "target": { "incidentId": "EVT-2026-0418" },
+  "intent": "What initiated the EVT-2026-0418 feedwater cascade and trip?",
+  "expect": "verdict",
+  "expectVerdict": "FV-104",
+  "expectCandidates": [
+    { "tag": "FV-104", "role": "origin", "weight": 0.66 },
+    { "tag": "PB-2A", "role": "proximate", "weight": 0.20 },
+    { "tag": "RCP-1B", "role": "parallel", "weight": 0.07 },
+    { "tag": "BUS-2A", "role": "contributing", "weight": 0.05 },
+    { "tag": "FT-7", "role": "ruled-out", "weight": 0.02 }
+  ],
+  "expectOriginCoverage": "11/14",
+  "mustNotAssert": ["PB-2A", "FT-7"],
+  "mustCite": ["Ch.1-2"],
+  "mustNotCite": ["Ch.5"]
+}
