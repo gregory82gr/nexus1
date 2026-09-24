@@ -1,12 +1,16 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Nexus1.BuildingBlocks.Application;
+using Nexus1.BuildingBlocks.Observability;
 using Nexus1.RootCause.Domain.Grounding;
 
 namespace Nexus1.RootCause.Application.Diagnosis;
 
 /// <summary>
-/// The full One-Truth Pipeline for the fixed EVT-2026-0418 skeleton (ADR-032,
-/// ADR-033). The deterministic engine decides: the graph walk names the origin,
+/// The full One-Truth Pipeline for a seeded incident (ADR-032, ADR-033; extended to
+/// the registry of incidents in ADR-037 -- the per-incident query text and corpus
+/// version travel on the <see cref="IncidentContext"/>, not as constants here). The
+/// deterministic engine decides: the graph walk names the origin,
 /// then two grounding gates (telemetry corroboration, corpus retrieval) each get
 /// a veto. Only once those pass does the served model explain -- the
 /// <see cref="IExplainer"/> seam turns the retrieved passages (the Unified
@@ -28,15 +32,14 @@ public sealed class FixedIncidentDiagnosisRunner(
     IAntiHallucinationValidator validator,
     IAuditChainWriter auditChain,
     IDiagnosisRunStore store,
-    IDateTimeProvider clock)
+    IDateTimeProvider clock,
+    NexusDiagnosticsMetrics metrics)
 {
-    /// <summary>What this run could read -- sealed into the audit payload (H10).</summary>
-    public const string CorpusVersion = "evt-2026-0418-book-worked-example-v1";
-
-    private const string QueryText = "feedwater control valve actuator latency cascade root cause";
-
     public async Task<DiagnosisResult> RunAsync(IncidentContext ctx, CancellationToken cancellationToken)
     {
+        // Appendix I (ADR-038): time the whole run for nexus1.diagnosis.duration.
+        var stopwatch = Stopwatch.StartNew();
+
         var walk = await graphWalker.WalkAsync(ctx, cancellationToken);
 
         var candidateRows = walk.Ranked
@@ -46,21 +49,26 @@ public sealed class FixedIncidentDiagnosisRunner(
         var origin = walk.Ranked.FirstOrDefault(c => c.Role == "origin");
         if (origin is null)
         {
-            return await FinishAsync(ctx, verdict: null, abstain: "graph walk found no origin candidate", walk.Ranked, citations: [], draft: null, candidateRows, cancellationToken);
+            return await FinishAsync(ctx, verdict: null, abstain: "graph walk found no origin candidate", walk.Ranked, citations: [], draft: null, candidateRows, stopwatch, cancellationToken);
         }
 
         // Grounding gate 1 -- telemetry corroboration (fault injection: missing historian data).
         var corroboration = await corroborator.CheckAsync(ctx, origin.ComponentId, cancellationToken);
         if (!corroboration.TimingFits)
         {
-            return await FinishAsync(ctx, verdict: null, abstain: $"telemetry corroboration failed: {corroboration.Detail}", walk.Ranked, citations: [], draft: null, candidateRows, cancellationToken);
+            return await FinishAsync(ctx, verdict: null, abstain: $"telemetry corroboration failed: {corroboration.Detail}", walk.Ranked, citations: [], draft: null, candidateRows, stopwatch, cancellationToken);
         }
 
         // Grounding gate 2 -- corpus retrieval (fault injection: missing corpus chunk). H2: below the floor = nothing to ground on.
-        var passages = await retriever.RetrieveAsync(QueryText, origin.Tag, ctx.UnitId, cancellationToken);
+        var passages = await retriever.RetrieveAsync(ctx.QueryText, origin.Tag, ctx.UnitId, cancellationToken);
+        // Grounding-hit PROXY, never recall (Appendix I; ADR-038): recorded only now
+        // that retrieval actually ran -- 1.0 if it returned >=1 passage above the H2
+        // floor, else 0.0. Runs that abstained earlier never reached retrieval and so
+        // record no sample (absence, not a fabricated 0).
+        metrics.GroundingHit.Record(passages.Count > 0 ? 1.0 : 0.0);
         if (passages.Count == 0)
         {
-            return await FinishAsync(ctx, verdict: null, abstain: "no grounding: corpus retrieval returned no passages", walk.Ranked, citations: [], draft: null, candidateRows, cancellationToken);
+            return await FinishAsync(ctx, verdict: null, abstain: "no grounding: corpus retrieval returned no passages", walk.Ranked, citations: [], draft: null, candidateRows, stopwatch, cancellationToken);
         }
 
         // Generation (H1/H5/H6) -- the served model turns the Unified Context into
@@ -69,22 +77,24 @@ public sealed class FixedIncidentDiagnosisRunner(
         var outcome = await explainer.ExplainAsync(ctx, origin.Tag, passages, cancellationToken);
         if (outcome.Abstained)
         {
-            return await FinishAsync(ctx, verdict: null, abstain: $"explain abstained: {outcome.AbstainReason}", walk.Ranked, passages, draft: null, candidateRows, cancellationToken);
+            return await FinishAsync(ctx, verdict: null, abstain: $"explain abstained: {outcome.AbstainReason}", walk.Ranked, passages, draft: null, candidateRows, stopwatch, cancellationToken);
         }
 
         // Grounding gate 3 -- H3/H4 validation of the model's draft (unregistered entity, or a claim citing a passage not retrieved).
         var validation = await validator.ValidateAsync(outcome.Draft!, passages, cancellationToken);
         if (!validation.Ok)
         {
-            return await FinishAsync(ctx, verdict: null, abstain: $"validation failed: {validation.Reason}", walk.Ranked, passages, draft: null, candidateRows, cancellationToken);
+            // Validator rejection (Appendix I) -- a subset of abstentions; both move.
+            metrics.ValidatorRejections.Add(1);
+            return await FinishAsync(ctx, verdict: null, abstain: $"validation failed: {validation.Reason}", walk.Ranked, passages, draft: null, candidateRows, stopwatch, cancellationToken);
         }
 
-        return await FinishAsync(ctx, verdict: origin.Tag, abstain: null, walk.Ranked, passages, outcome.Draft, candidateRows, cancellationToken);
+        return await FinishAsync(ctx, verdict: origin.Tag, abstain: null, walk.Ranked, passages, outcome.Draft, candidateRows, stopwatch, cancellationToken);
     }
 
     private async Task<DiagnosisResult> FinishAsync(
         IncidentContext ctx, string? verdict, string? abstain, IReadOnlyList<RankedCandidate> ranked,
-        IReadOnlyList<Passage> citations, DraftAnswer? draft, List<Candidate> candidateRows, CancellationToken cancellationToken)
+        IReadOnlyList<Passage> citations, DraftAnswer? draft, List<Candidate> candidateRows, Stopwatch stopwatch, CancellationToken cancellationToken)
     {
         var run = new DiagnosisRun
         {
@@ -92,7 +102,7 @@ public sealed class FixedIncidentDiagnosisRunner(
             StartedAtUtc = clock.UtcNow,
             Verdict = verdict,
             AbstainReason = abstain,
-            CorpusVersion = CorpusVersion,
+            CorpusVersion = ctx.CorpusVersion,
         };
 
         var runId = await store.SaveAsync(run, candidateRows, cancellationToken);
@@ -118,6 +128,15 @@ public sealed class FixedIncidentDiagnosisRunner(
                 },
         });
         var hash = await auditChain.AppendAsync(payload, cancellationToken);
+
+        // Appendix I metrics (ADR-038): latency for every run; the abstention counter
+        // when this run abstained. Recorded at the single exit so no path is missed.
+        stopwatch.Stop();
+        metrics.Duration.Record(stopwatch.Elapsed.TotalMilliseconds);
+        if (abstain is not null)
+        {
+            metrics.Abstentions.Add(1);
+        }
 
         return new DiagnosisResult(runId, ctx.IncidentId, verdict, abstain, ranked, citations, hash);
     }

@@ -55,6 +55,13 @@ public sealed class RootCauseAnalysis : Entity<RootCauseAnalysisId>, IAggregateR
 
     public DateTime? ClosedAtUtc { get; private set; }
 
+    /// <summary>Why the case was marked Inconclusive (ADR-039) — non-null exactly when Status == Inconclusive; never accompanied by a Verdict.</summary>
+    public string? InconclusiveReason { get; private set; }
+
+    public string? DecidedBy { get; private set; }
+
+    public DateTime? DecidedAtUtc { get; private set; }
+
     public IReadOnlyCollection<AnalysisHypothesis> Hypotheses => _hypotheses.AsReadOnly();
 
     public static RootCauseAnalysis Open(
@@ -117,6 +124,28 @@ public sealed class RootCauseAnalysis : Entity<RootCauseAnalysisId>, IAggregateR
         AddDomainEvent(new RootCauseAnalysisClosed(Id, verdict, closedAtUtc));
     }
 
+    /// <summary>
+    /// Terminally records "investigated, cannot conclude" (ADR-039). Unlike Close(),
+    /// it requires only a reason — no verdict, no hypothesis, no evidence — because the
+    /// point is to capture an unresolvable case honestly rather than leave it Open
+    /// forever. Verdict stays null; the case becomes immutable like Closed.
+    /// </summary>
+    public void MarkInconclusive(string reason, string decidedBy, DateTime decidedAtUtc)
+    {
+        EnsureOpen();
+
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("An inconclusive case must record a reason.", nameof(reason));
+        }
+
+        InconclusiveReason = reason;
+        DecidedBy = decidedBy;
+        DecidedAtUtc = decidedAtUtc;
+        Status = AnalysisStatus.Inconclusive;
+        AddDomainEvent(new RootCauseAnalysisMarkedInconclusive(Id, reason, decidedAtUtc));
+    }
+
     private AnalysisHypothesis FindHypothesis(AnalysisHypothesisId hypothesisId)
     {
         var hypothesis = _hypotheses.SingleOrDefault(h => h.Id == hypothesisId);
@@ -132,7 +161,8 @@ public sealed class RootCauseAnalysis : Entity<RootCauseAnalysisId>, IAggregateR
     {
         if (Status != AnalysisStatus.Open)
         {
-            throw new InvalidOperationException("Closed cases cannot be changed.");
+            // Generalized for both terminal states (Closed and Inconclusive, ADR-039).
+            throw new InvalidOperationException("A finalized case cannot be changed.");
         }
     }
 }

@@ -23,9 +23,10 @@ namespace Nexus1.RootCause.Infrastructure.Diagnosis;
 ///    ground on an exact tag today and light up the semantic path unchanged the
 ///    day embeddings arrive.
 ///
-/// Unit scoping is expressed in the query shape; the skeleton corpus is
-/// single-unit (the book's one worked example), so the filter is a structural
-/// placeholder rather than a discriminator yet (ADR-032).
+/// Unit scoping is now a real discriminator (ADR-037): with a second seeded
+/// incident on its own unit, the retriever filters corpus chunks by unit so a run
+/// can only ground on and cite its own incident's corpus. (Before ADR-037 the
+/// corpus was single-unit and this filter was a structural placeholder.)
 /// </summary>
 public sealed class EfRetriever(RootCauseDbContext db, IEmbedder embedder) : IRetriever
 {
@@ -41,7 +42,11 @@ public sealed class EfRetriever(RootCauseDbContext db, IEmbedder embedder) : IRe
 
     public async Task<IReadOnlyList<Passage>> RetrieveAsync(string queryText, string tagText, int unitId, CancellationToken cancellationToken)
     {
+        // Unit scoping is now a real discriminator (ADR-037): a run grounds on and
+        // cites only its own incident's corpus. Before the second incident existed,
+        // the corpus was single-unit and this filter was a no-op placeholder.
         var chunks = await db.CorpusChunks
+            .Where(c => c.UnitId == unitId)
             .OrderBy(c => c.TrustTier)
             .ThenBy(c => c.ChunkId)
             .ToListAsync(cancellationToken);

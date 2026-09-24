@@ -18,8 +18,7 @@ namespace Nexus1.RootCause.ComponentTests;
 /// </summary>
 public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
 {
-    private static readonly IncidentContext Incident = new(
-        GroundingSeed.IncidentId, GroundingSeed.UnitId, GroundingSeed.AlarmedComponentIds, GroundingSeed.FloodStartUtc);
+    private static readonly IncidentContext Incident = IncidentRegistry.Evt20260418;
 
     // ----- Graph walk -----
 
@@ -303,7 +302,8 @@ public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
             new RegistryAntiHallucinationValidator(db),
             new Sha256AuditChainWriter(db, Clock),
             new EfDiagnosisRunStore(db),
-            Clock);
+            Clock,
+            NewDiagnosticsMetrics());
 
     private sealed class FixtureExplainer(ExplainOutcome outcome) : IExplainer
     {

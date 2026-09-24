@@ -14,10 +14,15 @@ namespace Nexus1.RootCause.Infrastructure.Diagnosis;
 /// role is COMPUTED here, never read from the registry. Every other candidate
 /// keeps its seeded illustrative role.
 ///
-/// Only backbone edges are walked. Learned edges are subordinate (they may
-/// re-weight or propose, never define structure) and rejected edges are kept
-/// visible but never traversed -- so the 4kV bus and FT-7 fall out with the low
-/// or zero coverage the book shows, from the data rather than by fiat.
+/// Coverage is walked over backbone AND artefact edges (ADR-037): a backbone
+/// cascade origin explains its downstream alarms, and an artefact source explains
+/// the alarms on the channels it corrupts -- both are forward causal influence that
+/// a hypothesis accounts for. Learned edges stay subordinate (they may re-weight or
+/// propose, never define structure) and rejected edges are kept visible but never
+/// traversed -- so in 0418 the 4kV bus and FT-7 fall out with the low or zero
+/// coverage the book shows, and in 0419 the EMI source (BKR-2A) ranks above the busy
+/// flow channel via its artefact edges, all from the data rather than by fiat. This
+/// is a general rule, not a special case for one incident.
 /// </summary>
 public sealed class EfGraphWalker(RootCauseDbContext db) : IGraphWalker
 {
@@ -29,13 +34,15 @@ public sealed class EfGraphWalker(RootCauseDbContext db) : IGraphWalker
 
         var componentIds = components.Select(c => c.ComponentId).ToHashSet();
 
-        var backbone = await db.Edges
-            .Where(e => e.Kind == "backbone")
+        // Walkable causal edges: backbone (cascade) and artefact (a source corrupting
+        // the channels it couples into). Learned and rejected are never walked.
+        var walkable = await db.Edges
+            .Where(e => e.Kind == "backbone" || e.Kind == "artefact")
             .Where(e => componentIds.Contains(e.FromComponentId) && componentIds.Contains(e.ToComponentId))
             .Select(e => new { e.FromComponentId, e.ToComponentId })
             .ToListAsync(cancellationToken);
 
-        var adjacency = backbone
+        var adjacency = walkable
             .GroupBy(e => e.FromComponentId)
             .ToDictionary(g => g.Key, g => g.Select(e => e.ToComponentId).ToArray());
 

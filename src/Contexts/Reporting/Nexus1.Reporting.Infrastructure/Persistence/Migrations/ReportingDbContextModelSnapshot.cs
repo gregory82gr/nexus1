@@ -31,6 +31,9 @@ namespace Nexus1.Reporting.Infrastructure.Persistence.Migrations
                     b.Property<long>("AlarmFloodId")
                         .HasColumnType("bigint");
 
+                    b.Property<DateTime?>("FinalizedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("LastAppliedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -39,6 +42,10 @@ namespace Nexus1.Reporting.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime>("OpenedAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -225,6 +232,31 @@ namespace Nexus1.Reporting.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("UQ_messaging_RetryTicket_Attempt");
 
                     b.ToTable("RetryTicket", "messaging");
+                });
+
+            modelBuilder.Entity("Nexus1.Reporting.Infrastructure.Projection.PendingInconclusive", b =>
+                {
+                    b.Property<long>("AnalysisId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("DecidedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("ReceivedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("AnalysisId")
+                        .HasName("PK_Reporting_PendingInconclusive");
+
+                    b.ToTable("PendingInconclusive", "Reporting");
                 });
 
             modelBuilder.Entity("Nexus1.Reporting.Infrastructure.Projection.PendingVerdict", b =>

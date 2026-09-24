@@ -38,6 +38,10 @@ public sealed class RootCauseAnalysisConfiguration : IEntityTypeConfiguration<Ro
         builder.Property(x => x.Verdict).HasMaxLength(1000);
         builder.Property(x => x.ClosedBy).HasMaxLength(100);
         builder.Property(x => x.ClosedAtUtc);
+        // Inconclusive terminal state (ADR-039).
+        builder.Property(x => x.InconclusiveReason).HasMaxLength(1000);
+        builder.Property(x => x.DecidedBy).HasMaxLength(100);
+        builder.Property(x => x.DecidedAtUtc);
 
         builder.HasMany(x => x.Hypotheses)
             .WithOne()

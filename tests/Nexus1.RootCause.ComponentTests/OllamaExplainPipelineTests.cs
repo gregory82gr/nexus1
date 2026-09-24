@@ -26,8 +26,7 @@ public class OllamaExplainPipelineTests(ITestOutputHelper output) : RootCauseCom
 {
     private static readonly OllamaOptions Options = new();
 
-    private static readonly IncidentContext Incident = new(
-        GroundingSeed.IncidentId, GroundingSeed.UnitId, GroundingSeed.AlarmedComponentIds, GroundingSeed.FloodStartUtc);
+    private static readonly IncidentContext Incident = IncidentRegistry.Evt20260418;
 
     private static readonly IDateTimeProvider Clock = new FixedClock(new DateTime(2026, 4, 18, 17, 12, 14, DateTimeKind.Utc));
 
@@ -260,7 +259,8 @@ public class OllamaExplainPipelineTests(ITestOutputHelper output) : RootCauseCom
             new RegistryAntiHallucinationValidator(db),
             new Sha256AuditChainWriter(db, Clock),
             new EfDiagnosisRunStore(db),
-            Clock);
+            Clock,
+            NewDiagnosticsMetrics());
 
     private async Task SeedAsync()
     {

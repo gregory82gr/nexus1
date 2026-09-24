@@ -52,6 +52,14 @@ public sealed class ReportingProjectionMessageHandlerTests : ReportingComponentT
         return envelope.EnvelopeBytes;
     }
 
+    private static byte[] BuildInconclusiveEnvelope(Guid messageId, long analysisId, string reason = "Records incomplete; provenance trail could not be established.")
+    {
+        var payload = new RootCauseCaseInconclusiveV1(analysisId, 1, 500, reason, NowUtc);
+        var envelope = MessageEnvelopeFactory.Build(
+            messageId, "nexus1.root-cause.root-cause-case-inconclusive.v1", 1, NowUtc, "root-cause", Guid.NewGuid(), null, payload);
+        return envelope.EnvelopeBytes;
+    }
+
     private static byte[] BuildUnsupportedEnvelope(Guid messageId)
     {
         var payload = new { Note = "not a RootCause fact this projection understands" };
@@ -109,6 +117,57 @@ public sealed class ReportingProjectionMessageHandlerTests : ReportingComponentT
         Assert.Equal(ReportingCaseStatus.VerdictIssued, summary.Status);
         Assert.Equal("Loose fitting confirmed as cause.", summary.Verdict);
         Assert.Equal(0, await verifyContext.PendingVerdicts.CountAsync());
+    }
+
+    [Fact]
+    public async Task In_order_inconclusive_delivery_projects_the_inconclusive_status_with_its_reason()
+    {
+        var handler = BuildHandler();
+        var openedMessageId = Guid.NewGuid();
+        var inconclusiveMessageId = Guid.NewGuid();
+
+        var openedOutcome = await handler.HandleAsync(openedMessageId, BuildOpenedEnvelope(openedMessageId, analysisId: 800), CancellationToken.None);
+        var inconclusiveOutcome = await handler.HandleAsync(inconclusiveMessageId, BuildInconclusiveEnvelope(inconclusiveMessageId, analysisId: 800), CancellationToken.None);
+
+        // Acked, NOT quarantined -- proves the allowlist entry prevents the
+        // poison-on-wildcard-delivery regression (the event matches root-cause.#).
+        Assert.Equal(MessageHandlingOutcome.Ack, openedOutcome);
+        Assert.Equal(MessageHandlingOutcome.Ack, inconclusiveOutcome);
+
+        await using var verifyContext = CreateDbContext();
+        var summary = await verifyContext.CaseSummaries.SingleAsync();
+        Assert.Equal(ReportingCaseStatus.Inconclusive, summary.Status);
+        Assert.Equal("Records incomplete; provenance trail could not be established.", summary.Reason);
+        Assert.Null(summary.Verdict);
+        Assert.Equal(0, await verifyContext.PoisonMessages.CountAsync());
+    }
+
+    [Fact]
+    public async Task Out_of_order_inconclusive_delivery_buffers_then_applies_once_the_case_opens()
+    {
+        var handler = BuildHandler();
+        var inconclusiveMessageId = Guid.NewGuid();
+        var openedMessageId = Guid.NewGuid();
+
+        // Inconclusive arrives BEFORE its case-opened event.
+        var inconclusiveOutcome = await handler.HandleAsync(inconclusiveMessageId, BuildInconclusiveEnvelope(inconclusiveMessageId, analysisId: 801), CancellationToken.None);
+        Assert.Equal(MessageHandlingOutcome.Ack, inconclusiveOutcome);
+
+        await using (var midContext = CreateDbContext())
+        {
+            Assert.Equal(0, await midContext.CaseSummaries.CountAsync());
+            var pending = await midContext.PendingInconclusives.SingleAsync();
+            Assert.Equal(801, pending.AnalysisId);
+        }
+
+        var openedOutcome = await handler.HandleAsync(openedMessageId, BuildOpenedEnvelope(openedMessageId, analysisId: 801), CancellationToken.None);
+        Assert.Equal(MessageHandlingOutcome.Ack, openedOutcome);
+
+        await using var verifyContext = CreateDbContext();
+        var summary = await verifyContext.CaseSummaries.SingleAsync();
+        Assert.Equal(ReportingCaseStatus.Inconclusive, summary.Status);
+        Assert.Equal("Records incomplete; provenance trail could not be established.", summary.Reason);
+        Assert.Equal(0, await verifyContext.PendingInconclusives.CountAsync());
     }
 
     [Fact]

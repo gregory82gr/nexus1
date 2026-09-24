@@ -32,6 +32,11 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
 
     private const string CaseOpenedEventType = "nexus1.root-cause.root-cause-case-opened.v1";
     private const string VerdictIssuedEventType = "nexus1.root-cause.root-cause-verdict-issued.v1";
+    // ADR-039: MANDATORY allowlist entry, not a feature nicety. Reporting binds the
+    // wildcard "root-cause.#", so this event is DELIVERED here; without an explicit
+    // case it would fall to default: and be quarantined as unsupported-contract
+    // (poison) on every inconclusive event — a regression this entry prevents.
+    private const string CaseInconclusiveEventType = "nexus1.root-cause.root-cause-case-inconclusive.v1";
 
     private static readonly JsonSerializerOptions PayloadOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
@@ -107,6 +112,28 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
                     occurredAtUtc = verdictIssued.IssuedAtUtc;
                     break;
 
+                case CaseInconclusiveEventType:
+                    var inconclusive = JsonSerializer.Deserialize<RootCauseCaseInconclusiveV1>(payloadJson, PayloadOptions)
+                        ?? throw new InvalidOperationException("RootCauseCaseInconclusiveV1 payload deserialized to null.");
+
+                    using (var activity = NexusActivitySources.ReportingSource.StartActivity(
+                        SpanNames.ReportingApplyInconclusive, ActivityKind.Internal, parentContext: default,
+                        tags: SafeTags.ForOwnerOperation(messageId, "ATTEMPTED")))
+                    {
+                        try
+                        {
+                            reducerOutcome = await ApplyInconclusiveAsync(dbContext, inconclusive, messageId, nowUtc, cancellationToken);
+                            activity?.SetTag("nexus1.outcome.code", reducerOutcome);
+                        }
+                        catch (Exception ex)
+                        {
+                            SafeError.Record(activity, ex);
+                            throw;
+                        }
+                    }
+                    occurredAtUtc = inconclusive.DecidedAtUtc;
+                    break;
+
                 default:
                     // A wildcard binding is not a wildcard reducer (ch.35) —
                     // an unrecognized RootCause event type is a permanent
@@ -169,12 +196,20 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
         var summary = RootCauseCaseSummary.ApplyOpened(id, opened.UnitId, opened.AlarmFloodId, opened.OpenedAtUtc, nowUtc, messageId);
         await dbContext.CaseSummaries.AddAsync(summary, cancellationToken);
 
-        // The verdict may have arrived first — resolve it now that the row exists.
+        // A terminal event may have arrived first — resolve it now that the row exists.
+        // A case reaches exactly one terminal outcome, so at most one of these is present.
         var pending = await dbContext.PendingVerdicts.SingleOrDefaultAsync(p => p.AnalysisId == opened.AnalysisId, cancellationToken);
         if (pending is not null)
         {
             summary.ApplyVerdictIssued(pending.Verdict, pending.VerdictIssuedAtUtc, nowUtc, pending.MessageId);
             dbContext.PendingVerdicts.Remove(pending);
+        }
+
+        var pendingInconclusive = await dbContext.PendingInconclusives.SingleOrDefaultAsync(p => p.AnalysisId == opened.AnalysisId, cancellationToken);
+        if (pendingInconclusive is not null)
+        {
+            summary.ApplyInconclusive(pendingInconclusive.Reason, pendingInconclusive.DecidedAtUtc, nowUtc, pendingInconclusive.MessageId);
+            dbContext.PendingInconclusives.Remove(pendingInconclusive);
         }
 
         return "COMMITTED";
@@ -206,6 +241,37 @@ public sealed class ReportingProjectionMessageHandler(IServiceScopeFactory scope
 
         await dbContext.PendingVerdicts.AddAsync(
             new PendingVerdict(verdictIssued.AnalysisId, messageId, verdictIssued.Verdict, verdictIssued.IssuedAtUtc, nowUtc),
+            cancellationToken);
+        return "ABSTAINED";
+    }
+
+    private static async Task<string> ApplyInconclusiveAsync(
+        ReportingDbContext dbContext, RootCauseCaseInconclusiveV1 inconclusive, Guid messageId, DateTime nowUtc, CancellationToken cancellationToken)
+    {
+        var id = new RootCauseCaseSummaryId(inconclusive.AnalysisId);
+        var summary = await dbContext.CaseSummaries.SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
+
+        if (summary is not null)
+        {
+            if (summary.Status == ReportingCaseStatus.Open)
+            {
+                summary.ApplyInconclusive(inconclusive.Reason, inconclusive.DecidedAtUtc, nowUtc, messageId);
+                return "COMMITTED";
+            }
+            // Already terminal — replayed delivery, idempotent no-op.
+            return "DUPLICATE_MATCH";
+        }
+
+        // Out-of-order: the case-opened row doesn't exist yet. Buffer, don't lose it —
+        // the Inconclusive counterpart to the PendingVerdict path above.
+        var alreadyPending = await dbContext.PendingInconclusives.AnyAsync(p => p.AnalysisId == inconclusive.AnalysisId, cancellationToken);
+        if (alreadyPending)
+        {
+            return "DUPLICATE_MATCH";
+        }
+
+        await dbContext.PendingInconclusives.AddAsync(
+            new PendingInconclusive(inconclusive.AnalysisId, messageId, inconclusive.Reason, inconclusive.DecidedAtUtc, nowUtc),
             cancellationToken);
         return "ABSTAINED";
     }

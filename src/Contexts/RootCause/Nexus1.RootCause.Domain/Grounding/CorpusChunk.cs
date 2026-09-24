@@ -22,6 +22,15 @@ public sealed class CorpusChunk
 {
     public long ChunkId { get; init; }
 
+    /// <summary>
+    /// The unit this chunk grounds -- the retrieval scoping key (ADR-037). Retrieval
+    /// filters on it so one incident's run can only ground on (and cite) its own
+    /// corpus, never another incident's. Before ADR-037 the corpus was single-unit,
+    /// so the retriever accepted a unitId but ignored it; that was a real
+    /// cross-contamination bug the moment a second incident was seeded.
+    /// </summary>
+    public int UnitId { get; init; }
+
     public int DocId { get; init; }
 
     /// <summary>Trust tier (0 = highest), App C.3 TrustTier TINYINT.</summary>

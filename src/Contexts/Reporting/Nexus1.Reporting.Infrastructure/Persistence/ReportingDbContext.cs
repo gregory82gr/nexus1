@@ -17,6 +17,8 @@ public sealed class ReportingDbContext(DbContextOptions<ReportingDbContext> opti
 
     public DbSet<PendingVerdict> PendingVerdicts => Set<PendingVerdict>();
 
+    public DbSet<PendingInconclusive> PendingInconclusives => Set<PendingInconclusive>();
+
     public DbSet<InboxReceipt> InboxReceipts => Set<InboxReceipt>();
 
     public DbSet<RetryTicket> RetryTickets => Set<RetryTicket>();

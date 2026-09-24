@@ -188,8 +188,14 @@ namespace Nexus1.RootCause.Infrastructure.Persistence.Migrations
                     b.Property<byte>("TrustTier")
                         .HasColumnType("tinyint");
 
+                    b.Property<int>("UnitId")
+                        .HasColumnType("int");
+
                     b.HasKey("ChunkId")
                         .HasName("PK_RootCause_Corpus");
+
+                    b.HasIndex("UnitId")
+                        .HasDatabaseName("IX_RootCause_Corpus_UnitId");
 
                     b.ToTable("Corpus", "RootCause");
                 });
@@ -336,6 +342,17 @@ namespace Nexus1.RootCause.Infrastructure.Persistence.Migrations
                     b.Property<string>("ClosedBy")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("DecidedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DecidedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("InconclusiveReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<DateTime>("OpenedAtUtc")
                         .HasColumnType("datetime2");

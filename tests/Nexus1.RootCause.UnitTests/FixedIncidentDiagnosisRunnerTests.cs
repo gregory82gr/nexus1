@@ -1,4 +1,7 @@
+using System.Diagnostics.Metrics;
+using Microsoft.Extensions.Diagnostics.Metrics;
 using Nexus1.BuildingBlocks.Application;
+using Nexus1.BuildingBlocks.Observability;
 using Nexus1.RootCause.Application.Diagnosis;
 using Nexus1.RootCause.Domain.Grounding;
 
@@ -16,7 +19,7 @@ namespace Nexus1.RootCause.UnitTests;
 /// </summary>
 public class FixedIncidentDiagnosisRunnerTests
 {
-    private static readonly IncidentContext Incident = new("EVT-2026-0418", UnitId: 1, AlarmedComponentIds: [1, 2, 3], FloodStartUtc: new DateTime(2026, 4, 18, 17, 9, 52, DateTimeKind.Utc));
+    private static readonly IncidentContext Incident = new("EVT-2026-0418", UnitId: 1, AlarmedComponentIds: [1, 2, 3], FloodStartUtc: new DateTime(2026, 4, 18, 17, 9, 52, DateTimeKind.Utc), QueryText: "test query", CorpusVersion: "test-corpus-v1");
 
     private static readonly DraftAnswer GoodDraft = new(
         CauseTag: "FV-104",
@@ -171,7 +174,8 @@ public class FixedIncidentDiagnosisRunnerTests
             new FakeValidator(validation),
             audit ?? new FakeAudit(),
             store ?? new FakeStore(),
-            new FixedClock(new DateTime(2026, 4, 18, 17, 12, 14, DateTimeKind.Utc)));
+            new FixedClock(new DateTime(2026, 4, 18, 17, 12, 14, DateTimeKind.Utc)),
+            new NexusDiagnosticsMetrics(new SimpleMeterFactory()));
 
     private sealed class FakeWalker(GraphWalkResult result) : IGraphWalker
     {
@@ -234,5 +238,14 @@ public class FixedIncidentDiagnosisRunnerTests
     private sealed class FixedClock(DateTime now) : IDateTimeProvider
     {
         public DateTime UtcNow => now;
+    }
+
+    private sealed class SimpleMeterFactory : IMeterFactory
+    {
+        public Meter Create(MeterOptions options) => new(options);
+
+        public void Dispose()
+        {
+        }
     }
 }

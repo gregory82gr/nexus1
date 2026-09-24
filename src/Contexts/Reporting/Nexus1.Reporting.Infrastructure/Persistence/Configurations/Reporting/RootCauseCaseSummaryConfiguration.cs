@@ -20,8 +20,11 @@ public sealed class RootCauseCaseSummaryConfiguration : IEntityTypeConfiguration
         builder.Property(x => x.AlarmFloodId).IsRequired();
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.Property(x => x.Verdict).HasMaxLength(1000);
+        // Inconclusive terminal status (ADR-039).
+        builder.Property(x => x.Reason).HasMaxLength(1000);
         builder.Property(x => x.OpenedAtUtc).IsRequired();
         builder.Property(x => x.VerdictIssuedAtUtc);
+        builder.Property(x => x.FinalizedAtUtc);
         builder.Property(x => x.LastAppliedAtUtc).IsRequired();
         builder.Property(x => x.LastAppliedMessageId).IsRequired();
 

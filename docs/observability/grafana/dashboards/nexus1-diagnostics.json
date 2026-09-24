@@ -1,0 +1,95 @@
+{
+  "uid": "nexus1-diagnostics",
+  "title": "NEXUS-1 Diagnosis (Appendix I)",
+  "tags": ["nexus1", "rootcause", "appendix-i"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Diagnoses run (total)",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "nexus1-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [
+        { "refId": "A", "expr": "nexus1_diagnosis_duration_milliseconds_count", "instant": true }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Abstentions (total)",
+      "description": "Runs the engine declined to answer (any gate). Appendix I: nexus.abstentions.",
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "nexus1-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" }, "thresholds": { "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 1 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [
+        { "refId": "A", "expr": "sum(nexus1_diagnosis_abstentions_total or vector(0))", "instant": true }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Validator rejections (total)",
+      "description": "Drafts rejected by H3/H4 validation. Appendix I: nexus.validator_rejections.",
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "nexus1-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" }, "thresholds": { "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [
+        { "refId": "A", "expr": "sum(nexus1_diagnosis_validator_rejections_total or vector(0))", "instant": true }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Grounding-hit rate (proxy — NOT recall)",
+      "description": "Fraction of runs that reached retrieval and found ≥1 passage above the H2 floor. This is a PROXY, not retrieval recall: true recall needs a labelled set (Appendix J), which does not exist yet.",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "nexus1-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1, "color": { "mode": "thresholds" }, "thresholds": { "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 0.9 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [
+        { "refId": "A", "expr": "nexus1_diagnosis_grounding_hit_sum / nexus1_diagnosis_grounding_hit_count", "instant": true }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Diagnosis latency p50 / p95 (ms) — shows the cold/warm split",
+      "description": "End-to-end diagnosis latency. Appendix I: nexus.diagnosis_ms. Expect a bimodal distribution: warm ~29s vs cold ~122s model loads.",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "nexus1-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "pointSize": 6, "showPoints": "always", "lineInterpolation": "stepAfter" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "refId": "A", "legendFormat": "p50", "expr": "histogram_quantile(0.50, sum by (le) (rate(nexus1_diagnosis_duration_milliseconds_bucket[$__rate_interval])))" },
+        { "refId": "B", "legendFormat": "p95", "expr": "histogram_quantile(0.95, sum by (le) (rate(nexus1_diagnosis_duration_milliseconds_bucket[$__rate_interval])))" }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Mean diagnosis latency (ms) & run counts",
+      "description": "Average latency (sum/count) alongside cumulative run and abstention counts.",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "nexus1-prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "showPoints": "always" } }, "overrides": [ { "matcher": { "id": "byName", "options": "mean latency (ms)" }, "properties": [ { "id": "unit", "value": "ms" } ] } ] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "refId": "A", "legendFormat": "mean latency (ms)", "expr": "nexus1_diagnosis_duration_milliseconds_sum / nexus1_diagnosis_duration_milliseconds_count" },
+        { "refId": "B", "legendFormat": "diagnoses run", "expr": "nexus1_diagnosis_duration_milliseconds_count" },
+        { "refId": "C", "legendFormat": "abstentions", "expr": "sum(nexus1_diagnosis_abstentions_total or vector(0))" }
+      ]
+    }
+  ]
+}
