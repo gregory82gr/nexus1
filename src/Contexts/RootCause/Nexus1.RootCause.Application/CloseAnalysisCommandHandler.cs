@@ -51,7 +51,9 @@ public sealed class CloseAnalysisCommandHandler(
             outboxWriter.Enqueue(
                 EventType, schemaVersion: 1, RoutingKey, nowUtc,
                 new RootCauseVerdictIssuedV1(
-                    analysis.Id.Value, analysis.UnitId.Value, analysis.AlarmFloodId.Value, analysis.Verdict!, nowUtc));
+                    // A closed case is always flood-originated (provenance cases end Inconclusive),
+                    // so AlarmFloodId is non-null here (ADR-040).
+                    analysis.Id.Value, analysis.UnitId.Value, analysis.AlarmFloodId!.Value.Value, analysis.Verdict!, nowUtc));
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }

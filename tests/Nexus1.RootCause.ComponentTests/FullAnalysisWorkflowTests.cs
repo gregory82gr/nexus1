@@ -207,6 +207,48 @@ public sealed class FullAnalysisWorkflowTests : RootCauseComponentTestDatabase
     }
 
     [Fact]
+    public async Task A_provenance_originated_case_opens_without_a_flood_and_ends_inconclusive_publishing_both_events()
+    {
+        // Open via the provenance path -- no AlarmFloodId (ADR-040), the EVT-2026-0420 shape.
+        long analysisId;
+        await using (var openContext = CreateDbContext())
+        {
+            var result = await new OpenProvenanceAnalysisCommandHandler(
+                    Repository(openContext), UnitOfWork(openContext), new SystemDateTimeProvider(), new SequentialIdGenerator(), new EfOutboxWriter(openContext))
+                .Handle(new OpenProvenanceAnalysisCommand(1, "provenance.audit"), CancellationToken.None);
+            Assert.True(result.IsSuccess);
+            analysisId = result.Value;
+        }
+
+        await using (var markContext = CreateDbContext())
+        {
+            var result = await new MarkAnalysisInconclusiveCommandHandler(
+                    Repository(markContext), UnitOfWork(markContext), new SystemDateTimeProvider(), new EfOutboxWriter(markContext))
+                .Handle(new MarkAnalysisInconclusiveCommand(analysisId, "CR-7 non-conforming rod admitted via mis-dispositioned waiver WV-318; no alarm, no telemetry.", "provenance.audit"), CancellationToken.None);
+            Assert.True(result.IsSuccess);
+        }
+
+        await using (var verifyContext = CreateDbContext())
+        {
+            var analysis = await verifyContext.RootCauseAnalyses.SingleAsync(a => a.Id == new RootCauseAnalysisId(analysisId));
+            Assert.Null(analysis.AlarmFloodId); // genuinely flood-less, not a sentinel
+            Assert.Equal(AnalysisStatus.Inconclusive, analysis.Status);
+            Assert.Null(analysis.Verdict);
+            Assert.Contains("WV-318", analysis.InconclusiveReason);
+            Assert.Empty(analysis.Hypotheses);
+        }
+
+        // Both integration events enqueued, each with a null AlarmFloodId.
+        await using (var outboxContext = CreateDbContext())
+        {
+            var opened = await outboxContext.OutboxMessages.SingleAsync(m => m.RoutingKey == "root-cause.root-cause-case-opened.v1");
+            Assert.Equal("nexus1.root-cause.root-cause-case-opened.v1", opened.EventType);
+            var inconclusive = await outboxContext.OutboxMessages.SingleAsync(m => m.RoutingKey == "root-cause.root-cause-case-inconclusive.v1");
+            Assert.Equal("nexus1.root-cause.root-cause-case-inconclusive.v1", inconclusive.EventType);
+        }
+    }
+
+    [Fact]
     public async Task Marking_a_case_inconclusive_without_a_reason_fails()
     {
         var analysisId = await OpenAnalysisAsync();

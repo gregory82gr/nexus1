@@ -13,7 +13,7 @@ namespace Nexus1.Reporting.Domain;
 public sealed class RootCauseCaseSummary : Entity<RootCauseCaseSummaryId>, IAggregateRoot
 {
     private RootCauseCaseSummary(
-        RootCauseCaseSummaryId id, int unitId, long alarmFloodId, DateTime openedAtUtc,
+        RootCauseCaseSummaryId id, int unitId, long? alarmFloodId, DateTime openedAtUtc,
         DateTime lastAppliedAtUtc, Guid lastAppliedMessageId)
         : base(id)
     {
@@ -27,7 +27,8 @@ public sealed class RootCauseCaseSummary : Entity<RootCauseCaseSummaryId>, IAggr
 
     public int UnitId { get; }
 
-    public long AlarmFloodId { get; }
+    /// <summary>Null for a provenance-originated case with no flood (ADR-040).</summary>
+    public long? AlarmFloodId { get; }
 
     public ReportingCaseStatus Status { get; private set; }
 
@@ -48,7 +49,7 @@ public sealed class RootCauseCaseSummary : Entity<RootCauseCaseSummaryId>, IAggr
     public Guid LastAppliedMessageId { get; private set; }
 
     public static RootCauseCaseSummary ApplyOpened(
-        RootCauseCaseSummaryId id, int unitId, long alarmFloodId, DateTime openedAtUtc,
+        RootCauseCaseSummaryId id, int unitId, long? alarmFloodId, DateTime openedAtUtc,
         DateTime appliedAtUtc, Guid messageId)
         => new(id, unitId, alarmFloodId, openedAtUtc, appliedAtUtc, messageId);
 

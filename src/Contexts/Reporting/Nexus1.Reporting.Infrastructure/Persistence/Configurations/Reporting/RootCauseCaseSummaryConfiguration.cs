@@ -17,7 +17,8 @@ public sealed class RootCauseCaseSummaryConfiguration : IEntityTypeConfiguration
             .ValueGeneratedNever();
 
         builder.Property(x => x.UnitId).IsRequired();
-        builder.Property(x => x.AlarmFloodId).IsRequired();
+        // Nullable (ADR-040): a provenance-originated case has no flood.
+        builder.Property(x => x.AlarmFloodId);
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.Property(x => x.Verdict).HasMaxLength(1000);
         // Inconclusive terminal status (ADR-039).

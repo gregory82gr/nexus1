@@ -14,7 +14,7 @@ public sealed class RootCauseAnalysis : Entity<RootCauseAnalysisId>, IAggregateR
     private readonly List<AnalysisHypothesis> _hypotheses = [];
 
     private RootCauseAnalysis(
-        RootCauseAnalysisId id, UnitId unitId, AlarmFloodId alarmFloodId, string openedBy, DateTime openedAtUtc,
+        RootCauseAnalysisId id, UnitId unitId, AlarmFloodId? alarmFloodId, string openedBy, DateTime openedAtUtc,
         DateTime? alarmFloodStartedAtUtc)
         : base(id)
     {
@@ -28,7 +28,12 @@ public sealed class RootCauseAnalysis : Entity<RootCauseAnalysisId>, IAggregateR
 
     public UnitId UnitId { get; }
 
-    public AlarmFloodId AlarmFloodId { get; }
+    /// <summary>
+    /// The originating alarm flood, or null for a provenance-originated case (ADR-040):
+    /// a case that did not begin from a flood at all (no alarm, no telemetry — found by an
+    /// out-of-band provenance audit). Not a fake/sentinel id; genuinely absent.
+    /// </summary>
+    public AlarmFloodId? AlarmFloodId { get; }
 
     public AnalysisStatus Status { get; private set; }
 
@@ -75,6 +80,26 @@ public sealed class RootCauseAnalysis : Entity<RootCauseAnalysisId>, IAggregateR
 
         var analysis = new RootCauseAnalysis(id, unitId, alarmFloodId, openedBy, openedAtUtc, alarmFloodStartedAtUtc);
         analysis.AddDomainEvent(new RootCauseAnalysisOpened(id, unitId, alarmFloodId, openedAtUtc));
+        return analysis;
+    }
+
+    /// <summary>
+    /// Opens a provenance-originated case (ADR-040) — one that did NOT begin from an alarm
+    /// flood (no alarm, no telemetry), e.g. a fault exposed only by a provenance/QA audit.
+    /// AlarmFloodId is genuinely absent (null), not a sentinel; there is no flood timestamp
+    /// either. Such a case is expected to terminate as Inconclusive: the engine that thrives
+    /// on floods has no reach here (EVT-2026-0420).
+    /// </summary>
+    public static RootCauseAnalysis OpenForProvenance(
+        RootCauseAnalysisId id, UnitId unitId, string openedBy, DateTime openedAtUtc)
+    {
+        if (string.IsNullOrWhiteSpace(openedBy))
+        {
+            throw new ArgumentException("OpenedBy must not be empty.", nameof(openedBy));
+        }
+
+        var analysis = new RootCauseAnalysis(id, unitId, alarmFloodId: null, openedBy, openedAtUtc, alarmFloodStartedAtUtc: null);
+        analysis.AddDomainEvent(new RootCauseAnalysisOpened(id, unitId, AlarmFloodId: null, openedAtUtc));
         return analysis;
     }
 

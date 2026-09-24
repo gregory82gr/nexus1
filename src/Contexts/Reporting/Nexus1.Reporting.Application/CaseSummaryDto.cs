@@ -10,7 +10,7 @@ namespace Nexus1.Reporting.Application;
 public sealed record CaseSummaryDto(
     long CaseId,
     int UnitId,
-    long AlarmFloodId,
+    long? AlarmFloodId, // null for a provenance-originated case (ADR-040)
     string Status,
     string? Verdict,
     DateTime OpenedAtUtc,

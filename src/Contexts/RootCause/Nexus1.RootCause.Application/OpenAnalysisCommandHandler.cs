@@ -49,7 +49,7 @@ public sealed class OpenAnalysisCommandHandler(
             // aggregate write land together (ADR-008/ADR-012).
             outboxWriter.Enqueue(
                 EventType, schemaVersion: 1, RoutingKey, analysis.OpenedAtUtc,
-                new RootCauseCaseOpenedV1(analysis.Id.Value, analysis.UnitId.Value, analysis.AlarmFloodId.Value, analysis.OpenedAtUtc));
+                new RootCauseCaseOpenedV1(analysis.Id.Value, analysis.UnitId.Value, command.AlarmFloodId, analysis.OpenedAtUtc));
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
