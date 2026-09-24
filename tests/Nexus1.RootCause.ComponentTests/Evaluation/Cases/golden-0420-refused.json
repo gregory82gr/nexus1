@@ -1,0 +1,10 @@
+{
+  "id": "golden-0420-refused",
+  "category": "golden",
+  "tier": "deterministic",
+  "seam": "pipeline",
+  "target": { "incidentId": "EVT-2026-0420" },
+  "intent": "What caused EVT-2026-0420? (The engine has no reach here: no alarm, no telemetry signature.)",
+  "expect": "refused",
+  "expectReasonContains": ["unknown incident"]
+}

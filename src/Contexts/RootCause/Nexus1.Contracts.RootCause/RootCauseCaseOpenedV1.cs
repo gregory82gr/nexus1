@@ -9,4 +9,6 @@ namespace Nexus1.Contracts.RootCause;
 /// open (ADR-012) — RootCause's existing outbox, a second message type, not
 /// a second outbox.
 /// </summary>
-public sealed record RootCauseCaseOpenedV1(long AnalysisId, int UnitId, long AlarmFloodId, DateTime OpenedAtUtc);
+// AlarmFloodId widened to long? (ADR-040): null for a provenance-originated case (no
+// flood). Backward-compatible -- flood-originated cases still carry their id.
+public sealed record RootCauseCaseOpenedV1(long AnalysisId, int UnitId, long? AlarmFloodId, DateTime OpenedAtUtc);

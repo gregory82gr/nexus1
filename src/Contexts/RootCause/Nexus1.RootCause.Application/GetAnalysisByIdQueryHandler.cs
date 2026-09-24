@@ -19,7 +19,7 @@ public sealed class GetAnalysisByIdQueryHandler(IRepository<RootCauseAnalysis, R
             .ToList();
 
         var dto = new AnalysisDto(
-            analysis.Id.Value, analysis.UnitId.Value, analysis.AlarmFloodId.Value,
+            analysis.Id.Value, analysis.UnitId.Value, analysis.AlarmFloodId?.Value,
             analysis.Status.ToString(), analysis.Verdict, hypotheses);
 
         return Result<AnalysisDto?>.Success(dto);

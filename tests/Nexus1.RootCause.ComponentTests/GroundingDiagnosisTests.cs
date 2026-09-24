@@ -194,28 +194,11 @@ public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
         Assert.Equal(2, await verify.Candidates.CountAsync(c => c.DiagnosisRunId == runId));
     }
 
-    // ----- Full pipeline: verdict + the four abstention proofs -----
-
-    [Fact]
-    public async Task Full_pipeline_reaches_the_FV104_verdict_and_persists_a_sealed_run()
-    {
-        await SeedAsync();
-        await using var db = CreateDbContext();
-        var draft = await GoodDraftAsync(db);
-
-        var result = await BuildRunner(db, draft).RunAsync(Incident, CancellationToken.None);
-
-        Assert.False(result.Abstained);
-        Assert.Equal("FV-104", result.Verdict);
-        Assert.NotEmpty(result.AuditHash);
-
-        await using var verify = CreateDbContext();
-        var run = await verify.DiagnosisRuns.SingleAsync(r => r.DiagnosisRunId == result.DiagnosisRunId);
-        Assert.Equal("FV-104", run.Verdict);
-        Assert.Null(run.AbstainReason);
-        Assert.True(await verify.Candidates.AnyAsync(c => c.DiagnosisRunId == result.DiagnosisRunId));
-        Assert.True(await verify.AuditEntries.AnyAsync(a => a.Hash == result.AuditHash));
-    }
+    // ----- Full pipeline: the pre-model fault-injection abstentions -----
+    // The FV-104 verdict and the two draft-level traps (unregistered entity, uncited claim)
+    // moved to the H9 harness as golden-0418-fv104, trap-transposed-entity and
+    // trap-invented-source (ADR-041) -- their single home. What stays here are the
+    // fault-injection abstentions, which are not Appendix-J trap categories.
 
     [Fact]
     public async Task Full_pipeline_abstains_when_the_historian_cannot_corroborate()
@@ -250,35 +233,6 @@ public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
 
         Assert.True(result.Abstained);
         Assert.Contains("no grounding", result.AbstainReason);
-    }
-
-    [Fact]
-    public async Task Full_pipeline_abstains_when_the_draft_names_an_unregistered_entity()
-    {
-        await SeedAsync();
-        await using var db = CreateDbContext();
-        var citable = await FirstChunkIdAsync(db);
-        var draft = new DraftAnswer("FV-104", ["FV-999"], [new Claim("bogus", citable)]);
-
-        var result = await BuildRunner(db, draft).RunAsync(Incident, CancellationToken.None);
-
-        Assert.True(result.Abstained);
-        Assert.Contains("validation failed", result.AbstainReason);
-        Assert.Contains("FV-999", result.AbstainReason);
-    }
-
-    [Fact]
-    public async Task Full_pipeline_abstains_when_the_draft_cites_a_passage_not_retrieved()
-    {
-        await SeedAsync();
-        await using var db = CreateDbContext();
-        var draft = new DraftAnswer("FV-104", ["FV-104"], [new Claim("uncited", CitationChunkId: 999999)]);
-
-        var result = await BuildRunner(db, draft).RunAsync(Incident, CancellationToken.None);
-
-        Assert.True(result.Abstained);
-        Assert.Contains("validation failed", result.AbstainReason);
-        Assert.Contains("uncited claim", result.AbstainReason);
     }
 
     // ----- helpers -----

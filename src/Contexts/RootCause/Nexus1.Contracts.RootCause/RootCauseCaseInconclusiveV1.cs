@@ -10,4 +10,6 @@ namespace Nexus1.Contracts.RootCause;
 /// Reporting's projection. Audit and Compliance bind the verdict routing key only, so
 /// they never receive this (a stated, reversible deferral — ADR-039).
 /// </summary>
-public sealed record RootCauseCaseInconclusiveV1(long AnalysisId, int UnitId, long AlarmFloodId, string Reason, DateTime DecidedAtUtc);
+// AlarmFloodId is long? (ADR-040): null for a provenance-originated case (e.g. the
+// EVT-2026-0420 QA-escape, which had no flood).
+public sealed record RootCauseCaseInconclusiveV1(long AnalysisId, int UnitId, long? AlarmFloodId, string Reason, DateTime DecidedAtUtc);

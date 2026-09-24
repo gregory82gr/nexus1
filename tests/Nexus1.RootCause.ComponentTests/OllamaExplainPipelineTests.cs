@@ -113,38 +113,9 @@ public class OllamaExplainPipelineTests(ITestOutputHelper output) : RootCauseCom
         Assert.All(cited, p => Assert.Contains("From Flood to Cause", p.SourceLabel));
     }
 
-    [SkippableFact]
-    public async Task Full_pipeline_end_to_end_reaches_the_FV104_verdict_with_the_real_model()
-    {
-        await EnsureOllamaAsync();
-        await SeedAsync();
-        await IngestAsync();
-
-        await using var db = CreateDbContext();
-        using var http = new HttpClient();
-        var result = await BuildRealRunner(db, http).RunAsync(Incident, CancellationToken.None);
-
-        // The pipeline's safety invariant, which ALWAYS holds: the engine's
-        // decision is FV-104, so the run either reaches the FV-104 verdict (when
-        // the model's draft validates) or SAFELY ABSTAINS (H8) -- it can never emit
-        // a different or unsourced verdict. Both outcomes are sealed. On a
-        // compliant model run this reaches FV-104 with book citations (captured in
-        // the evidence file); a safe abstention is an expected stochastic-model
-        // outcome, not a failure.
-        Assert.NotEmpty(result.AuditHash);
-        await using var verify = CreateDbContext();
-        Assert.True(await verify.AuditEntries.AnyAsync(a => a.Hash == result.AuditHash), "run was not sealed into the audit chain");
-
-        if (result.Abstained)
-        {
-            output.WriteLine("safe abstention (no false verdict): " + result.AbstainReason);
-            return;
-        }
-
-        Assert.Equal("FV-104", result.Verdict);
-        Assert.All(result.Citations, p => Assert.Contains("From Flood to Cause", p.SourceLabel));
-        output.WriteLine($"verdict={result.Verdict} auditHash={result.AuditHash}");
-    }
+    // The live end-to-end FV-104 verdict (verdict-or-safe-abstention, sealed, book
+    // citations) moved to the H9 harness as golden-0418-live (ADR-041), alongside the new
+    // golden-0419-live -- its single home, not duplicated here.
 
     [SkippableFact]
     public async Task Engine_verdict_is_identical_across_two_runs_and_narration_equality_is_reported()

@@ -26,10 +26,13 @@ public sealed class RootCauseAnalysisConfiguration : IEntityTypeConfiguration<Ro
             .HasColumnName("UnitId")
             .IsRequired();
 
+        // Nullable (ADR-040): a provenance-originated case has no flood. Explicit
+        // nullable-aware conversion so null round-trips as NULL, not a sentinel.
         builder.Property(x => x.AlarmFloodId)
-            .HasConversion(id => id.Value, value => new AlarmFloodId(value))
-            .HasColumnName("AlarmFloodId")
-            .IsRequired();
+            .HasConversion(
+                id => id == null ? (long?)null : id.Value.Value,
+                value => value == null ? (AlarmFloodId?)null : new AlarmFloodId(value.Value))
+            .HasColumnName("AlarmFloodId");
 
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.Property(x => x.OpenedBy).HasMaxLength(100).IsRequired();

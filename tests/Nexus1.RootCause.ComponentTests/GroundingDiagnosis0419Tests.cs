@@ -109,26 +109,8 @@ public class GroundingDiagnosis0419Tests : RootCauseComponentTestDatabase
         Assert.Contains("no deflection", corroboration.Detail);
     }
 
-    // ----- Full deterministic pipeline reaches the artefact verdict -----
-
-    [Fact]
-    public async Task Full_pipeline_reaches_the_BKR2A_artefact_verdict_and_seals_it()
-    {
-        await SeedAsync();
-        await using var db = CreateDbContext();
-        var draft = await GoodDraftAsync(db);
-
-        var result = await BuildRunner(db, draft).RunAsync(Incident, CancellationToken.None);
-
-        Assert.False(result.Abstained);
-        Assert.Equal("BKR-2A", result.Verdict);
-        Assert.NotEmpty(result.AuditHash);
-
-        await using var verify = CreateDbContext();
-        var run = await verify.DiagnosisRuns.SingleAsync(r => r.DiagnosisRunId == result.DiagnosisRunId);
-        Assert.Equal("BKR-2A", run.Verdict);
-        Assert.Equal("evt-2026-0419-book-worked-example-v1", run.CorpusVersion);
-    }
+    // The full deterministic pipeline verdict (BKR-2A, sealed) moved to the H9 harness as
+    // golden-0419-bkr2a (ADR-041) -- its single home, not duplicated here.
 
     // ----- Corpus scoping: the two incidents do not cross-contaminate -----
 
@@ -182,35 +164,5 @@ public class GroundingDiagnosis0419Tests : RootCauseComponentTestDatabase
     {
         await using var db = CreateDbContext();
         await GroundingSeed.SeedAsync(db);
-    }
-
-    private FixedIncidentDiagnosisRunner BuildRunner(RootCauseDbContext db, DraftAnswer draft) =>
-        new(
-            new EfGraphWalker(db),
-            new EfTelemetryCorroborator(db),
-            new EfRetriever(db, new NoOpEmbedder()),
-            new FixtureExplainer(ExplainOutcome.Answer(draft)),
-            new RegistryAntiHallucinationValidator(db),
-            new Sha256AuditChainWriter(db, Clock),
-            new EfDiagnosisRunStore(db),
-            Clock,
-            NewDiagnosticsMetrics());
-
-    private sealed class FixtureExplainer(ExplainOutcome outcome) : IExplainer
-    {
-        public Task<ExplainOutcome> ExplainAsync(IncidentContext ctx, string originTag, IReadOnlyList<Passage> passages, CancellationToken cancellationToken) => Task.FromResult(outcome);
-    }
-
-    private static async Task<DraftAnswer> GoodDraftAsync(RootCauseDbContext db)
-    {
-        var chunkId = await db.CorpusChunks.Where(c => c.UnitId == GroundingSeed.UnitId0419).OrderBy(c => c.ChunkId).Select(c => c.ChunkId).FirstAsync();
-        return new DraftAnswer("BKR-2A", ["BKR-2A"], [new Claim("A switchgear transient coupled EMI into the flow, level and pressure channels", chunkId)]);
-    }
-
-    private static readonly IDateTimeProvider Clock = new FixedClock(new DateTime(2026, 4, 19, 17, 42, 10, DateTimeKind.Utc));
-
-    private sealed class FixedClock(DateTime now) : IDateTimeProvider
-    {
-        public DateTime UtcNow => now;
     }
 }

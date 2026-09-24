@@ -50,7 +50,8 @@ public sealed class MarkAnalysisInconclusiveCommandHandler(
         outboxWriter.Enqueue(
             EventType, schemaVersion: 1, RoutingKey, nowUtc,
             new RootCauseCaseInconclusiveV1(
-                analysis.Id.Value, analysis.UnitId.Value, analysis.AlarmFloodId.Value, analysis.InconclusiveReason!, nowUtc));
+                // AlarmFloodId is null for a provenance-originated case (ADR-040), a real long for a flood case.
+                analysis.Id.Value, analysis.UnitId.Value, analysis.AlarmFloodId?.Value, analysis.InconclusiveReason!, nowUtc));
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

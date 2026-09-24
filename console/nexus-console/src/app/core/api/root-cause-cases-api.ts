@@ -14,7 +14,7 @@ import { Observable } from 'rxjs';
 export interface RootCauseCase {
   caseId: number;
   unitId: number;
-  alarmFloodId: number;
+  alarmFloodId: number | null; // null for a provenance-originated case with no flood (ADR-040)
   status: string;
   verdict: string | null;
   openedAtUtc: string;

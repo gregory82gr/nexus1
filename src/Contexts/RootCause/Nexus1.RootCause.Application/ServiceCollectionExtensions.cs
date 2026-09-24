@@ -6,6 +6,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddRootCauseApplication(this IServiceCollection services) => services
         .AddScoped<OpenAnalysisCommandHandler>()
+        .AddScoped<OpenProvenanceAnalysisCommandHandler>()
         .AddScoped<AddHypothesisCommandHandler>()
         .AddScoped<AddEvidenceCommandHandler>()
         .AddScoped<RejectHypothesisCommandHandler>()

@@ -52,11 +52,20 @@ public sealed class ReportingProjectionMessageHandlerTests : ReportingComponentT
         return envelope.EnvelopeBytes;
     }
 
-    private static byte[] BuildInconclusiveEnvelope(Guid messageId, long analysisId, string reason = "Records incomplete; provenance trail could not be established.")
+    private static byte[] BuildInconclusiveEnvelope(Guid messageId, long analysisId, string reason = "Records incomplete; provenance trail could not be established.", long? alarmFloodId = 500)
     {
-        var payload = new RootCauseCaseInconclusiveV1(analysisId, 1, 500, reason, NowUtc);
+        var payload = new RootCauseCaseInconclusiveV1(analysisId, 1, alarmFloodId, reason, NowUtc);
         var envelope = MessageEnvelopeFactory.Build(
             messageId, "nexus1.root-cause.root-cause-case-inconclusive.v1", 1, NowUtc, "root-cause", Guid.NewGuid(), null, payload);
+        return envelope.EnvelopeBytes;
+    }
+
+    private static byte[] BuildProvenanceOpenedEnvelope(Guid messageId, long analysisId)
+    {
+        // A provenance-originated case has no flood (ADR-040): AlarmFloodId null.
+        var payload = new RootCauseCaseOpenedV1(analysisId, 1, null, NowUtc);
+        var envelope = MessageEnvelopeFactory.Build(
+            messageId, "nexus1.root-cause.root-cause-case-opened.v1", 1, NowUtc, "root-cause", Guid.NewGuid(), null, payload);
         return envelope.EnvelopeBytes;
     }
 
@@ -138,6 +147,28 @@ public sealed class ReportingProjectionMessageHandlerTests : ReportingComponentT
         var summary = await verifyContext.CaseSummaries.SingleAsync();
         Assert.Equal(ReportingCaseStatus.Inconclusive, summary.Status);
         Assert.Equal("Records incomplete; provenance trail could not be established.", summary.Reason);
+        Assert.Null(summary.Verdict);
+        Assert.Equal(0, await verifyContext.PoisonMessages.CountAsync());
+    }
+
+    [Fact]
+    public async Task A_provenance_originated_case_projects_inconclusive_with_a_null_alarm_flood_id()
+    {
+        var handler = BuildHandler();
+        var openedMessageId = Guid.NewGuid();
+        var inconclusiveMessageId = Guid.NewGuid();
+
+        // The EVT-2026-0420 shape: opened with no flood, then inconclusive with no flood.
+        await handler.HandleAsync(openedMessageId, BuildProvenanceOpenedEnvelope(openedMessageId, analysisId: 20260420), CancellationToken.None);
+        var outcome = await handler.HandleAsync(inconclusiveMessageId, BuildInconclusiveEnvelope(inconclusiveMessageId, analysisId: 20260420, reason: "CR-7 / WV-318 QA escape; no alarm, no telemetry.", alarmFloodId: null), CancellationToken.None);
+
+        Assert.Equal(MessageHandlingOutcome.Ack, outcome);
+
+        await using var verifyContext = CreateDbContext();
+        var summary = await verifyContext.CaseSummaries.SingleAsync();
+        Assert.Equal(ReportingCaseStatus.Inconclusive, summary.Status);
+        Assert.Null(summary.AlarmFloodId); // genuinely flood-less, projected as NULL not a sentinel
+        Assert.Contains("WV-318", summary.Reason);
         Assert.Null(summary.Verdict);
         Assert.Equal(0, await verifyContext.PoisonMessages.CountAsync());
     }

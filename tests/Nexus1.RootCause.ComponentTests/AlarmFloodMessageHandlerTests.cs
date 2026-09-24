@@ -59,7 +59,7 @@ public sealed class AlarmFloodMessageHandlerTests : RootCauseComponentTestDataba
         await using var verifyContext = CreateDbContext();
         Assert.Equal(1, await verifyContext.RootCauseAnalyses.CountAsync());
         var analysis = await verifyContext.RootCauseAnalyses.SingleAsync();
-        Assert.Equal(500, analysis.AlarmFloodId.Value);
+        Assert.Equal(500, analysis.AlarmFloodId!.Value.Value);
         Assert.Equal(1, analysis.UnitId.Value);
 
         var receipt = await verifyContext.InboxReceipts.SingleAsync();

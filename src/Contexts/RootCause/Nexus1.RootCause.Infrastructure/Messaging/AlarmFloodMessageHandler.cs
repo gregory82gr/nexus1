@@ -79,7 +79,8 @@ public sealed class AlarmFloodMessageHandler(IServiceScopeFactory scopeFactory, 
             // see every opened case, not just manually-opened ones (ADR-012).
             outboxWriter.Enqueue(
                 CaseOpenedEventType, schemaVersion: 1, CaseOpenedRoutingKey, analysis.OpenedAtUtc,
-                new RootCauseCaseOpenedV1(analysis.Id.Value, analysis.UnitId.Value, analysis.AlarmFloodId.Value, analysis.OpenedAtUtc));
+                // Auto-open is always flood-originated, so AlarmFloodId is non-null here (ADR-040).
+                new RootCauseCaseOpenedV1(analysis.Id.Value, analysis.UnitId.Value, analysis.AlarmFloodId!.Value.Value, analysis.OpenedAtUtc));
 
             openActivity?.SetTag("nexus1.outcome.code", "COMMITTED");
 

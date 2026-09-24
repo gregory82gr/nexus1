@@ -1,0 +1,19 @@
+{
+  "id": "golden-0419-bkr2a",
+  "category": "golden",
+  "tier": "deterministic",
+  "seam": "pipeline",
+  "target": { "incidentId": "EVT-2026-0419" },
+  "intent": "Was the EVT-2026-0419 flow/level/pressure flood a real excursion, and what caused it?",
+  "expect": "verdict",
+  "expectVerdict": "BKR-2A",
+  "expectCandidates": [
+    { "tag": "BKR-2A", "role": "origin", "weight": 0.70 },
+    { "tag": "FT-9", "role": "proximate", "weight": 0.16 },
+    { "tag": "LOF-1", "role": "ruled-out", "weight": 0.10 }
+  ],
+  "expectOriginCoverage": "10/10",
+  "mustNotAssert": ["FT-9", "LOF-1", "FV-104"],
+  "mustCite": ["Ch.5"],
+  "mustNotCite": ["Ch.1-2"]
+}

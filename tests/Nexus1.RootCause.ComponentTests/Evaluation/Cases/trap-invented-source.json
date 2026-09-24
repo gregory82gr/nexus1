@@ -1,0 +1,15 @@
+{
+  "id": "trap-invented-source",
+  "category": "trap-invented-source",
+  "tier": "deterministic",
+  "seam": "pipeline",
+  "target": { "incidentId": "EVT-2026-0418" },
+  "intent": "Cite the EMI chapter to explain EVT-2026-0418. (Ch.5 is a REAL corpus document, but for unit 2 -- it was never retrieved for this incident.)",
+  "injectedDraft": {
+    "causeTag": "FV-104",
+    "entities": ["FV-104"],
+    "claims": [{ "text": "EMI coupling from a breaker transient explains the FV-104 cascade", "cite": "unretrieved:Ch.5" }]
+  },
+  "expect": "abstain",
+  "expectAbstainReasonContains": "uncited claim"
+}

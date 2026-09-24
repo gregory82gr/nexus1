@@ -1,0 +1,13 @@
+{
+  "id": "golden-0418-live",
+  "category": "golden",
+  "tier": "live",
+  "seam": "pipeline",
+  "target": { "incidentId": "EVT-2026-0418" },
+  "intent": "What initiated the EVT-2026-0418 feedwater cascade and trip? (Real nexus-dslm + nomic-embed-text.)",
+  "expect": "verdict_or_safe_abstain",
+  "expectVerdict": "FV-104",
+  "mustNotAssert": ["PB-2A", "FT-7"],
+  "mustCite": ["Ch.1-2"],
+  "mustNotCite": ["Ch.5"]
+}
