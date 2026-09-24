@@ -8,8 +8,20 @@ namespace Nexus1.RootCause.Application.Diagnosis;
 /// way).
 /// </summary>
 
-/// <summary>The input to one diagnosis run -- which incident, which unit, which components alarmed, and when the flood began.</summary>
-public sealed record IncidentContext(string IncidentId, int UnitId, IReadOnlyList<int> AlarmedComponentIds, DateTime FloodStartUtc);
+/// <summary>
+/// The input to one diagnosis run -- which incident, which unit, which components
+/// alarmed, when the flood began, and the per-incident retrieval query text and
+/// corpus version (moved off the runner's constants so more than one incident can
+/// run; ADR-037). Each seeded incident has exactly one of these in
+/// <see cref="IncidentRegistry"/>.
+/// </summary>
+public sealed record IncidentContext(
+    string IncidentId,
+    int UnitId,
+    IReadOnlyList<int> AlarmedComponentIds,
+    DateTime FloodStartUtc,
+    string QueryText,
+    string CorpusVersion);
 
 /// <summary>One node-test result: role, illustrative weight, and coverage (share of the flood explained).</summary>
 public sealed record RankedCandidate(int ComponentId, string Tag, string Role, double Weight, double Coverage);

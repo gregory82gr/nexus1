@@ -16,7 +16,7 @@ namespace Nexus1.RootCause.UnitTests;
 /// </summary>
 public class FixedIncidentDiagnosisRunnerTests
 {
-    private static readonly IncidentContext Incident = new("EVT-2026-0418", UnitId: 1, AlarmedComponentIds: [1, 2, 3], FloodStartUtc: new DateTime(2026, 4, 18, 17, 9, 52, DateTimeKind.Utc));
+    private static readonly IncidentContext Incident = new("EVT-2026-0418", UnitId: 1, AlarmedComponentIds: [1, 2, 3], FloodStartUtc: new DateTime(2026, 4, 18, 17, 9, 52, DateTimeKind.Utc), QueryText: "test query", CorpusVersion: "test-corpus-v1");
 
     private static readonly DraftAnswer GoodDraft = new(
         CauseTag: "FV-104",

@@ -5,8 +5,10 @@ using Nexus1.RootCause.Domain.Grounding;
 namespace Nexus1.RootCause.Application.Diagnosis;
 
 /// <summary>
-/// The full One-Truth Pipeline for the fixed EVT-2026-0418 skeleton (ADR-032,
-/// ADR-033). The deterministic engine decides: the graph walk names the origin,
+/// The full One-Truth Pipeline for a seeded incident (ADR-032, ADR-033; extended to
+/// the registry of incidents in ADR-037 -- the per-incident query text and corpus
+/// version travel on the <see cref="IncidentContext"/>, not as constants here). The
+/// deterministic engine decides: the graph walk names the origin,
 /// then two grounding gates (telemetry corroboration, corpus retrieval) each get
 /// a veto. Only once those pass does the served model explain -- the
 /// <see cref="IExplainer"/> seam turns the retrieved passages (the Unified
@@ -30,11 +32,6 @@ public sealed class FixedIncidentDiagnosisRunner(
     IDiagnosisRunStore store,
     IDateTimeProvider clock)
 {
-    /// <summary>What this run could read -- sealed into the audit payload (H10).</summary>
-    public const string CorpusVersion = "evt-2026-0418-book-worked-example-v1";
-
-    private const string QueryText = "feedwater control valve actuator latency cascade root cause";
-
     public async Task<DiagnosisResult> RunAsync(IncidentContext ctx, CancellationToken cancellationToken)
     {
         var walk = await graphWalker.WalkAsync(ctx, cancellationToken);
@@ -57,7 +54,7 @@ public sealed class FixedIncidentDiagnosisRunner(
         }
 
         // Grounding gate 2 -- corpus retrieval (fault injection: missing corpus chunk). H2: below the floor = nothing to ground on.
-        var passages = await retriever.RetrieveAsync(QueryText, origin.Tag, ctx.UnitId, cancellationToken);
+        var passages = await retriever.RetrieveAsync(ctx.QueryText, origin.Tag, ctx.UnitId, cancellationToken);
         if (passages.Count == 0)
         {
             return await FinishAsync(ctx, verdict: null, abstain: "no grounding: corpus retrieval returned no passages", walk.Ranked, citations: [], draft: null, candidateRows, cancellationToken);
@@ -92,7 +89,7 @@ public sealed class FixedIncidentDiagnosisRunner(
             StartedAtUtc = clock.UtcNow,
             Verdict = verdict,
             AbstainReason = abstain,
-            CorpusVersion = CorpusVersion,
+            CorpusVersion = ctx.CorpusVersion,
         };
 
         var runId = await store.SaveAsync(run, candidateRows, cancellationToken);

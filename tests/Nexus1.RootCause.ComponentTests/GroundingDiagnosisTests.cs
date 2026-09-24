@@ -18,8 +18,7 @@ namespace Nexus1.RootCause.ComponentTests;
 /// </summary>
 public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
 {
-    private static readonly IncidentContext Incident = new(
-        GroundingSeed.IncidentId, GroundingSeed.UnitId, GroundingSeed.AlarmedComponentIds, GroundingSeed.FloodStartUtc);
+    private static readonly IncidentContext Incident = IncidentRegistry.Evt20260418;
 
     // ----- Graph walk -----
 

@@ -12,7 +12,11 @@ public sealed class CorpusChunkConfiguration : IEntityTypeConfiguration<CorpusCh
         builder.HasKey(x => x.ChunkId).HasName("PK_RootCause_Corpus");
 
         builder.Property(x => x.ChunkId).ValueGeneratedOnAdd();
+        builder.Property(x => x.UnitId).IsRequired();
         builder.Property(x => x.DocId).IsRequired();
+
+        // Retrieval scoping key (ADR-037): the retriever filters chunks by unit.
+        builder.HasIndex(x => x.UnitId).HasDatabaseName("IX_RootCause_Corpus_UnitId");
         builder.Property(x => x.TrustTier).IsRequired();
         builder.Property(x => x.Body).IsRequired();
         builder.Property(x => x.SourceLabel).HasMaxLength(256).IsRequired();
