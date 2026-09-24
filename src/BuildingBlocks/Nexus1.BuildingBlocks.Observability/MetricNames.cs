@@ -22,4 +22,15 @@ public static class MetricNames
     public const string OutboxSnapshotAge = "nexus1.outbox.snapshot_age";
     public const string InboxOutcomes = "nexus1.inbox.outcomes";
     public const string WorkflowDuration = "nexus1.workflow.duration";
+
+    // Diagnosis/RAG-pipeline metrics (From Flood to Cause, Appendix I; ADR-038).
+    // Appendix I names them nexus.abstentions / nexus.validator_rejections /
+    // nexus.diagnosis_ms / nexus.retrieval_recall on a meter "Nexus1.Diagnostics";
+    // this repo keeps its own nexus1.* convention. The recall slot is deliberately
+    // a grounding-hit PROXY, never "recall" -- true recall needs a labelled set
+    // (Appendix J), which does not exist yet.
+    public const string DiagnosisAbstentions = "nexus1.diagnosis.abstentions";
+    public const string DiagnosisValidatorRejections = "nexus1.diagnosis.validator_rejections";
+    public const string DiagnosisDuration = "nexus1.diagnosis.duration";
+    public const string DiagnosisGroundingHit = "nexus1.diagnosis.grounding_hit";
 }

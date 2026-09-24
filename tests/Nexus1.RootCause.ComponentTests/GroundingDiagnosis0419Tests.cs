@@ -193,7 +193,8 @@ public class GroundingDiagnosis0419Tests : RootCauseComponentTestDatabase
             new RegistryAntiHallucinationValidator(db),
             new Sha256AuditChainWriter(db, Clock),
             new EfDiagnosisRunStore(db),
-            Clock);
+            Clock,
+            NewDiagnosticsMetrics());
 
     private sealed class FixtureExplainer(ExplainOutcome outcome) : IExplainer
     {

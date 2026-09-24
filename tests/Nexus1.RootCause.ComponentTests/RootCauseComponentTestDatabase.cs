@@ -37,6 +37,9 @@ public abstract class RootCauseComponentTestDatabase : IAsyncLifetime
     /// <summary>A fresh, uncaptured instrument set per call — tests that need to assert on recorded measurements build their own MeterListener against this, mirroring Nexus1.BuildingBlocks.Observability.UnitTests' TestMeterFactory (duplicated, not shared, per this project's own convention for test-only doubles).</summary>
     protected static NexusRuntimeMetrics NewMetrics() => new(new TestMeterFactory());
 
+    /// <summary>A fresh diagnosis instrument set (Appendix I; ADR-038) for the runner under test.</summary>
+    protected static NexusDiagnosticsMetrics NewDiagnosticsMetrics() => new(new TestMeterFactory());
+
     private sealed class TestMeterFactory : IMeterFactory
     {
         public Meter Create(MeterOptions options) => new(options);

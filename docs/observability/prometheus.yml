@@ -1,0 +1,20 @@
+# Dev-only Prometheus scrape config for the RootCause diagnosis metrics
+# (From Flood to Cause, Appendix I; ADR-038). Points at RootCause.Host's /metrics
+# endpoint. See docs/runbooks/local-prometheus-grafana.md.
+#
+# Scope: RootCause.Host only for now. The BFF and ModularRuntime are deliberately
+# not scraped (BFF/edge metrics are deferred to ADR-007).
+global:
+  scrape_interval: 15s
+  # Prometheus 3.x defaults to UTF-8 metric names, which preserves the OpenTelemetry
+  # dotted names (nexus1.diagnosis.*) that Grafana 10.x cannot query. Legacy scheme
+  # makes Prometheus sanitize to conventional underscore names (nexus1_diagnosis_*),
+  # which are portable and query cleanly everywhere (ADR-038).
+  metric_name_validation_scheme: legacy
+
+scrape_configs:
+  - job_name: nexus1-rootcause
+    scrape_interval: 15s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["localhost:5102"]

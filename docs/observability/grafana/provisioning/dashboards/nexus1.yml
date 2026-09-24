@@ -1,0 +1,15 @@
+# Dev-only Grafana dashboard provider (ADR-038). Loads the committed
+# nexus1-diagnostics dashboard from disk. The `path` is an ABSOLUTE local-checkout
+# path (this box: C:\dev\nexus1) -- adjust it to your own checkout, since Grafana
+# provisioning does not resolve repo-relative paths. See
+# docs/runbooks/local-prometheus-grafana.md.
+apiVersion: 1
+
+providers:
+  - name: nexus1
+    type: file
+    disableDeletion: false
+    allowUiUpdates: true
+    options:
+      path: C:\dev\nexus1\docs\observability\grafana\dashboards
+      foldersFromFilesStructure: false

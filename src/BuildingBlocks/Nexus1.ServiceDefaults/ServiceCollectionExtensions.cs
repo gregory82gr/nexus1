@@ -18,6 +18,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddNexusObservability(this IServiceCollection services, NexusObservabilityOptions options)
     {
         services.AddSingleton<NexusRuntimeMetrics>();
+        services.AddSingleton<NexusDiagnosticsMetrics>();
         services.AddSingleton<OutboxMetricState>();
 
         services
@@ -34,6 +35,8 @@ public static class ServiceCollectionExtensions
                 .AddOtlpExporter(exporter => exporter.Endpoint = options.OtlpEndpoint))
             .WithMetrics(metrics => metrics
                 .AddMeter(NexusRuntimeMetrics.MeterName)
+                // Diagnosis/RAG-pipeline meter (Appendix I; ADR-038).
+                .AddMeter(NexusDiagnosticsMetrics.MeterName)
                 // Bucket boundaries scoped to what this project actually
                 // measures (ch.52 52-AA): sub-second broker attempts through
                 // low tens-of-seconds workflow durations, not the book's
@@ -47,6 +50,13 @@ public static class ServiceCollectionExtensions
                 .AddView(MetricNames.WorkflowDuration, new ExplicitBucketHistogramConfiguration
                 {
                     Boundaries = [.1, .25, .5, 1, 2.5, 5, 10, 30, 60, 120, 300],
+                })
+                // Diagnosis latency is in MILLISECONDS and spans warm (~29s) to cold
+                // (~122s) model loads (ADR-038); boundaries chosen to resolve that
+                // bimodal split around the 30s warm and 130s cold clusters.
+                .AddView(MetricNames.DiagnosisDuration, new ExplicitBucketHistogramConfiguration
+                {
+                    Boundaries = [100, 500, 1000, 5000, 10000, 20000, 25000, 30000, 40000, 60000, 100000, 130000, 180000],
                 })
                 .AddOtlpExporter((exporter, metricReader) =>
                 {
@@ -62,7 +72,14 @@ public static class ServiceCollectionExtensions
                     // after the stimulus saw nothing, though the export was
                     // genuinely queued and appeared moments later).
                     metricReader.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 2000;
-                }));
+                })
+                // Prometheus scrape exporter (Appendix I; ADR-038), added ALONGSIDE
+                // the OTLP exporter above -- OTLP keeps feeding the collector for
+                // tracing and the ch.52 campaigns; Prometheus scrapes /metrics on the
+                // host that maps the endpoint (RootCause.Host only, for now). Every
+                // registered meter above becomes scrapeable, so the existing
+                // Nexus1.Runtime messaging metrics are exposed too, as a side benefit.
+                .AddPrometheusExporter());
 
         return services;
     }

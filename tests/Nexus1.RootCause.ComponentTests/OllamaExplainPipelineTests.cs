@@ -259,7 +259,8 @@ public class OllamaExplainPipelineTests(ITestOutputHelper output) : RootCauseCom
             new RegistryAntiHallucinationValidator(db),
             new Sha256AuditChainWriter(db, Clock),
             new EfDiagnosisRunStore(db),
-            Clock);
+            Clock,
+            NewDiagnosticsMetrics());
 
     private async Task SeedAsync()
     {

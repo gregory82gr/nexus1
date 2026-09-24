@@ -71,6 +71,11 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => fa
 // Readiness: can this host actually reach its database.
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = _ => true });
 
+// Prometheus scrape endpoint (Appendix I; ADR-038) -> /metrics. Only this host maps
+// it for now: the diagnosis/RAG metrics originate here, and Prometheus scrapes it
+// directly. The OTLP export (tracing + ch.52 metrics) is unchanged.
+app.MapPrometheusScrapingEndpoint();
+
 // Run the fixed-incident One-Truth Pipeline and return its sealed result (ADR-034).
 // Synchronous (CPU inference is 26-70s). An abstention is a first-class 200; an
 // unknown incident is 404; genuine infrastructure failure (model unreachable, DB
