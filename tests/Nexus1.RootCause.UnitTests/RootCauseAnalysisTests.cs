@@ -85,15 +85,15 @@ public class RootCauseAnalysisTests
         analysis.Close("Loose fitting confirmed as cause.", "operator.2", OpenedAtUtc);
 
         var ex1 = Assert.Throws<InvalidOperationException>(() => analysis.AddHypothesis(new AnalysisHypothesisId(2), "Another cause."));
-        Assert.Equal("Closed cases cannot be changed.", ex1.Message);
+        Assert.Equal("A finalized case cannot be changed.", ex1.Message);
 
         var ex2 = Assert.Throws<InvalidOperationException>(() =>
             analysis.AddEvidence(new AnalysisHypothesisId(1), new HypothesisEvidenceId(2), "More evidence.", OpenedAtUtc));
-        Assert.Equal("Closed cases cannot be changed.", ex2.Message);
+        Assert.Equal("A finalized case cannot be changed.", ex2.Message);
 
         var ex3 = Assert.Throws<InvalidOperationException>(() =>
             analysis.RejectHypothesis(new AnalysisHypothesisId(1), "Too late.", OpenedAtUtc));
-        Assert.Equal("Closed cases cannot be changed.", ex3.Message);
+        Assert.Equal("A finalized case cannot be changed.", ex3.Message);
     }
 
     [Fact]

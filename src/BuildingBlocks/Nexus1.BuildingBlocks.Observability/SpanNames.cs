@@ -28,6 +28,7 @@ public static class SpanNames
     // Reporting owner operations — one per reducer (INTERNAL spans).
     public const string ReportingApplyOpened = "reporting apply case-opened";
     public const string ReportingApplyVerdictIssued = "reporting apply verdict-issued";
+    public const string ReportingApplyInconclusive = "reporting apply case-inconclusive";
 
     /// <summary>
     /// Background work (INTERNAL spans). RetryDispatch is intentionally

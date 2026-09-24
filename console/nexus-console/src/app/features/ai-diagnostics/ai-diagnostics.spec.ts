@@ -62,6 +62,27 @@ describe('AiDiagnosticsComponent', () => {
     expect(el.querySelectorAll('.case-status').length).toBe(2);
   });
 
+  // Defensive check (ADR-039): Reporting can now emit a third terminal status,
+  // "Inconclusive". This slice adds no dedicated styling/label for it, so the screen
+  // must degrade gracefully -- render the status text verbatim, with neither the
+  // .open nor .verdict pill class (no mislabel) and no crash.
+  it('renders the new Inconclusive status as plain text without crashing or mislabelling it', () => {
+    const withInconclusive: RootCauseCase[] = [
+      { caseId: 7, unitId: 1, alarmFloodId: 107, status: 'Inconclusive', verdict: null, openedAtUtc: '2026-09-01T09:00:00Z', verdictIssuedAtUtc: null },
+    ];
+    const fixture = TestBed.createComponent(AiDiagnosticsComponent);
+    const unitId = TestBed.inject(PlantStateService).selectedId();
+    httpMock.expectOne(`http://localhost:5103/api/v1/reporting/units/${unitId}`).flush(withInconclusive);
+    fixture.detectChanges(); // must not throw
+
+    const status = fixture.nativeElement.querySelector('.case-status') as HTMLElement;
+    expect(status).not.toBeNull();
+    expect(status.textContent?.trim()).toBe('Inconclusive');
+    // Not mislabelled with the Open/VerdictIssued styling.
+    expect(status.classList.contains('open')).toBe(false);
+    expect(status.classList.contains('verdict')).toBe(false);
+  });
+
   it('shows a real error state, not fake data, when the endpoint is unreachable', () => {
     const fixture = TestBed.createComponent(AiDiagnosticsComponent);
     const unitId = TestBed.inject(PlantStateService).selectedId();

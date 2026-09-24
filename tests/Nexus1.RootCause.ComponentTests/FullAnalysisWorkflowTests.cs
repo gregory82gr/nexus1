@@ -160,6 +160,63 @@ public sealed class FullAnalysisWorkflowTests : RootCauseComponentTestDatabase
             .Handle(new AddHypothesisCommand(analysisId, "Another cause."), CancellationToken.None);
 
         Assert.True(addHypothesisResult.IsFailure);
-        Assert.Equal("Closed cases cannot be changed.", addHypothesisResult.Error);
+        Assert.Equal("A finalized case cannot be changed.", addHypothesisResult.Error);
+    }
+
+    [Fact]
+    public async Task Marking_a_case_inconclusive_finalizes_it_with_a_reason_no_verdict_and_publishes_the_event()
+    {
+        var analysisId = await OpenAnalysisAsync();
+
+        // No hypothesis, no evidence -- the reason-only invariant (ADR-039): an
+        // unresolvable case can be terminally recorded rather than left Open forever.
+        await using (var markContext = CreateDbContext())
+        {
+            var result = await new MarkAnalysisInconclusiveCommandHandler(
+                    Repository(markContext), UnitOfWork(markContext), new SystemDateTimeProvider(), new EfOutboxWriter(markContext))
+                .Handle(new MarkAnalysisInconclusiveCommand(analysisId, "Records incomplete; provenance trail could not be established.", "operator.3"), CancellationToken.None);
+            Assert.True(result.IsSuccess);
+        }
+
+        // Aggregate: Inconclusive, no verdict, reason recorded.
+        await using (var verifyContext = CreateDbContext())
+        {
+            var analysis = await verifyContext.RootCauseAnalyses.SingleAsync(a => a.Id == new RootCauseAnalysisId(analysisId));
+            Assert.Equal(AnalysisStatus.Inconclusive, analysis.Status);
+            Assert.Null(analysis.Verdict);
+            Assert.Equal("Records incomplete; provenance trail could not be established.", analysis.InconclusiveReason);
+            Assert.Equal("operator.3", analysis.DecidedBy);
+        }
+
+        // Outbox carries the integration event, enqueued in the same transaction.
+        await using (var outboxContext = CreateDbContext())
+        {
+            var message = await outboxContext.OutboxMessages
+                .SingleAsync(m => m.RoutingKey == "root-cause.root-cause-case-inconclusive.v1");
+            Assert.Equal("nexus1.root-cause.root-cause-case-inconclusive.v1", message.EventType);
+        }
+
+        // Terminal/immutable via the generalized guard.
+        await using (var mutateContext = CreateDbContext())
+        {
+            var addResult = await new AddHypothesisCommandHandler(Repository(mutateContext), UnitOfWork(mutateContext), new SequentialIdGenerator())
+                .Handle(new AddHypothesisCommand(analysisId, "Too late."), CancellationToken.None);
+            Assert.True(addResult.IsFailure);
+            Assert.Equal("A finalized case cannot be changed.", addResult.Error);
+        }
+    }
+
+    [Fact]
+    public async Task Marking_a_case_inconclusive_without_a_reason_fails()
+    {
+        var analysisId = await OpenAnalysisAsync();
+
+        await using var markContext = CreateDbContext();
+        var result = await new MarkAnalysisInconclusiveCommandHandler(
+                Repository(markContext), UnitOfWork(markContext), new SystemDateTimeProvider(), new EfOutboxWriter(markContext))
+            .Handle(new MarkAnalysisInconclusiveCommand(analysisId, "   ", "operator.3"), CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Contains("An inconclusive case must record a reason.", result.Error);
     }
 }
