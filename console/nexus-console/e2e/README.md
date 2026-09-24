@@ -2,7 +2,7 @@
 
 ## What this suite proves
 
-Two real, investigated cross-screen properties, out of the console's full
+Three real, investigated cross-screen properties, out of the console's full
 39-route surface:
 
 1. **Selection propagation.** `PlantStateService.selectedId` is real,
@@ -22,6 +22,25 @@ Two real, investigated cross-screen properties, out of the console's full
    `operator-session.e2e.ts`'s steps 4-5 prove acknowledging a real
    active alarm for a unit is reflected in Overview's independently-
    fetched `alarmCount` for that same unit.
+3. **Root-cause cross-screen agreement (over the live pipeline).** Root
+   Cause Graph (`/rcgraph`) and Incident Analysis (`/incident`) both inject
+   the one root-provided `RootCauseService`, which fetches the diagnosis
+   once and caches it (Ch. 29). `root-cause-cross-screen.e2e.ts` proves
+   that with no reload between the two screens, the origin the graph blames
+   (its `[data-field=verdict]`) is the same cause Incident Analysis names as
+   its top cause (`[data-field=top-cause-name]`), and both are the seeded
+   origin FV-104 -- reading the **real** backend, end to end (console -> BFF
+   -> RootCause.Host -> served model -> RootCauseDb), not a stub. This is a
+   different kind of evidence from the Ch.29 Jest component test, which
+   proves the shared-service logic with `RootCauseDiagnosisApi` mocked and
+   no backend. `root-cause-cross-screen.spec-of-specs.e2e.ts` proves this
+   test is load-bearing, by the same documented break-run-revert ritual as
+   property 1 (see that file's header for the exact source edit).
+
+   This test drives the real diagnosis pipeline (cold ~100-130s on first
+   model load, warm ~20-25s), so it is tagged **`@slow`** and needs the
+   fuller stack below. It is excluded from the fast suite via
+   `--grep-invert @slow` and run on its own via `--grep @slow`.
 
 ## What this suite does NOT prove
 
@@ -65,6 +84,42 @@ Then, from `console/nexus-console`:
 ```bash
 npm run e2e
 ```
+
+### The fast suite vs. the @slow live-pipeline test
+
+The two fast, seconds-long properties (selection propagation, alarm-
+acknowledge consistency) run against just `Nexus1.Bff` + LocalDB, as above.
+The root-cause agreement test is tagged `@slow` because it drives the real
+RootCause diagnosis pipeline (tens of seconds warm, up to ~2 min cold).
+
+```bash
+# Fast suite only -- excludes the @slow live-pipeline test (unchanged runtime):
+npm run e2e -- --grep-invert @slow
+
+# The @slow live-pipeline test(s) only, run selectively when the full stack is up:
+npm run e2e -- --grep @slow
+```
+
+`npm run e2e` with no flags runs everything, including the slow test, so use
+the flags above to pick one or the other. (No `package.json` script is added
+for this -- the flags are the documented mechanism.)
+
+### Extra stack the @slow test needs
+
+Beyond `Nexus1.Bff` + `ng serve`, the `@slow` root-cause test needs the whole
+diagnosis chain up:
+
+- **RootCauseDb** provisioned and seeded (the EVT-2026-0418 grounding fixture:
+  Component/Edge topology + corpus with embeddings) -- if it is not seeded, the
+  pipeline abstains or errors and the verdict never renders, and the test fails
+  with a clear assertion rather than a false pass.
+- **RabbitMQ** up -- `RootCause.Host` will not boot without it (its messaging
+  hosted services).
+- **Ollama** on `127.0.0.1:11434` with the pinned `nexus-dslm` model and
+  `nomic-embed-text` embeddings.
+- **RootCause.Host** on `http://localhost:5102`.
+- The **BFF** composed with the RootCause proxy hop (ADR-035/ADR-036) so
+  `/rcgraph` and `/incident` reach the Host.
 
 `operator-session.e2e.ts` acknowledges one real active alarm belonging to
 unit 1 each time it runs (State: Active -> Acknowledged, permanently, in
