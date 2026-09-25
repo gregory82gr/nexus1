@@ -1,6 +1,10 @@
-# nexus1
+# NEXUS-1
 
-**The companion implementation of the NEXUS-1 book series** — a .NET 8 / EF Core / SQL Server / RabbitMQ / Angular reference system for a fictional nuclear-plant operations platform, built one evidenced slice at a time.
+**A companion reference implementation for a nuclear facility management platform** — a .NET 8 / EF Core / SQL Server / RabbitMQ / Angular reference system, built one evidenced slice at a time.
+
+NEXUS-1 is an educational/reference demonstrator built alongside a companion book series. It exists to show, with real running code and real evidence rather than illustrative snippets, how a hybrid modular-monolith + selective-microservice backend is actually designed, built, and extended — including the parts that go wrong, the architectural decisions that get revisited, and the gaps that get named instead of faked.
+
+Every claim in the companion books is backed by this codebase. If a book says a test passes, that test is in this repository and it passes. If a book says a decision was made, the ADR recording it is here too.
 
 > **Phase-0 educational demonstrator.** Not safety-class or operational software, and not connected to any real facility. Every plant, component and incident here is a teaching fixture.
 
@@ -55,15 +59,54 @@ This is a **fixed-incident demonstrator that proves the architecture end to end*
 
 ---
 
-## What else is in this repository
+## Current status
 
-NEXUS-1 is a **hybrid modular monolith**: all **17 Schema Atlas sectors** are bounded contexts (Domain / Application / Infrastructure projects each).
+- ✅ **Phase 1** — the distributed slice (AlarmManagement → RootCause, with Audit, Compliance and Reporting as fan-out subscribers): transactional outbox/inbox, retry/DLQ, OpenTelemetry tracing and metrics, real broker proof, real host health checks.
+- ✅ **Phase 2** — all 11 remaining sectors, built sector by sector inside `ModularRuntime` (ADR-015 – ADR-026).
+- ✅ **BFF layer** — all 17 sectors: 16 composed in-process, RootCause reached over an HTTP proxy to `Nexus1.RootCause.Host` (ADR-035/036).
+- ✅ **Angular console** — every screen, including Root Cause and Incident Analysis on the real diagnosis pipeline, the drawn fault-tree, and a live cross-screen end-to-end test. It reuses the companion Angular book's screens and design system with a purpose-built API contract (ADR-030).
+- ✅ **RAG root-cause engine ("From Flood to Cause")** — built and evidenced as a fixed-incident demonstrator (ADR-032 – ADR-044; see above).
+- **Latest regression gate** (ADR-044 evidence): build with 0 warnings and 0 errors; 36 test assemblies green, each run in isolation; the live `@slow` end-to-end test 2/2.
+- 🔜 **Not yet built** — see *Honest scope* above and the consolidated list in Section 6.12 of the [guide](docs/NEXUS-1-Programmers-Guide.pdf).
 
-- **`Nexus1.ModularRuntime`** runs 16 of them in one process.
-- **`RootCause`** is the one context extracted to its own independently deployed host, **`Nexus1.RootCause.Host`**.
-- **`Nexus1.Bff`** composes the in-process contexts for the **Angular 18 console** and reaches RootCause only over HTTP.
-- Integration events travel over **RabbitMQ**, with a transactional outbox, idempotent inboxes and dead-lettering.
+---
+
+## Architecture
+
+NEXUS-1 uses a **hybrid modular monolith + selective microservice** architecture (see [`ADR-001-amend`](docs/adr/ADR-001-amend-reactorfleet.md)). All **17 Schema Atlas sectors** are bounded contexts, each with its own Domain / Application / Infrastructure projects.
+
+- **`Nexus1.ModularRuntime`** hosts 16 of them as a modular monolith: one process, in-process composition, no cross-context transactions. Databases follow ownership, not a strict one-per-context rule: eleven plant-operational contexts share `AlarmManagementDb` (each with its own schema and migrations history); Security, Organization, Audit, Compliance and Reporting each own a database.
+- **`Nexus1.RootCause.Host`** is the one context deliberately extracted as an independently deployed service. It owns `RootCauseDb`, consumes alarm floods and publishes its own events over the messaging backbone, and hosts the RAG diagnosis engine.
+- **`Nexus1.Bff`** is a Backend-for-Frontend that serves the Angular console. It composes context Application layers in-process and reaches RootCause only over HTTP (see [BFF layer](#bff-layer) below).
 - The dependency law is **enforced by architecture tests** that fail the build.
+
+### The 17 Schema Atlas sectors
+
+| Sector | Phase | Notes |
+|---|---|---|
+| ReactorFleet | 1 | Core unit identity |
+| AlarmManagement | 1 | Full messaging backbone (outbox/inbox, retry/DLQ) |
+| RootCause | 1 | Independently deployed service (ADR-001); hosts the RAG diagnosis engine (ADR-032 – ADR-044) |
+| Audit | 1 | |
+| Compliance | 1 | |
+| Reporting | 1 | Write-side projection from RootCause events (ADR-012) |
+| CorePlatform | 2 | Reference/lookup data |
+| Security | 2 | Application-level RBAC |
+| Organization | 2 | Personnel/department hierarchy |
+| Instrumentation | 2 | Generic signal/measurement telemetry |
+| DigitalTwin | 2 | |
+| Maintenance | 2 | Asset condition, degradation tracking |
+| EventManagement | 2 | |
+| Robotics | 2 | |
+| RadiationMonitoring | 2 | |
+| EmergencyPreparedness | 2 | |
+| ReinforcementLearning | 2 | Training/persistence only, advisory-only (ADR-026) |
+
+**Phase 1** (contexts 1–6) is the original distributed slice: full messaging backbone, OpenTelemetry tracing and metrics, real broker proof, real host health checks.
+
+**Phase 2** (contexts 7–17) are monolithic implementations built sector by sector inside `ModularRuntime`, each verified with real databases and a full regression suite before moving to the next.
+
+### Repository map
 
 ```
 src/BuildingBlocks/        shared kernel: Domain, Application (CQRS ports), Messaging, Observability, ServiceDefaults
@@ -75,7 +118,63 @@ docs/                      adr/ (44 decision records) · runbooks/ · observabil
 artifacts/evidence/        what was actually run for every slice, and its output
 ```
 
-## Quick start
+### BFF layer
+
+`Nexus1.Bff` has been built as a series of proven, evidence-backed vertical slices. Each one composes a context's existing Application layer in-process, shapes an endpoint around a real screen from the companion Angular book, and is verified against a real database before being considered done. **All slices are complete**; RootCause, the last one, is reached through a thin HTTP proxy to its own host rather than composed in-process.
+
+| # | Slice | Notes |
+|---|---|---|
+| 1 | ReactorFleet | Read-only walking skeleton |
+| 2 | AlarmManagement | Read + write (acknowledge), no messaging side effects |
+| 3 | DigitalTwin | |
+| 4 | RadiationMonitoring | No per-unit dose concept — ambient/zone data only |
+| 5 | Reporting | Built `Nexus1.Reporting.Application` from scratch — none existed |
+| 6 | Robotics | |
+| 7 | Instrumentation | 7 book screens map to 2 real domain groupings |
+| 8 | Overview (aggregation) | First cross-context endpoint — proven concurrent, partial-failure-safe |
+| 9 | Organization | No link to ReactorFleet.Unit exists (ADR-017) |
+| 10 | Security | RBAC only — no physical/zone-access concept |
+| 11 | Maintenance | Ageing/Degradation real; Decommissioning/Waste don't exist |
+| 12 | CorePlatform | Software/lookup metadata — not a physical component registry |
+| 13+ | Audit, Compliance, EventManagement, EmergencyPreparedness, ReinforcementLearning, RootCause | All complete; RootCause via an HTTP proxy that relays the host's response verbatim, 502 vs relayed 503 (ADR-035/036) |
+
+A dev-mode subset-composition capability (`BffContexts:Enabled`) lets the BFF host start with only the contexts a given session needs, roughly halving startup memory cost during evidence-gathering.
+
+---
+
+## Architectural decisions of note
+
+- **No Controllers** — Minimal API endpoints only, throughout.
+- **MediatR deferred** — hand-rolled direct dispatch instead (ADR-002-amend).
+- **No cross-context database transactions.** Integration events use a transactional outbox and idempotent inbox, with retry and dead-lettering (ADR-008/009); there are no sagas yet.
+- **Cross-context references** are real SQL FKs when contexts share a database and no sensitivity applies. Otherwise they are deliberately downgraded to passport-only ints, enforced by restricting write access to a scoped SQL login (`nexus1_app`, ADR-028) rather than a real FK — preserving the option to extract a context as a service later.
+- **OpenTelemetry** is fully wired for Phase 1 (Ch. 51–52, ADR-013/014) and deliberately deferred for Phase 2 sectors until they have a real external caller (ADR-027). The RAG engine's diagnosis metrics are exported to Prometheus (ADR-038).
+- **The served model is fenced in** — only `Nexus1.RootCause.Explain` may reference a language-model package, enforced by an architecture test (ADR-032/033).
+- **No secrets in tracked files** — connection strings live in User Secrets, and a guard test fails the build if a password appears in any `appsettings*.json` (ADR-044).
+- **Evidence discipline** — nothing in this codebase or its accompanying reports claims completion without a real database, a real host, and captured output. Gaps are named explicitly rather than papered over; see the reports in [`artifacts/evidence/`](artifacts/evidence/) referenced by each ADR.
+
+Full ADR log lives in [`docs/adr`](docs/adr).
+
+---
+
+## Tech stack
+
+- .NET 8, C#
+- Entity Framework Core, SQL Server (LocalDB in development)
+- RabbitMQ (transactional outbox/inbox, retry/DLQ)
+- OpenTelemetry (Phase 1); Prometheus + Grafana for the diagnosis metrics
+- ASP.NET Core Minimal APIs
+- Angular 18 (Jest, Playwright)
+- Ollama + Semantic Kernel — the local served model, used only by `Nexus1.RootCause.Explain`
+
+---
+
+## Getting started
+
+```bash
+git clone https://github.com/gregory82gr/nexus1
+cd nexus1
+```
 
 The full procedure — LocalDB and migrations, scoped SQL logins, User Secrets, RabbitMQ, Ollama and the pinned model, provisioning, the hosts and the console — is **Section 6 of the [Programmer's Guide](docs/NEXUS-1-Programmers-Guide.pdf)**, consolidated from [`docs/runbooks/`](docs/runbooks/). It is proven on one Windows 10 machine (LocalDB is Windows-only; there are no containers yet).
 
@@ -88,11 +187,15 @@ dotnet test tests/Nexus1.ArchitectureTests      # dependency law, served-model r
 dotnet test tests/Nexus1.RootCause.UnitTests
 ```
 
-Component tests need SQL Server LocalDB. The RootCause live-model tests need Ollama with `nexus-dslm` and `nomic-embed-text`, and **skip by name** when it is absent.
+Component tests need SQL Server LocalDB. The RootCause live-model tests need Ollama with `nexus-dslm` and `nomic-embed-text`, and **skip by name** when it is absent. A plain `dotnet test` of the whole solution needs all of that, and on a modest machine it is more reliable to run the test assemblies one at a time (guide §4.4).
 
 ---
 
-## The book series (22 titles)
+## Companion book series (22 titles)
+
+**Author:** Grigorios Kyriakos Agathangelidis (Γρηγόριος Κυριάκος Αγαθαγγελίδης) · books on [Leanpub](https://leanpub.com/u/grigorios-kyriakos-agathangelidis)
+
+The books are written to match this repository's actual state at time of writing, and are updated as the backend evolves. If you find a mismatch, the code is authoritative.
 
 ★ = this repository is its implementation  ·  ◆ = a direct source this repository is built from
 
