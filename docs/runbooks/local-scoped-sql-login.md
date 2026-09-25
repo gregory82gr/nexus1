@@ -18,6 +18,10 @@ uses the restricted login.
 
 ## Create the login (idempotent — safe to re-run)
 
+**Prerequisite — the databases must already exist.** Apply migrations first
+(`local-rootcause-diagnosis-provisioning.md` step 1, repeated for every context); the
+script's `USE <Database>;` lines fail with `Msg 911 … does not exist` on a fresh machine.
+
 Run once per LocalDB instance, as the developer's own (sysadmin)
 Windows-integrated connection:
 
