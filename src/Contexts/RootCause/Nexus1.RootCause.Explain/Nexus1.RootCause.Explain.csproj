@@ -22,6 +22,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.SemanticKernel" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" />
+    <!-- The "ollama" readiness check (ADR-044). -->
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
     <!-- Microsoft.Extensions.DependencyInjection.Abstractions is provided transitively
          by Semantic Kernel (at its own required version); referencing it directly at
          the solution's net8 pin (8.0.2) triggers an NU1605 downgrade against SK's

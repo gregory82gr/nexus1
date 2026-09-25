@@ -13,7 +13,7 @@ namespace Nexus1.RootCause.ComponentTests;
 /// measurement artefact confirmed by an ABSENCE: the walker names the EMI source via
 /// its artefact edges, and the corroborator confirms it because the independent
 /// witnesses stayed flat. These tests prove that genuinely-new engine logic, the
-/// 0.70/0.16/0.10 ranking, that the witness silence is load-bearing (fault
+/// derived ranking (ADR-042), that the witness silence is load-bearing (fault
 /// injection), and that the new unit-scoped corpus isolates the two incidents.
 /// </summary>
 public class GroundingDiagnosis0419Tests : RootCauseComponentTestDatabase
@@ -37,14 +37,16 @@ public class GroundingDiagnosis0419Tests : RootCauseComponentTestDatabase
         Assert.NotEqual("FT-9", origin.Tag);
         Assert.NotEqual("FV-104", origin.Tag);
 
-        // The book's ranking: artefact 0.70 / FT-9 0.16 / genuine excursion 0.10.
-        Assert.Equal(0.70, origin.Weight, 3);
+        // Derived, not the book's illustrative 0.70/0.16/0.10 (ADR-042): the EMI source is
+        // attributed the whole flood; the corrupted channels are downstream symptoms it
+        // explains; the genuine-excursion hypothesis explains nothing and is ruled out.
+        Assert.Equal(1.0, origin.Weight, 3);
         var ft9 = Assert.Single(result.Ranked, c => c.Tag == "FT-9");
-        Assert.Equal("proximate", ft9.Role);
-        Assert.Equal(0.16, ft9.Weight, 3);
+        Assert.Equal("downstream", ft9.Role);
+        Assert.Equal(0d, ft9.Weight, 3);
         var excursion = Assert.Single(result.Ranked, c => c.Tag == "LOF-1");
         Assert.Equal("ruled-out", excursion.Role);
-        Assert.Equal(0.10, excursion.Weight, 3);
+        Assert.Equal(0d, excursion.Weight, 3);
 
         // The EMI source explains the alarms on the channels it corrupts (all of them);
         // the busy flow channel explains only its own -- coverage, from the data.

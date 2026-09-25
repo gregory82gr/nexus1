@@ -17,6 +17,7 @@
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.11" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <!-- Served-model stack: allowed ONLY in Nexus1.RootCause.Explain (ADR-033);
          the DependencyLawTests served-model-package rule enforces that. -->

@@ -59,20 +59,21 @@ public static class GroundingSeed
     public static DateTime FloodStartUtc0419 => IncidentRegistry.Evt20260419.FloodStartUtc;
 
     // Stable component ids for the 0419 fixture (11..17), disjoint from 0418's.
-    public const int Bkr2A = 11;   // EMI source -- switchgear breaker close (computed origin, weight 0.70)
-    public const int Ft9 = 12;     // primary-flow transmitter -- +18% step (proximate, weight 0.16)
+    public const int Bkr2A = 11;   // EMI source -- switchgear breaker close (computed origin; book-figure weight 0.70)
+    public const int Ft9 = 12;     // primary-flow transmitter -- +18% step (book figure: proximate, 0.16)
     public const int Lt3 = 13;     // pressuriser-level transmitter -- spike (coupled)
     public const int Pt7 = 14;     // RCS-pressure transmitter -- spike (coupled)
     public const int Rtd1 = 15;    // primary RTD T-avg -- independent witness, stays flat
     public const int Nfx1 = 16;    // neutron-flux -- independent witness, stays flat
-    public const int Lof1 = 17;    // genuine loss-of-flow excursion hypothesis -- ruled out (weight 0.10)
+    public const int Lof1 = 17;    // genuine loss-of-flow excursion hypothesis -- ruled out (book-figure weight 0.10)
 
     // ================= EVT-2026-0418 rows (unit 1) =================
 
     private static IReadOnlyList<Component> Components0418() =>
     [
         // Tag, Kind, HealthScore, Status, AlarmCount, IllustrativeWeight, IllustrativeRole.
-        // The origin's role is deliberately left null -- the walk computes it.
+        // The Illustrative* values are the book figure's labels, presentation-only (ADR-042):
+        // the walker derives every candidate, weight and role from edges + alarms + onsets.
         new() { ComponentId = Fv104, UnitId = UnitId, Tag = "FV-104", Kind = "valve", HealthScore = 0.41, Status = "degrading", AlarmCount = 1, IllustrativeWeight = 0.66, IllustrativeRole = null },
         new() { ComponentId = Sg1Level, UnitId = UnitId, Tag = "SG-1", Kind = "condition", HealthScore = null, Status = "degrading", AlarmCount = 2, IllustrativeWeight = null, IllustrativeRole = null },
         new() { ComponentId = FwPump2A, UnitId = UnitId, Tag = "FWP-2A", Kind = "pump", HealthScore = 0.58, Status = "degrading", AlarmCount = 1, IllustrativeWeight = null, IllustrativeRole = null },

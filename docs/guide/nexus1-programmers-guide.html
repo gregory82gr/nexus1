@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NEXUS-1 Programmer's Guide</title>
+<meta name="description" content="A programmer-to-programmer guide to the NEXUS-1 educational demonstrator: topology, the RootCause/RAG pipeline, verification, troubleshooting and installation.">
+<style>
+  @page { size: A4; }  /* margins are set by build-guide-pdf.mjs so the page-number footer has room */
+  :root {
+    --ink: #1b1f24; --muted: #57606a; --rule: #d0d7de; --soft: #f6f8fa;
+    --accent: #0b5cad; --accent-soft: #e8f1fb;
+    --ok: #1a7f37; --ok-soft: #e9f7ee; --gap: #9a6700; --gap-soft: #fff6dd;
+    --warn: #b42318; --warn-soft: #fdecea;
+  }
+  html { font-size: 10.2pt; }
+  body { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: var(--ink); line-height: 1.5; margin: 0; background: #fff; }
+  h1, h2, h3, h4 { font-family: "Segoe UI Semibold", "Segoe UI", Arial, sans-serif; line-height: 1.25; color: #0d1117; }
+  h1 { font-size: 21pt; margin: 0 0 6pt; padding-bottom: 6pt; border-bottom: 2.5px solid var(--accent); break-before: page; }
+  h1 .num { color: var(--accent); margin-right: 8pt; }
+  h2 { font-size: 14pt; margin: 18pt 0 6pt; break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 14pt 0 4pt; break-after: avoid; }
+  h4 { font-size: 10.2pt; margin: 10pt 0 3pt; break-after: avoid; }
+  p { margin: 0 0 7pt; orphans: 3; widows: 3; }
+  ul, ol { margin: 0 0 8pt; padding-left: 18pt; }
+  li { margin: 0 0 3pt; }
+  a { color: var(--accent); text-decoration: none; }
+  code, pre, .mono { font-family: Consolas, "Cascadia Mono", "Courier New", monospace; }
+  code { font-size: 8.9pt; background: var(--soft); border: 1px solid #e3e7eb; border-radius: 3px; padding: 0 3px; }
+  pre { font-size: 8.3pt; line-height: 1.38; background: #0f1720; color: #e6edf3; border-radius: 5px; padding: 8pt 10pt; margin: 4pt 0 9pt; white-space: pre-wrap; word-break: break-word; break-inside: avoid; }
+  pre code { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
+  pre .c { color: #8b98a5; } pre .k { color: #7ee787; } pre .s { color: #ffa657; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; font-size: 8.9pt; break-inside: auto; }
+  thead { display: table-header-group; }
+  tr { break-inside: avoid; }
+  th, td { border: 1px solid var(--rule); padding: 3.5pt 5pt; vertical-align: top; text-align: left; }
+  th { background: var(--soft); font-weight: 600; }
+  td code, th code { font-size: 8.2pt; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 6pt 9pt; margin: 6pt 0 10pt; border-radius: 0 4px 4px 0; break-inside: avoid; }
+  .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .callout.gap { border-color: var(--gap); background: var(--gap-soft); }
+  .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout p:last-child, .callout ul:last-child { margin-bottom: 0; }
+  .tag { display: inline-block; font-size: 7.6pt; font-weight: 700; letter-spacing: .03em; padding: 0 5px; border-radius: 3px; vertical-align: 1px; }
+  .tag.ok { background: var(--ok); color: #fff; } .tag.gap { background: var(--gap); color: #fff; } .tag.warn { background: var(--warn); color: #fff; }
+  .lead { font-size: 11pt; color: #24292f; }
+  .muted { color: var(--muted); }
+  .small { font-size: 8.6pt; }
+  figure { margin: 6pt 0 12pt; break-inside: avoid; }
+  figcaption { font-size: 8.4pt; color: var(--muted); margin-top: 3pt; text-align: center; }
+  svg text { font-family: "Segoe UI", Arial, sans-serif; }
+  .two { display: flex; gap: 12pt; } .two > div { flex: 1; }
+  .kbd { font-family: Consolas, monospace; font-size: 8.6pt; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 3px; padding: 0 3px; background: #fff; }
+  /* cover */
+  .cover { height: 245mm; display: flex; flex-direction: column; justify-content: space-between; }
+  .cover .brand { font-size: 10pt; letter-spacing: .25em; color: var(--accent); font-weight: 700; }
+  .cover h1.title { border: 0; font-size: 34pt; margin: 14mm 0 4mm; break-before: auto; padding: 0; line-height: 1.1; }
+  .cover .subtitle { font-size: 14pt; color: #24292f; max-width: 150mm; }
+  .cover .meta { border-top: 1px solid var(--rule); padding-top: 8pt; font-size: 9pt; color: var(--muted); }
+  .cover .meta td { border: 0; padding: 1.5pt 10pt 1.5pt 0; }
+  .toc { break-before: page; }
+  .toc h1 { break-before: auto; }
+  .toc ol { list-style: none; padding-left: 0; }
+  .toc > ol > li { margin: 5pt 0; font-weight: 600; }
+  .toc ol ol { padding-left: 16pt; font-weight: 400; margin-top: 2pt; }
+  .toc ol ol li { margin: 1.5pt 0; }
+  .chrono td:first-child { white-space: nowrap; }
+  .nobreak { break-inside: avoid; }
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 12pt 0; }
+</style>
+</head>
+<body>
+
+<!-- ============================ COVER ============================ -->
+<section class="cover">
+  <div>
+    <div class="brand">NEXUS-1 · COMPANION IMPLEMENTATION</div>
+    <h1 class="title">Programmer's Guide</h1>
+    <p class="subtitle">From topology to a verifiable root-cause engine: how this repository is put together, how the RootCause RAG pipeline was built and why, how to check its claims yourself, and how to stand the whole stack up on your own machine.</p>
+    <div class="callout warn" style="margin-top:14mm; max-width:160mm">
+      <p><strong>What this is not.</strong> NEXUS-1 is a Phase-0 <em>educational demonstrator</em> backing a book series. It is not safety-class or operational software and is not connected to any real facility. Every plant, component and incident in it is a teaching fixture.</p>
+    </div>
+  </div>
+  <div class="meta">
+    <table>
+      <tr><td>Repository state described</td><td><code>v1.0.0</code> branch at commit <code>1fbada7</code> (ADR-044), 2026-09-25</td></tr>
+      <tr><td>Grounded in</td><td>the repo's own ADRs (<code>docs/adr/</code>), runbooks (<code>docs/runbooks/</code>), evidence reports (<code>artifacts/evidence/</code>) and source code — plus live runs made while writing this guide</td></tr>
+      <tr><td>Source of this PDF</td><td><code>docs/guide/nexus1-programmers-guide.html</code> (rendered by <code>docs/guide/build-guide-pdf.mjs</code>)</td></tr>
+      <tr><td>Companion script</td><td><code>docs/guide/verify-audit-chain.ps1</code> — independent audit-chain verifier (Section 3)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============================ TOC ============================ -->
+<section class="toc">
+  <h1>Contents</h1>
+  <ol>
+    <li><a href="#conventions">How to read this guide</a></li>
+    <li><a href="#s1">1 · Project topology</a>
+      <ol>
+        <li><a href="#s1-1">1.1 The shape in one picture</a></li>
+        <li><a href="#s1-2">1.2 Seventeen bounded contexts, two runtime hosts, one gateway</a></li>
+        <li><a href="#s1-3">1.3 Solution layout and the dependency law</a></li>
+        <li><a href="#s1-4">1.4 The messaging backbone</a></li>
+        <li><a href="#s1-5">1.5 The BFF and the Angular console</a></li>
+        <li><a href="#s1-6">1.6 Ports, databases and logins at a glance</a></li>
+        <li><a href="#s1-7">1.7 Topology gaps, named</a></li>
+      </ol></li>
+    <li><a href="#s2">2 · How the RAG was built, and why</a>
+      <ol>
+        <li><a href="#s2-1">2.1 The purpose, plainly</a></li>
+        <li><a href="#s2-2">2.2 Where it started: <em>From Flood to Cause</em></a></li>
+        <li><a href="#s2-3">2.3 The fixed-incident-first decision</a></li>
+        <li><a href="#s2-4">2.4 The One-Truth Pipeline</a></li>
+        <li><a href="#s2-5">2.5 The ten anti-hallucination controls (H1–H10)</a></li>
+        <li><a href="#s2-6">2.6 Semantic Kernel, on a short leash</a></li>
+        <li><a href="#s2-7">2.7 Two worlds that must not be confused</a></li>
+        <li><a href="#s2-8">2.8 The build, commit by commit</a></li>
+        <li><a href="#s2-9">2.9 Where the engine stands today</a></li>
+      </ol></li>
+    <li><a href="#s3">3 · Verify the claims yourself</a></li>
+    <li><a href="#s4">4 · Troubleshooting known setup friction</a></li>
+    <li><a href="#s5">5 · The honest-gap discipline, as philosophy</a></li>
+    <li><a href="#s6">6 · Installation and running guide</a></li>
+    <li><a href="#appx">Appendices: ADR index · RAG evidence index · glossary</a></li>
+  </ol>
+</section>
+
+<!-- ============================ CONVENTIONS ============================ -->
+<h1 id="conventions">How to read this guide</h1>
+<p class="lead">This guide is written by one programmer for another. It assumes you are comfortable with C#/.NET, SQL Server and a terminal, and that you want to know <em>how the thing actually works</em> — not a marketing tour.</p>
+<p>Three conventions run throughout:</p>
+<ul>
+  <li><span class="tag ok">VERIFIED</span> marks a statement that was checked against the live system or the repository while this guide was written (the evidence is named next to it).</li>
+  <li><span class="tag gap">GAP</span> marks something that is deliberately <strong>not</strong> built, only partially built, or known to be wrong in the repo's own docs. The project's standing rule is that a gap gets named, never hidden (Section 5 explains why).</li>
+  <li>File paths are repo-relative. ADR numbers refer to <code>docs/adr/ADR-NNN-*.md</code>; evidence reports live in <code>artifacts/evidence/</code>.</li>
+</ul>
+<div class="callout">
+  <p><strong>Three corrections to the brief this guide was written from</strong>, made because the repository disagreed and the repository wins:</p>
+  <ul>
+    <li>There are <strong>17 bounded contexts</strong> (one per Schema Atlas sector). <code>Nexus1.ModularRuntime</code> composes <strong>16</strong> of them; the 17th, RootCause, runs in <code>Nexus1.RootCause.Host</code>. The BFF surfaces all 17 (16 in-process, RootCause over HTTP).</li>
+    <li>The RootCause/RAG phase is <strong>17 commits</strong> since ADR-032, not sixteen: 15 feature slices plus 2 small corrective commits. All 17 are listed in §2.8.</li>
+    <li>The provisioning runbook's migration command (<code>--startup-project src/Hosts/Nexus1.RootCause.Host</code>) <strong>did not work</strong> — the hosts do not reference <code>Microsoft.EntityFrameworkCore.Design</code>. The working form (§6.3) was verified on this machine, and the runbook was corrected in the same commit as this guide, together with two other runbook errors found while writing it (step order, stale seed counts).</li>
+  </ul>
+</div>
+
+<!-- ============================ SECTION 1 ============================ -->
+<h1 id="s1"><span class="num">1</span>Project topology</h1>
+<p class="lead">NEXUS-1 is a <strong>hybrid</strong>: a modular monolith that keeps most of the domain in one process, with exactly one bounded context — RootCause — extracted to its own independently deployed host. The book series argues for earning each extraction; this repository extracted only the one the architecture decision records justify.</p>
+
+<h2 id="s1-1">1.1 The shape in one picture</h2>
+<figure>
+<svg viewBox="0 0 720 520" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#57606a"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0b5cad"/></marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b05a00"/></marker>
+  </defs>
+  <!-- Browser -->
+  <rect x="250" y="8" width="220" height="46" rx="7" fill="#f6f8fa" stroke="#57606a"/>
+  <text x="360" y="28" text-anchor="middle" font-size="12.5" font-weight="700">Angular 18 console</text>
+  <text x="360" y="44" text-anchor="middle" font-size="10" fill="#57606a">nexus-console · ng serve · :4200</text>
+  <line x1="360" y1="54" x2="360" y2="86" stroke="#0b5cad" stroke-width="1.8" marker-end="url(#ab)"/>
+  <text x="368" y="74" font-size="9.5" fill="#0b5cad">HTTP, single origin (BFF_BASE_URL)</text>
+  <!-- BFF -->
+  <rect x="190" y="88" width="340" height="92" rx="8" fill="#e8f1fb" stroke="#0b5cad" stroke-width="1.6"/>
+  <text x="360" y="108" text-anchor="middle" font-size="13" font-weight="700">Nexus1.Bff  ·  :5103</text>
+  <text x="360" y="125" text-anchor="middle" font-size="10">Minimal API gateway — one endpoint per screen need</text>
+  <text x="360" y="142" text-anchor="middle" font-size="10">16 contexts composed <tspan font-weight="700">in-process</tspan> (Application layers, no HTTP hop)</text>
+  <text x="360" y="159" text-anchor="middle" font-size="10">BffContexts:Enabled can compose a subset (unset = all)</text>
+  <text x="360" y="173" text-anchor="middle" font-size="9.5" fill="#57606a">no ProjectReference to RootCause — reaches it only over HTTP</text>
+  <!-- BFF -> RootCause.Host -->
+  <path d="M530,152 L612,152 L612,236" fill="none" stroke="#0b5cad" stroke-width="1.8" marker-end="url(#ab)"/>
+  <text x="537" y="130" font-size="9.5" fill="#0b5cad">HTTP proxy (ADR-035/036)</text>
+  <text x="537" y="143" font-size="9.5" fill="#0b5cad">180 s · 502 vs relayed 503</text>
+  <!-- RootCause.Host -->
+  <rect x="520" y="238" width="190" height="118" rx="8" fill="#fff7ed" stroke="#b05a00" stroke-width="1.6"/>
+  <text x="615" y="258" text-anchor="middle" font-size="12.5" font-weight="700">Nexus1.RootCause.Host</text>
+  <text x="615" y="273" text-anchor="middle" font-size="10">:5102 · independently deployed</text>
+  <text x="615" y="290" text-anchor="middle" font-size="10">RootCause context (ADR-001)</text>
+  <text x="615" y="305" text-anchor="middle" font-size="10">One-Truth Pipeline + Explain</text>
+  <text x="615" y="320" text-anchor="middle" font-size="10">/health/live · /health/ready</text>
+  <text x="615" y="335" text-anchor="middle" font-size="10">/metrics (Prometheus)</text>
+  <text x="615" y="350" text-anchor="middle" font-size="9.5" fill="#57606a">alarm-flood consumer + outbox</text>
+  <!-- Ollama -->
+  <rect x="540" y="404" width="170" height="50" rx="7" fill="#fff" stroke="#b05a00" stroke-dasharray="4 3"/>
+  <text x="625" y="424" text-anchor="middle" font-size="11.5" font-weight="700">Ollama (loopback)</text>
+  <text x="625" y="440" text-anchor="middle" font-size="9.5" fill="#57606a">127.0.0.1:11434 · nexus-dslm</text>
+  <line x1="625" y1="356" x2="625" y2="402" stroke="#b05a00" stroke-width="1.6" marker-end="url(#ao)"/>
+  <!-- ModularRuntime -->
+  <rect x="10" y="238" width="330" height="140" rx="8" fill="#f6f8fa" stroke="#57606a" stroke-width="1.6"/>
+  <text x="175" y="258" text-anchor="middle" font-size="12.5" font-weight="700">Nexus1.ModularRuntime  ·  :5101</text>
+  <text x="175" y="275" text-anchor="middle" font-size="10">the runtime host: 16 contexts in one process</text>
+  <text x="175" y="292" text-anchor="middle" font-size="9.5">ReactorFleet → AlarmManagement (in-process flood detection)</text>
+  <text x="175" y="307" text-anchor="middle" font-size="9.5">Audit · Compliance · Reporting (fan-out subscribers)</text>
+  <text x="175" y="322" text-anchor="middle" font-size="9.5">CorePlatform · Security · Organization · Instrumentation</text>
+  <text x="175" y="337" text-anchor="middle" font-size="9.5">DigitalTwin · Maintenance · EventManagement · Robotics</text>
+  <text x="175" y="352" text-anchor="middle" font-size="9.5">RadiationMonitoring · EmergencyPreparedness · RL</text>
+  <text x="175" y="369" text-anchor="middle" font-size="9.5" fill="#57606a">outbox relays + consumers · health endpoints only (no business HTTP)</text>
+  <!-- RabbitMQ -->
+  <rect x="370" y="272" width="120" height="70" rx="7" fill="#fff" stroke="#57606a"/>
+  <text x="430" y="293" text-anchor="middle" font-size="11.5" font-weight="700">RabbitMQ</text>
+  <text x="430" y="309" text-anchor="middle" font-size="9.5">nexus.events (topic)</text>
+  <text x="430" y="323" text-anchor="middle" font-size="9.5">nexus.dead (DLX)</text>
+  <text x="430" y="336" text-anchor="middle" font-size="9" fill="#57606a">:5672 · mgmt :15672</text>
+  <line x1="340" y1="296" x2="368" y2="296" stroke="#57606a" stroke-width="1.5" marker-end="url(#a)" marker-start="url(#a)"/>
+  <line x1="490" y1="306" x2="518" y2="306" stroke="#57606a" stroke-width="1.5" marker-end="url(#a)" marker-start="url(#a)"/>
+  <!-- BFF shares DBs with ModularRuntime -->
+  <path d="M235,180 L150,236" fill="none" stroke="#57606a" stroke-dasharray="3 3" stroke-width="1.2"/>
+  <text x="14" y="200" font-size="9" fill="#57606a">same Application layers,</text>
+  <text x="14" y="211" font-size="9" fill="#57606a">same databases</text>
+  <!-- Databases -->
+  <rect x="10" y="408" width="505" height="100" rx="7" fill="#fbfcfd" stroke="#8c959f"/>
+  <text x="262" y="426" text-anchor="middle" font-size="11.5" font-weight="700">SQL Server LocalDB  ·  (localdb)\mssqllocaldb  ·  7 physical databases</text>
+  <text x="20" y="446" font-size="9.8"><tspan font-weight="700">AlarmManagementDb</tspan> — 11 schemas: AlarmManagement, ReactorFleet, CorePlatform, Instrumentation,</text>
+  <text x="20" y="460" font-size="9.8">DigitalTwin, Maintenance, EventManagement, Robotics, RadiationMonitoring, EmergencyPreparedness, RL</text>
+  <text x="20" y="478" font-size="9.8"><tspan font-weight="700">SecurityDb · OrganizationDb · AuditDb · ComplianceDb · ReportingDb</tspan> — one owner each</text>
+  <text x="20" y="496" font-size="9.8"><tspan font-weight="700" fill="#b05a00">RootCauseDb</tspan> — reached only by RootCause.Host (nexus1_app read-write · nexus1_explain read-only)</text>
+  <line x1="175" y1="378" x2="175" y2="406" stroke="#57606a" stroke-width="1.4" marker-end="url(#a)"/>
+  <path d="M560,356 C540,380 520,440 517,458" fill="none" stroke="#b05a00" stroke-width="1.4" marker-end="url(#ao)"/>
+</svg>
+<figcaption>Figure 1 — Runtime topology as built. Solid arrows are real network or process hops; the dashed line marks that the BFF and ModularRuntime compose the same Application layers over the same databases.</figcaption>
+</figure>
+
+<p>Read the picture as three facts:</p>
+<ol>
+  <li><strong>Most of the domain is one deployable.</strong> Sixteen contexts share the <code>Nexus1.ModularRuntime</code> process. ReactorFleet produces simulated telemetry that AlarmManagement consumes <em>in-process</em> to detect alarm floods (ADR-001-amend).</li>
+  <li><strong>RootCause is the one extraction.</strong> <code>Nexus1.RootCause.Host</code> owns RootCauseDb outright, consumes <code>alarm-management.alarm-flood-detected.v1</code> from the broker, publishes its own events through a transactional outbox, and hosts the diagnosis (RAG) pipeline.</li>
+  <li><strong>The console talks to exactly one origin.</strong> <code>Nexus1.Bff</code> composes the in-process contexts' Application layers directly and reaches RootCause only through an HTTP proxy. The browser never sees RootCause.Host.</li>
+</ol>
+
+<h2 id="s1-2">1.2 Seventeen bounded contexts, two runtime hosts, one gateway</h2>
+<p>Each Schema Atlas sector is a bounded context with its own Domain / Application / Infrastructure projects under <code>src/Contexts/&lt;Name&gt;/</code>. The table shows where each one runs and where its data lives (from the host composition in <code>Program.cs</code> and each context's design-time <code>*DbContextFactory</code>).</p>
+<table>
+  <thead><tr><th>Context</th><th>Runs in</th><th>Physical database</th><th>Phase / ADR</th></tr></thead>
+  <tbody>
+    <tr><td>ReactorFleet</td><td>ModularRuntime (+ BFF)</td><td>AlarmManagementDb</td><td>Phase 1 · ADR-001-amend, 003, 006</td></tr>
+    <tr><td>AlarmManagement</td><td>ModularRuntime (+ BFF)</td><td>AlarmManagementDb</td><td>Phase 1 · ADR-004</td></tr>
+    <tr><td><strong>RootCause</strong></td><td><strong>RootCause.Host only</strong></td><td><strong>RootCauseDb</strong></td><td>Phase 1 · ADR-005; RAG ADR-032–044</td></tr>
+    <tr><td>Audit</td><td>ModularRuntime (+ BFF)</td><td>AuditDb</td><td>Phase 1 fan-out · ADR-010</td></tr>
+    <tr><td>Compliance</td><td>ModularRuntime (+ BFF)</td><td>ComplianceDb</td><td>Phase 1 fan-out · ADR-011</td></tr>
+    <tr><td>Reporting</td><td>ModularRuntime (+ BFF)</td><td>ReportingDb</td><td>Phase 1 fan-out · ADR-012</td></tr>
+    <tr><td>CorePlatform</td><td>ModularRuntime (+ BFF)</td><td>AlarmManagementDb</td><td>Phase 2 sector 1 · ADR-015</td></tr>
+    <tr><td>Security</td><td>ModularRuntime (+ BFF)</td><td>SecurityDb</td><td>Phase 2 sector 2 · ADR-016</td></tr>
+    <tr><td>Organization</td><td>ModularRuntime (+ BFF)</td><td>OrganizationDb</td><td>Phase 2 sector 3 · ADR-017</td></tr>
+    <tr><td>Instrumentation</td><td>ModularRuntime (+ BFF)</td><td>AlarmManagementDb</td><td>Phase 2 sector 4 · ADR-019</td></tr>
+    <tr><td>DigitalTwin</td><td>ModularRuntime (+ BFF)</td><td>AlarmManagementDb</td><td>Phase 2 sector 5 · ADR-020</td></tr>
+    <tr><td>Maintenance</td><td>ModularRuntime (+ BFF)</td><td>AlarmManagementDb</td><td>Phase 2 sector 6 · ADR-021</td></tr>
+    <tr><td>EventManagement</td><td>ModularRuntime (+ BFF)</td><td>AlarmManagementDb</td><td>Phase 2 sector 7 · ADR-022</td></tr>
+    <tr><td>Robotics</td><td>ModularRuntime (+ BFF)</td><td>AlarmManagementDb</td><td>Phase 2 sector 8 · ADR-023</td></tr>
+    <tr><td>RadiationMonitoring</td><td>ModularRuntime (+ BFF)</td><td>AlarmManagementDb</td><td>Phase 2 sector 9 · ADR-024</td></tr>
+    <tr><td>EmergencyPreparedness</td><td>ModularRuntime (+ BFF)</td><td>AlarmManagementDb</td><td>Phase 2 sector 10 · ADR-025</td></tr>
+    <tr><td>ReinforcementLearning</td><td>ModularRuntime (+ BFF)</td><td>AlarmManagementDb</td><td>Phase 2 sector 11 · ADR-026</td></tr>
+  </tbody>
+</table>
+<p>Two different hosts compose the same sixteen Application layers, for different jobs:</p>
+<ul>
+  <li><strong><code>Nexus1.ModularRuntime</code></strong> is the <em>runtime</em>: background services (outbox relays, broker consumers, retry dispatchers), plus <code>/health/live</code> and <code>/health/ready</code>. It exposes no business HTTP routes (ADR-007).</li>
+  <li><strong><code>Nexus1.Bff</code></strong> is the <em>read/command surface</em> for the console — Minimal API endpoints, one per screen need, dispatching to the same query and command handlers (hand-rolled dispatch, no MediatR, ADR-002-amend and ADR-030). It does not run the messaging background services: it registers no broker connection and composes AlarmManagement, Audit, Compliance and Reporting with their outbox relay and consumers switched off (<code>enableOutboxRelay: false</code>, <code>enableMessagingConsumer: false</code>).</li>
+</ul>
+<p>The project's own evidence closes the Phase 2 vertical slices with: <em>"all seventeen Schema Atlas sectors, plus the Overview aggregation, are now live in <code>Nexus1.Bff</code>"</em> (<code>2026-08-23-bff-reinforcementlearning-policy-recommendations-slice.md</code>).</p>
+
+<h2 id="s1-3">1.3 Solution layout and the dependency law</h2>
+<p>The layout is <strong>context-first</strong> (ADR-002, from <em>From Services to Runtime</em> Ch. 4): project-per-context-per-layer, never folders named "API/Worker/Database".</p>
+<pre><code>Nexus1.Runtime.sln · global.json (SDK 8.0.424, latestPatch) · Directory.Build.props · Directory.Packages.props
+src/
+  BuildingBlocks/  Nexus1.BuildingBlocks.{Domain,Application,Messaging,Observability}, Nexus1.ServiceDefaults
+  Contexts/&lt;Name&gt;/ Nexus1.&lt;Name&gt;.{Domain,Application,Infrastructure}   (+ Nexus1.Contracts.&lt;Name&gt; where it publishes)
+                   Nexus1.RootCause.Explain   <span class="c"># the ONLY project allowed a served-model package</span>
+  Hosts/           Nexus1.ModularRuntime · Nexus1.RootCause.Host · Nexus1.Bff
+tests/             ArchitectureTests · &lt;Context&gt;.UnitTests · &lt;Context&gt;.ComponentTests · …
+console/nexus-console/   Angular 18 + Jest + Playwright
+docs/              adr/ · runbooks/ · observability/ · guide/
+artifacts/evidence/      one evidence report per slice (what was run, and its real output)</code></pre>
+<p>The dependency law is <strong>enforced by <code>Nexus1.ArchitectureTests</code></strong>, which parses every <code>.csproj</code>'s <code>&lt;ProjectReference&gt;</code> graph (not compiled IL) and fails the test gate on violation:</p>
+<ul>
+  <li>Inside a context, dependencies point inward: Infrastructure → Application → Domain.</li>
+  <li>Across contexts, a project may reference only another context's <code>Nexus1.Contracts.*</code> project — never its Domain, Application or Infrastructure.</li>
+  <li>Domain never references transport, persistence, hosts or contracts (domain events are not integration events).</li>
+  <li>Hosts are composition roots only.</li>
+  <li><strong>Served-model packages</strong> (Semantic Kernel, the Ollama connector) may appear only in <code>Nexus1.RootCause.Explain</code> (ADR-032/033).</li>
+  <li><strong>No passwords</strong> in any <code>appsettings*.json</code> under <code>src/</code> (ADR-044).</li>
+</ul>
+
+<h2 id="s1-4">1.4 The messaging backbone</h2>
+<p>Integration events travel through RabbitMQ with a <strong>transactional outbox</strong> on the producer side and an <strong>inbox</strong> (idempotent consumption) on the consumer side (ADR-008), plus retry with backoff and dead-lettering (ADR-009). All publishes go to the durable topic exchange <code>nexus.events</code>; dead letters go to <code>nexus.dead</code>. Queues are quorum queues; dead-lettering is applied as a broker <em>policy</em> through the management API at consumer start.</p>
+<figure>
+<svg viewBox="0 0 720 228" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#57606a"/></marker></defs>
+  <rect x="5" y="20" width="148" height="58" rx="6" fill="#f6f8fa" stroke="#57606a"/>
+  <text x="79" y="42" text-anchor="middle" font-size="11" font-weight="700">AlarmManagement</text>
+  <text x="79" y="57" text-anchor="middle" font-size="9.5">detects a flood (in-process</text>
+  <text x="79" y="70" text-anchor="middle" font-size="9.5">from ReactorFleet telemetry)</text>
+  <line x1="153" y1="49" x2="226" y2="49" stroke="#57606a" stroke-width="1.5" marker-end="url(#m)"/>
+  <text x="189" y="42" text-anchor="middle" font-size="8.5">outbox</text>
+  <rect x="228" y="10" width="218" height="208" rx="6" fill="#fff" stroke="#57606a"/>
+  <text x="337" y="30" text-anchor="middle" font-size="11" font-weight="700">nexus.events</text>
+  <text x="337" y="44" text-anchor="middle" font-size="9" fill="#57606a">durable topic exchange · routing keys:</text>
+  <text x="236" y="76" font-size="8.4">alarm-management.alarm-flood-detected.v1</text>
+  <text x="236" y="128" font-size="8.4">root-cause.root-cause-verdict-issued.v1</text>
+  <text x="236" y="176" font-size="8.4">root-cause.root-cause-case-opened.v1</text>
+  <text x="236" y="190" font-size="8.4">root-cause.root-cause-case-inconclusive.v1</text>
+  <line x1="446" y1="73" x2="464" y2="73" stroke="#57606a" stroke-width="1.5" marker-end="url(#m)"/>
+  <rect x="466" y="50" width="250" height="46" rx="6" fill="#fff7ed" stroke="#b05a00"/>
+  <text x="591" y="69" text-anchor="middle" font-size="10.3" font-weight="700">RootCause · rootcause.alarm-events.v1</text>
+  <text x="591" y="84" text-anchor="middle" font-size="9">opens a RootCauseAnalysis case (inbox, idempotent)</text>
+  <line x1="446" y1="125" x2="464" y2="125" stroke="#57606a" stroke-width="1.5" marker-end="url(#m)"/>
+  <rect x="466" y="104" width="250" height="56" rx="6" fill="#f6f8fa" stroke="#57606a"/>
+  <text x="591" y="120" text-anchor="middle" font-size="9.5">audit.root-cause-verdicts.v1</text>
+  <text x="591" y="134" text-anchor="middle" font-size="9.5">compliance.root-cause-verdicts.v1</text>
+  <text x="591" y="150" text-anchor="middle" font-size="9" fill="#57606a">bind only the verdict key</text>
+  <line x1="446" y1="188" x2="464" y2="188" stroke="#57606a" stroke-width="1.5" marker-end="url(#m)"/>
+  <rect x="466" y="168" width="250" height="46" rx="6" fill="#f6f8fa" stroke="#57606a"/>
+  <text x="591" y="187" text-anchor="middle" font-size="9.5">reporting.integration-events.v1</text>
+  <text x="591" y="202" text-anchor="middle" font-size="9" fill="#57606a">binds root-cause.# (all three RootCause keys)</text>
+</svg>
+<figcaption>Figure 2 — The Phase 1 distributed slice: AlarmManagement → RootCause, with Audit, Compliance and Reporting as independent subscribers (ADR-001, 008, 010–012, 039).</figcaption>
+</figure>
+<div class="callout">
+  <p><strong>Startup behaviour (ADR-044).</strong> Both hosts that talk to the broker now <em>start and retry</em> when it is unreachable: the connection is made by a background loop with backoff (1 s doubling to a 30 s cap), and each consumer's start sequence is retried through the shared <code>ConsumerStartup</code> helper. Before ADR-044, a missing broker crashed ModularRuntime (~9.7 s) and RootCause.Host (~16 s) with an unhandled <code>BrokerUnreachableException</code>. Readiness never depends on the broker — no HTTP route uses it.</p>
+</div>
+
+<h2 id="s1-5">1.5 The BFF and the Angular console</h2>
+<p><code>console/nexus-console</code> is an Angular 18 application (Jest unit/component tests, Playwright end-to-end tests). Every API client targets a single constant, <code>BFF_BASE_URL = 'http://localhost:5103'</code>. The BFF enables CORS only in the Development environment and only for <code>http://localhost:4200</code>.</p>
+<p>For RootCause, the BFF adds two thin proxies — <code>POST /api/v1/root-cause/incidents/{id}/diagnoses</code> (ADR-035) and <code>GET …/{id}/graph</code> (ADR-036) — that relay the host's status, body and content type <em>verbatim</em>. If RootCause.Host itself cannot be reached, the BFF returns <strong>502</strong>; if the host ran but a dependency of its pipeline failed, the host's own <strong>503</strong> is relayed. That distinction is deliberate and diagnostic.</p>
+<p>The RootCause screens (Ch. 29) are <code>/rcgraph</code> (Root Cause Graph: verdict, ranked candidates, citations, audit hash, and the drawn fault tree) and <code>/incident</code> (Incident Analysis: the top cause). Both read one shared <code>RootCauseService</code>, so one diagnosis run feeds both — a property the live <code>@slow</code> Playwright test asserts end to end.</p>
+
+<h2 id="s1-6">1.6 Ports, databases and logins at a glance</h2>
+<table>
+  <thead><tr><th>Process</th><th>Address</th><th>Health / notes</th></tr></thead>
+  <tbody>
+    <tr><td>Angular console</td><td><code>http://localhost:4200</code></td><td><code>npm start</code> (= <code>ng serve</code>)</td></tr>
+    <tr><td>Nexus1.Bff</td><td><code>http://localhost:5103</code></td><td><code>/health/live</code>, <code>/health/ready</code></td></tr>
+    <tr><td>Nexus1.RootCause.Host</td><td><code>http://localhost:5102</code></td><td><code>/health/live</code>, <code>/health/ready</code>, <code>/metrics</code></td></tr>
+    <tr><td>Nexus1.ModularRuntime</td><td><code>http://localhost:5101</code></td><td><code>/health/live</code>, <code>/health/ready</code></td></tr>
+    <tr><td>RabbitMQ</td><td>AMQP <code>:5672</code> · management <code>:15672</code></td><td>management port is hard-coded to 15672 in <code>RabbitMqOptions</code></td></tr>
+    <tr><td>Ollama</td><td><code>http://127.0.0.1:11434</code></td><td>loopback only; <code>/api/tags</code> lists models</td></tr>
+    <tr><td>Prometheus / Grafana (optional)</td><td><code>:9090</code> / <code>:3000</code></td><td>RootCause.Host metrics only (ADR-038)</td></tr>
+    <tr><td>OTel Collector (optional)</td><td>OTLP <code>:4317/4318</code> · health <code>:13133</code></td><td>tracing/messaging-metrics evidence campaigns</td></tr>
+  </tbody>
+</table>
+<p>The running hosts never use the developer's own sysadmin connection. They connect as <strong><code>nexus1_app</code></strong> (read/write DML on exactly the schemas they own, no DDL — ADR-028). RootCause's retrieval and validator path uses <strong><code>nexus1_explain</code></strong> (read-only, explicit <code>DENY</code> on every write verb — ADR-033/034). Migrations and provisioning use the developer's own Windows login through the design-time factories.</p>
+
+<h2 id="s1-7">1.7 Topology gaps, named</h2>
+<div class="callout gap">
+  <ul>
+    <li><strong>No container images for the .NET hosts.</strong> Only the console has a <code>Dockerfile</code>. A Kubernetes-readiness investigation (before ADR-044) found the health endpoints are now correct, but no image, manifests or non-LocalDB database target exist.</li>
+    <li><strong>No authentication/authorization</strong> on any HTTP surface beyond the development status quo.</li>
+    <li><strong>The BFF has no observability</strong> (no tracing/metrics); edge metrics such as <code>nexus1.edge.requests</code> are deferred (ADR-007/030/038).</li>
+    <li><strong>Two test projects are empty shells:</strong> <code>Nexus1.Contracts.ContractTests</code> and <code>Nexus1.DistributedSlice.EndToEndTests</code> contain no <code>.cs</code> files and report "No test is available".</li>
+    <li><strong>The console's README is the Angular CLI boilerplate</strong> (it mentions Karma; the project uses Jest and Playwright). The real E2E instructions are in <code>console/nexus-console/e2e/README.md</code>.</li>
+  </ul>
+</div>
+
+<!-- ============================ SECTION 2 ============================ -->
+<h1 id="s2"><span class="num">2</span>How the RAG was built, and why</h1>
+
+<h2 id="s2-1">2.1 The purpose, plainly</h2>
+<div class="callout ok">
+  <p><strong>RootCause's diagnosis pipeline is a deterministic, grounded, auditable root-cause engine in which a language model only narrates a decision it never makes itself.</strong></p>
+</div>
+<p>When an alarm flood hits, the engine decides which component started it by walking an engineered causal graph, checks that decision against the physical telemetry, and grounds it in a retrieved corpus. Only then is a small local model allowed to <em>explain</em> the already-made decision — in a strict output schema, citing only passages that were actually retrieved, naming only components that exist. Anything that fails a gate produces a <em>named abstention</em> instead of a verdict. Every outcome, verdict or abstention, is sealed into a SHA-256 hash chain that anyone can recompute (Section 3).</p>
+<p>The design inverts the usual "ask the LLM what happened" RAG. Here the LLM is the least trusted component in the system, and the architecture is built so that it structurally cannot change the answer.</p>
+
+<h2 id="s2-2">2.2 Where it started: <em>From Flood to Cause</em></h2>
+<p>The RAG phase began with a close reading of <em>From Flood to Cause</em>, a NEXUS-1 companion book that describes the "One-Truth Pipeline": a deterministic engine decides, a served language model explains, and ten anti-hallucination controls (H1–H10) make confident fabrication structurally hard. Its Chapters 8–9 give the C#/SQL production form, Appendix C the grounding schema, and Figure 2.1 the worked incident <strong>EVT-2026-0418</strong> as a causal fault-propagation graph with delay windows. Chapter 10 works three case studies: 0418 (a cascade), 0419 (a measurement artefact) and 0420 (a QA escape).</p>
+<p>Two constraints shaped everything that followed (ADR-032):</p>
+<ul>
+  <li><strong>The book is not in the repository.</strong> It is outside the project's seven-source authority list, and ADR-029 purged licensed source PDFs from the repo and its history. Every value the book supplies is therefore <em>pinned</em> — in the ADRs and in <code>GroundingSeed</code> — so the implementation traces to a recorded decision rather than to a PDF the repo does not carry. Figure 2.1's delay windows were re-derived from the book (<code>pdftotext -table</code>) and cross-checked arithmetically.</li>
+  <li><strong>The book targets SQL Server 2025 preview features</strong> (<code>VECTOR(1024)</code>, <code>VECTOR_DISTANCE</code>, <code>AI_GENERATE_EMBEDDINGS</code>). The available database is SQL Server 2016 (LocalDB 13.0 SP1). So cosine similarity is computed in C#, and embeddings are stored as JSON in <code>Corpus.EmbeddingJson</code>.</li>
+</ul>
+
+<h2 id="s2-3">2.3 The fixed-incident-first decision</h2>
+<p>Instead of building a general question-answering assistant, the project built <strong>one fixed incident end to end</strong> — EVT-2026-0418 — as a walking skeleton, and only then added depth. The reasoning, recorded across ADR-032 to ADR-034:</p>
+<ul>
+  <li><strong>A single known incident has a known right answer.</strong> The book's own figure says FV-104 explains 11 of 14 alarms. If the engine computes 11/14 from seeded alarm counts, that is evidence; if it merely prints it, it is theatre.</li>
+  <li><strong>It exposes every seam at once.</strong> Graph walk, telemetry corroboration, retrieval, generation, validation and sealing all have to exist for one incident to go through. Nothing can hide behind "later".</li>
+  <li><strong>It refuses premature generality.</strong> A second incident (0419) was added only after the first was proven over HTTP, in the browser and in a live E2E test. The third (0420) is deliberately <em>not</em> solvable by the engine, and the repo says so.</li>
+  <li><strong>It gives the generation stage nowhere to hide.</strong> ADR-032 shipped the deterministic half with the model stage <em>visibly unbuilt</em> — no stub, no simulated narrative — until the hardware for a local model existed (ADR-033).</li>
+</ul>
+
+<h2 id="s2-4">2.4 The One-Truth Pipeline</h2>
+<p><code>FixedIncidentDiagnosisRunner</code> (Application layer, LLM-free) composes six stages behind interfaces. Each stage either passes the run forward or ends it with a named abstention.</p>
+<figure>
+<svg viewBox="0 0 720 330" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1b1f24"/></marker>
+  <marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#b42318"/></marker></defs>
+  <rect x="4" y="4" width="712" height="170" rx="10" fill="#f3f8fd" stroke="#0b5cad" stroke-dasharray="5 4"/>
+  <text x="14" y="20" font-size="10" fill="#0b5cad" font-weight="700">DETERMINISTIC SHELL — decides (no model involved)</text>
+  <g font-size="10">
+    <rect x="16" y="34" width="120" height="66" rx="6" fill="#fff" stroke="#1b1f24"/>
+    <text x="76" y="52" text-anchor="middle" font-weight="700">1 · Graph walk</text>
+    <text x="76" y="67" text-anchor="middle" font-size="9">EfGraphWalker</text>
+    <text x="76" y="80" text-anchor="middle" font-size="9">greedy set cover</text>
+    <text x="76" y="92" text-anchor="middle" font-size="9">→ origin</text>
+    <rect x="156" y="34" width="120" height="66" rx="6" fill="#fff" stroke="#1b1f24"/>
+    <text x="216" y="52" text-anchor="middle" font-weight="700">2 · Corroborate</text>
+    <text x="216" y="67" text-anchor="middle" font-size="9">historian onsets</text>
+    <text x="216" y="80" text-anchor="middle" font-size="9">delay windows / silence</text>
+    <text x="216" y="92" text-anchor="middle" font-size="9">precursor rule</text>
+    <rect x="296" y="34" width="120" height="66" rx="6" fill="#fff" stroke="#1b1f24"/>
+    <text x="356" y="52" text-anchor="middle" font-weight="700">3 · Retrieve</text>
+    <text x="356" y="67" text-anchor="middle" font-size="9">lexical tag match +</text>
+    <text x="356" y="80" text-anchor="middle" font-size="9">C# cosine (H2 floor)</text>
+    <text x="356" y="92" text-anchor="middle" font-size="9">unit-scoped corpus</text>
+    <rect x="576" y="34" width="130" height="66" rx="6" fill="#fff" stroke="#1b1f24"/>
+    <text x="641" y="52" text-anchor="middle" font-weight="700">5 · Validate</text>
+    <text x="641" y="67" text-anchor="middle" font-size="9">H3: entity in registry</text>
+    <text x="641" y="80" text-anchor="middle" font-size="9">H4: cites a retrieved</text>
+    <text x="641" y="92" text-anchor="middle" font-size="9">passage</text>
+    <rect x="576" y="116" width="130" height="48" rx="6" fill="#fff" stroke="#1b1f24"/>
+    <text x="641" y="134" text-anchor="middle" font-weight="700">6 · Seal (H10)</text>
+    <text x="641" y="149" text-anchor="middle" font-size="9">SHA-256(prev + payload)</text>
+    <text x="641" y="160" text-anchor="middle" font-size="9">verdict OR abstention</text>
+  </g>
+  <line x1="136" y1="67" x2="154" y2="67" stroke="#1b1f24" stroke-width="1.5" marker-end="url(#p)"/>
+  <line x1="276" y1="67" x2="294" y2="67" stroke="#1b1f24" stroke-width="1.5" marker-end="url(#p)"/>
+  <line x1="641" y1="100" x2="641" y2="114" stroke="#1b1f24" stroke-width="1.5" marker-end="url(#p)"/>
+  <!-- probabilistic core -->
+  <rect x="436" y="190" width="126" height="100" rx="8" fill="#fff7ed" stroke="#b05a00" stroke-width="1.6"/>
+  <text x="499" y="207" text-anchor="middle" font-size="9.5" fill="#b05a00" font-weight="700">PROBABILISTIC CORE</text>
+  <text x="499" y="223" text-anchor="middle" font-size="10" font-weight="700">4 · Explain</text>
+  <text x="499" y="238" text-anchor="middle" font-size="9">nexus-dslm via SK</text>
+  <text x="499" y="251" text-anchor="middle" font-size="9">no planner, no tools</text>
+  <text x="499" y="264" text-anchor="middle" font-size="9">H5 schema · no DB</text>
+  <text x="499" y="278" text-anchor="middle" font-size="9">narrates the origin</text>
+  <path d="M416,67 C470,67 470,170 470,188" fill="none" stroke="#1b1f24" stroke-width="1.5" marker-end="url(#p)"/>
+  <path d="M530,188 C530,120 560,67 574,67" fill="none" stroke="#1b1f24" stroke-width="1.5" marker-end="url(#p)"/>
+  <!-- abstention rail -->
+  <line x1="16" y1="200" x2="400" y2="200" stroke="#b42318" stroke-width="1.3" stroke-dasharray="4 3"/>
+  <text x="18" y="216" font-size="9.3" fill="#b42318">Any gate can veto → named abstention (H8), still sealed. Examples:</text>
+  <text x="18" y="231" font-size="8.9" fill="#b42318">"graph walk found no origin candidate" · "telemetry corroboration failed: …"</text>
+  <text x="18" y="245" font-size="8.9" fill="#b42318">"no grounding: corpus retrieval returned no passages" · "explain abstained: …"</text>
+  <text x="18" y="259" font-size="8.9" fill="#b42318">"validation failed: unknown entity FV-140" · "validation failed: uncited claim …"</text>
+  <text x="18" y="314" font-size="8.9" fill="#57606a">Connections: walker / corroborator / run store / audit → nexus1_app · retriever / validator → nexus1_explain (read-only) · explainer → no database</text>
+</svg>
+<figcaption>Figure 3 — The One-Truth Pipeline: deterministic shell around a probabilistic core. The engine decides the origin before the model runs; the model cannot change it.</figcaption>
+</figure>
+<p>What each stage actually does, in the code as it stands (ADR-032, 037, 042, 043):</p>
+<ol>
+  <li><strong>Graph walk</strong> (<code>EfGraphWalker</code>). Candidates are every component that is alarmed in the flood or is the source of an authored edge. Each candidate's explanation is the set of alarmed nodes reachable over <em>backbone</em> and <em>artefact</em> edges; learned edges are subordinate and rejected edges are never walked. Ranking is a greedy set cover (most not-yet-explained alarms first; ties by earlier historian onset, then lower ComponentId). Weight is an attribution share. Roles are structural: origin, downstream, parallel, contributing, independent, ruled-out. <em>Nothing is read from seeded "answer" fields</em> (ADR-042).</li>
+  <li><strong>Corroborate</strong> (<code>EfTelemetryCorroborator</code>). Cascade mode: every backbone edge on the origin's forward path must fit its delay window against historian onsets. Artefact mode: coupled channels deflect together, and independent witnesses must stay <em>flat</em> — silence is the evidence. Both modes then apply the <strong>unexplained-precursor rule</strong>: an alarmed component the origin does not reach, with a strictly earlier onset, means the graph is probably missing a coupling, so the run abstains (ADR-043).</li>
+  <li><strong>Retrieve</strong> (<code>EfRetriever</code>). Exact lexical tag match plus a C# cosine path over <code>nomic-embed-text</code> embeddings with an H2 relevance floor of 0.5. The corpus is scoped by unit, so incidents never ground on each other's passages.</li>
+  <li><strong>Explain</strong> (<code>SemanticKernelExplainer</code> in <code>Nexus1.RootCause.Explain</code>). One chat call to the pinned local model <code>nexus-dslm</code>, parsed into a strict JSON schema. A refusal or an unparseable reply is an abstention — never salvaged.</li>
+  <li><strong>Validate</strong> (<code>RegistryAntiHallucinationValidator</code>). H3: every named entity must exist in the component registry. H4: every claim must cite a passage that was actually retrieved.</li>
+  <li><strong>Seal</strong> (<code>Sha256AuditChainWriter</code>). The run's inputs, conclusion, candidates, citations and validated answer are serialized to JSON and appended to <code>RootCause.Audit</code>, where <code>Hash = SHA-256(PrevHash + Payload)</code> from a 64-zero genesis.</li>
+</ol>
+
+<h2 id="s2-5">2.5 The ten anti-hallucination controls (H1–H10)</h2>
+<table>
+  <thead><tr><th style="width:9%">Control</th><th style="width:34%">What it guarantees</th><th>Where it lives / status</th></tr></thead>
+  <tbody>
+    <tr><td>H1</td><td>Closed world: the model uses only the supplied context.</td><td>The <code>SYSTEM</code> block of <code>nexus-dslm.Modelfile</code> travels with the pinned model.</td></tr>
+    <tr><td>H2</td><td>Relevance floor: below it there is nothing to ground on.</td><td><code>EfRetriever</code>, cosine floor 0.5 (a demonstrator value, not H9-calibrated).</td></tr>
+    <tr><td>H3</td><td>Every named entity exists in the registry.</td><td><code>RegistryAntiHallucinationValidator</code>; caught live by the H9 trap <code>trap-transposed-entity</code> (FV-140).</td></tr>
+    <tr><td>H4</td><td>Every claim cites a retrieved passage.</td><td>Same validator; H9 trap <code>trap-invented-source</code> (a real but unretrieved document).</td></tr>
+    <tr><td>H5</td><td>Output must fit a strict schema.</td><td><code>StructuredAnswerParser</code>; the schema lives in the Modelfile.</td></tr>
+    <tr><td>H6</td><td>Determinism.</td><td>The <strong>decision</strong> is deterministic (proven model-free). The <strong>narration is not byte-identical</strong> on CPU even at temperature 0 with a fixed seed — reported honestly (ADR-033).</td></tr>
+    <tr><td>H7</td><td>No write path for the model side.</td><td>The explainer has no database at all; retrieval runs as read-only <code>nexus1_explain</code> (proven live via <code>sys.dm_exec_sessions</code>, ADR-034).</td></tr>
+    <tr><td>H8</td><td>Abstain rather than guess; never salvage a bad draft.</td><td>Runner gates; abstention is a first-class <code>200</code> over HTTP.</td></tr>
+    <tr><td>H9</td><td>Golden and trap cases run on every change.</td><td><span class="tag gap">PARTIAL</span> ADR-041 harness: goldens, two traps, a live tier. The leading-question trap is authored but <strong>skipped</strong> by name: no CauseTag-vs-origin check exists yet.</td></tr>
+    <tr><td>H10</td><td>Tamper-evident audit.</td><td><code>Sha256AuditChainWriter</code>; independently verifiable (Section 3).</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s2-6">2.6 Semantic Kernel, on a short leash</h2>
+<p>The model stage uses Microsoft Semantic Kernel 1.50.0 with the Ollama connector (1.50.0-alpha) — pinned below the latest release because 1.80.x pulls the .NET 10 <code>Microsoft.Extensions.*</code> wave into a .NET 8 solution (NU1605). The constraints are the point:</p>
+<ul>
+  <li><strong><code>FunctionChoiceBehavior.None()</code></strong> — no planner, no automatic tool calling. The model cannot call functions, query anything or decide which steps to run.</li>
+  <li><strong>Temperature 0, seed 42, one call</strong> (<code>GetChatMessageContentAsync</code>), with the determinism parameters pinned in the Modelfile rather than left to the caller.</li>
+  <li><strong>The model is told the answer.</strong> The prompt carries the origin the engine already chose; Modelfile rule 1 says <code>cause</code> must be exactly that tag, and rule 2 restricts <code>entities</code> to that one tag. The model's job is to explain, not to decide.</li>
+  <li><strong>No database dependency.</strong> <code>SemanticKernelExplainer</code> receives passages and returns a draft, so it structurally cannot read or write the store.</li>
+  <li><strong>Air-gapped by configuration.</strong> Ollama binds <code>127.0.0.1</code>. During ~70 s of continuous inference, zero non-loopback connections were observed from any Ollama process (ADR-033 evidence).</li>
+  <li><strong>One project holds it all.</strong> An architecture test fails the build if a served-model package appears anywhere except <code>Nexus1.RootCause.Explain</code>.</li>
+</ul>
+<pre><code><span class="c"># src/Contexts/RootCause/Nexus1.RootCause.Explain/nexus-dslm.Modelfile (excerpt)</span>
+FROM qwen2.5:3b-instruct-q4_K_M
+PARAMETER temperature 0
+PARAMETER seed 42
+PARAMETER top_p 1.0
+PARAMETER repeat_penalty 1.0
+PARAMETER num_ctx 8192
+SYSTEM """… Closed-world rule (H1): use ONLY the CONTEXT … The deterministic engine has ALREADY
+decided the origin; your only job is to explain that origin from the CONTEXT. …"""</code></pre>
+
+<h2 id="s2-7">2.7 Two worlds that must not be confused</h2>
+<p>RootCause holds two separate records, and newcomers routinely conflate them:</p>
+<table>
+  <thead><tr><th></th><th>The engine's record: <code>DiagnosisRun</code></th><th>The human case: <code>RootCauseAnalysis</code></th></tr></thead>
+  <tbody>
+    <tr><td>Created by</td><td>The diagnosis route (<code>POST …/diagnoses</code>), every call</td><td>An alarm flood event arriving from the broker, or provenance provisioning (0420)</td></tr>
+    <tr><td>Lifecycle</td><td>Immutable result: verdict or named abstention, plus candidates and an audit link</td><td>Open → Closed (with a verdict) or Open → <strong>Inconclusive</strong> (reason only, ADR-039)</td></tr>
+    <tr><td>Who decides</td><td>The deterministic engine</td><td>A human investigator</td></tr>
+    <tr><td>Published as events?</td><td>No</td><td>Yes: case-opened, verdict-issued, case-inconclusive (outbox → broker)</td></tr>
+    <tr><td>Incidents</td><td>EVT-2026-0418 and 0419 only (<code>IncidentRegistry</code>); anything else is <code>404</code></td><td>Any flood; plus the fixed 0420 case (AnalysisId 20260420)</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s2-8">2.8 The build, commit by commit</h2>
+<p>The RootCause/RAG phase is 17 commits on top of the finished Phase 1 slice and the Phase 2 sectors. Each was its own planned slice with an ADR (or a stated reason for none), an evidence report, and a commit only after review.</p>
+<table class="chrono">
+  <thead><tr><th>#</th><th>Commit</th><th>Slice</th><th>What it proved</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><code>4172674</code><br>09-07</td><td><strong>Deterministic engine</strong> · ADR-032</td><td>The whole LLM-free half on SQL Server 2016: grounding store, the four seams, audit chain, <code>GroundingSeed</code>. FV-104 computed as origin covering 11 of 14 alarms from the data; four fault injections each produce a named abstention. The generation stage was left visibly unbuilt — no stub.</td></tr>
+    <tr><td>2</td><td><code>a8c3d1d</code><br>09-22</td><td><strong>Air-gapped Ollama stage</strong> · ADR-033</td><td><code>Nexus1.RootCause.Explain</code>, the pinned <code>nexus-dslm</code> Modelfile, constrained SK, nomic embeddings, the read-only login. Loopback-only binding with zero egress captured. Honest H6 finding: decision deterministic, narration not.</td></tr>
+    <tr><td>3</td><td><code>7d2856c</code><br>09-22</td><td><strong>Real HTTP route</strong> · ADR-034</td><td><code>POST …/diagnoses</code>: an abstention is a <code>200</code>, infrastructure failure a <code>503</code>. The response's <code>auditHash</code> equals the newest <code>RootCause.Audit</code> row; the read-only split was proven live.</td></tr>
+    <tr><td>4</td><td><code>40bfc7a</code><br>09-22</td><td><strong>BFF gateway hop</strong> · ADR-035</td><td>The BFF's first outbound call: a raw relay (no shared DTO), a 180 s timeout, and 502 (hop failed) kept distinct from a relayed 503 (host ran, dependency failed).</td></tr>
+    <tr><td>5</td><td><code>78aee13</code><br>09-22</td><td><em>Fix</em> · ADR-033 addendum</td><td>A real cold call exceeded SK's default 100 s HttpClient timeout. The chat call now uses its own 150 s client — below the BFF's 180 s, so the host fails first with its own clean 503.</td></tr>
+    <tr><td>6</td><td><code>66e1491</code><br>09-23</td><td><strong>Angular screens</strong> (Ch. 29)</td><td>Root Cause and Incident Analysis screens on the real pipeline through the BFF, with one shared service. Graph drawing was deferred with an explicit "pending a backend endpoint" note rather than faked.</td></tr>
+    <tr><td>7</td><td><code>8afbb19</code><br>09-23</td><td><em>Fix</em> · copy only</td><td>The Ch. 24 AI Diagnostics screen still claimed no grounded pipeline existed — now false. The wording was corrected: "nothing claims to exist that does not" cuts both ways.</td></tr>
+    <tr><td>8</td><td><code>212b669</code><br>09-23</td><td><strong>Graph topology endpoint</strong> · ADR-036</td><td><code>GET …/graph</code> serves the seeded topology; the console draws Figure 29.1 with its existing inline-SVG renderer. Topology is 100% backend data; only screen positions are client constants.</td></tr>
+    <tr><td>9</td><td><code>47e3602</code><br>09-24</td><td><strong>Live E2E</strong> (Ch. 33)</td><td>A <code>@slow</code> Playwright test drives console → BFF → RootCause.Host → Ollama → RootCauseDb and asserts both screens name the same origin, plus a spec-of-specs proving the assertion is load-bearing.</td></tr>
+    <tr><td>10</td><td><code>a5e0a6a</code><br>09-24</td><td><strong>Second incident EVT-2026-0419</strong> · ADR-037</td><td><code>IncidentRegistry</code>, artefact-edge walking, silence-as-corroboration (flat witnesses confirm an EMI artefact), and unit-scoped corpora so incidents never cross-ground.</td></tr>
+    <tr><td>11</td><td><code>680d610</code><br>09-24</td><td><strong>Observability</strong> · ADR-038</td><td>Appendix I's four diagnosis metrics on RootCause.Host's <code>/metrics</code>, plus local Prometheus and Grafana. <code>grounding_hit</code> is named a proxy, never "recall".</td></tr>
+    <tr><td>12</td><td><code>f86d4b5</code><br>09-24</td><td><strong>Inconclusive third state</strong> · ADR-039</td><td>Investigators can terminally record "cannot conclude" (reason only, verdict stays null), published as <code>RootCauseCaseInconclusiveV1</code> and projected by Reporting — which binds <code>root-cause.#</code> and would otherwise have poisoned the event.</td></tr>
+    <tr><td>13</td><td><code>910a0bd</code><br>09-24</td><td><strong>EVT-2026-0420</strong> · ADR-040</td><td>The QA escape (CR-7 / WV-318) recorded as an Inconclusive, provenance-originated case with a nullable flood id. Deliberately <em>not</em> in the engine's registry: its 404 is the evidence of where the engine's reach ends.</td></tr>
+    <tr><td>14</td><td><code>cfc280a</code><br>09-24</td><td><strong>H9 evaluation harness</strong> · ADR-041</td><td>JSON golden and trap cases with a deterministic tier and a skippable live tier, plus a discovery guard. The missing CauseTag-vs-origin check was found and its trap skipped by name.</td></tr>
+    <tr><td>15</td><td><code>7c59f9a</code><br>09-25</td><td><strong>De-circularization</strong> · ADR-042</td><td>The walker stopped reading seeded answer-key fields. A poisoned-seed test proves byte-identical output; on the old walker, poisoning made PB-2A the origin. A pure-observable fixture is ranked correctly by hand-worked rules.</td></tr>
+    <tr><td>16</td><td><code>b4f90b7</code><br>09-25</td><td><strong>Model-mismatch scenario</strong> · ADR-043</td><td>A graph missing an upstream coupling (IA-1 → AOV-2) used to seal a confident wrong verdict. The unexplained-precursor rule now abstains. Two controls prove the rule is not arbitrary; the classes it still cannot catch are listed.</td></tr>
+    <tr><td>17</td><td><code>1fbada7</code><br>09-25</td><td><strong>Startup / readiness / secrets hardening</strong> · ADR-044</td><td>Hosts start and retry without a broker; readiness now covers the read-only connection and Ollama (reachable, not warm); connection strings moved to User Secrets; error details stay server-side under a trace id. It also found and fixed a migrations-history mismatch in the read-only context.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s2-9">2.9 Where the engine stands today</h2>
+<p>Live on 2026-09-25 while writing this guide <span class="tag ok">VERIFIED</span>: a diagnosis of EVT-2026-0418 returned <strong>FV-104</strong> (origin, attribution weight 0.79, coverage 11/14) with RCP-1B parallel (0.14), BUS-2A contributing (0.07), six downstream symptoms and FT-7 ruled out, citing the book's Ch.1-2 and Ch.2 passages. EVT-2026-0419 returned <strong>BKR-2A</strong> (weight 1.00) with FT-9, LT-3 and PT-7 downstream and LOF-1 ruled out. EVT-2026-0420 returned <code>404 unknown incident</code>.</p>
+<div class="callout gap">
+  <p><strong>Named gaps in the RAG as of this commit</strong></p>
+  <ul>
+    <li><strong>True <code>retrieval_recall</code> (Appendix J) is not measured.</strong> Three incidents are far too small a labelled set; <code>grounding_hit</code> is a proxy (ADR-038, 041).</li>
+    <li><strong>No CauseTag-vs-origin check.</strong> A draft naming a registered, retrieved but wrong component (e.g. RCP-1B for 0418) would pass H3/H4; the H9 leading-question trap is skipped by name until that engine slice exists.</li>
+    <li><strong>No free-form question interface.</strong> The route takes an incident id; the "DSLM advisory" in the console's AI Diagnostics screen is labelled "not running in this build".</li>
+    <li><strong>Audit and Compliance do not consume <code>RootCauseCaseInconclusiveV1</code>.</strong> They bind only the verdict key, so they safely never receive it. The extension is the named follow-on of ADR-040.</li>
+    <li><strong>Mismatch classes the precursor rule cannot catch</strong> (ADR-043): a silent true cause, a spurious edge whose timing fits, a missing downstream edge; and a standing alarm with an early onset would cause a false abstention.</li>
+    <li><strong>0418's delay windows are exact points</strong> (min = max), so one second of real jitter would make it abstain. Recorded, not changed.</li>
+    <li><strong>The weights are attribution shares, not probabilities.</strong> The console still labels them "Illustrative weight" / "Illustrative confidence" — a wording mismatch left from before ADR-042, named for a UI slice.</li>
+  </ul>
+</div>
+
+<!-- ============================ SECTION 3 ============================ -->
+<h1 id="s3"><span class="num">3</span>Verify the claims yourself</h1>
+<p class="lead">This project's standing rule is <em>evidence over assertion</em>. This section applies that rule to the guide itself: instead of trusting that the audit chain works, you run one fixed incident and watch the hash in the HTTP response match the newest row in <code>RootCause.Audit</code> — then recompute it yourself, with no project code involved.</p>
+<div class="callout">
+  <p><strong>Everything below was run exactly as written</strong> on 2026-09-25 against this commit. The sample outputs are from that run. Your hashes will differ — they depend on your chain's history and on the model's narration — but the <em>relationships</em> must hold.</p>
+</div>
+
+<h2>3.1 What you need running</h2>
+<p>Only three things: LocalDB with RootCauseDb migrated and provisioned, Ollama with <code>nexus-dslm</code> and <code>nomic-embed-text</code>, and <code>Nexus1.RootCause.Host</code>. Since ADR-044 the host starts without RabbitMQ, and the diagnosis route never uses the broker. If you have not installed anything yet, do Section 6 first, then come back.</p>
+<pre><code><span class="c"># Start RootCause.Host. launchSettings.json supplies http://localhost:5102 and the</span>
+<span class="c"># Development environment (which is what loads User Secrets).</span>
+dotnet run --project src/Hosts/Nexus1.RootCause.Host
+
+<span class="c"># In another shell: is it ready? (checks both SQL logins and Ollama)</span>
+curl http://localhost:5102/health/ready          <span class="c"># → Healthy</span></code></pre>
+<p>If readiness says <code>Unhealthy</code>, the host's console log names the failing check (<code>rootcause-db</code>, <code>rootcause-explain-db</code> or <code>ollama</code>). While writing this guide, the first attempt did exactly that: Ollama had stopped, readiness reported <code>ollama … did not answer /api/tags</code>, and the diagnosis returned a generic <code>503</code> with a <code>traceId</code> instead of internals — the ADR-044 behaviour working as designed.</p>
+
+<h2>3.2 Run one fixed incident and note the hash</h2>
+<pre><code>curl -X POST http://localhost:5102/api/v1/root-cause/incidents/EVT-2026-0418/diagnoses</code></pre>
+<p>Expect 20–150 s. A cold model load on a CPU is the slow part; see §4.3. Sample response from the author's run (trimmed):</p>
+<pre><code>HTTP 200 in 105.1 s
+{ "diagnosisRunId": 41, "incidentId": "EVT-2026-0418", "verdict": "FV-104", "abstained": false,
+  "candidates": [ {"tag":"FV-104","role":"origin","weight":0.7857,"coverage":0.7857},
+                  {"tag":"RCP-1B","role":"parallel","weight":0.1429,…}, {"tag":"BUS-2A","role":"contributing",…},
+                  {"tag":"SG-1","role":"downstream","weight":0,…}, …, {"tag":"FT-7","role":"ruled-out",…} ],
+  "citations": [ {"sourceLabel":"From Flood to Cause -- NEXUS-1 Companion, worked example, Ch.1-2"},
+                 {"sourceLabel":"From Flood to Cause -- NEXUS-1 Companion, worked example, Ch.2 (delay windows)"} ],
+  "auditHash": "<span class="s">1bd5bcfbb3ba404c1cf068c2c60e0f0115da162b91fa7c170f69a2dc2df5c646</span>" }</code></pre>
+
+<h2>3.3 Look at the newest audit row with your own eyes</h2>
+<pre><code>sqlcmd -S "(localdb)\mssqllocaldb" -E -d RootCauseDb -W -Q "SELECT TOP 1 Seq, Hash, PrevHash FROM RootCause.Audit ORDER BY Seq DESC"</code></pre>
+<pre><code>Seq Hash                                                             PrevHash
+--- ----                                                             --------
+41  <span class="s">1bd5bcfbb3ba404c1cf068c2c60e0f0115da162b91fa7c170f69a2dc2df5c646</span> c977055964e783eb598d9793ac2236d9685dc5a4a5eb6049b267ef3319cad5a1</code></pre>
+<p>The row's <code>Hash</code> is the <code>auditHash</code> you just received. Its <code>PrevHash</code> is the previous row's hash — that is the chain.</p>
+
+<h2>3.4 Recompute it yourself — the whole chain</h2>
+<p>Matching two strings proves the route returned what it stored. It does not prove the stored hash is honest. So recompute it: the formula is lowercase hex <code>SHA-256(UTF-8(PrevHash + Payload))</code>, starting from sixty-four zeros (<code>Sha256AuditChainWriter.ComputeHash</code>). The companion script <code>docs/guide/verify-audit-chain.ps1</code> does that for <em>every</em> row. It uses only Windows PowerShell's built-in <code>System.Data.SqlClient</code> and your own Windows login — no project assemblies, no SQL-login secrets.</p>
+<pre><code>.\docs\guide\verify-audit-chain.ps1 -ExpectedLatestHash 1bd5bcfbb3ba404c1cf068c2c60e0f0115da162b91fa7c170f69a2dc2df5c646</code></pre>
+<pre><code>Rows checked: 41   broken links/hashes: 0
+Newest row:   Seq 41 at 2026-09-25 09:03:35Z
+  stored     Hash = 1bd5bcfbb3ba404c1cf068c2c60e0f0115da162b91fa7c170f69a2dc2df5c646
+  recomputed Hash = 1bd5bcfbb3ba404c1cf068c2c60e0f0115da162b91fa7c170f69a2dc2df5c646
+  payload (first 160 chars): {"IncidentId":"EVT-2026-0418","Verdict":"FV-104","AbstainReason":null,…
+HTTP auditHash matches newest row: <span class="k">YES</span>
+<span class="k">CHAIN INTACT</span></code></pre>
+<p>The heart of the script is four lines — short enough to audit before you run it:</p>
+<pre><code>function Get-ChainHash([string]$prev, [string]$payload) {
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($prev + $payload)
+    ($sha.ComputeHash($bytes) | ForEach-Object { $_.ToString("x2") }) -join ""
+}   <span class="c"># each row: PrevHash == previous row's Hash, and Hash == Get-ChainHash(PrevHash, Payload)</span></code></pre>
+<p><strong>Now try to break it.</strong> In a throwaway copy of the database, edit one character of any row's <code>Payload</code> and rerun the script: that row's recomputed hash no longer matches, and the tampering is reported at its exact <code>Seq</code>. That is what "tamper-evident" means here — not tamper-proof, but impossible to alter silently.</p>
+
+<h2>3.5 More claims you can check in minutes</h2>
+<table>
+  <thead><tr><th style="width:32%">Claim</th><th>How to check it</th></tr></thead>
+  <tbody>
+    <tr><td>The <strong>decision</strong> is deterministic; the <strong>narration</strong> is not (H6)</td><td>POST 0418 twice. Both return FV-104 with identical candidates; the two <code>auditHash</code> values differ because the sealed payload includes the model's prose. Rerun the verifier: the chain still links.</td></tr>
+    <tr><td>The engine's reach ends at 0420</td><td><code>curl -X POST …/incidents/EVT-2026-0420/diagnoses</code> → <code>404 {"error":"unknown incident 'EVT-2026-0420'"}</code>. The human case exists as Inconclusive: <code>SELECT Status, InconclusiveReason FROM RootCause.RootCauseAnalysis WHERE RootCauseAnalysisId = 20260420</code>.</td></tr>
+    <tr><td>The artefact incident is ruled by silence</td><td>POST 0419 → BKR-2A. The corroborator passes <em>because</em> the witnesses RTD-1 and NFX-1 have no historian deflection (ADR-037).</td></tr>
+    <tr><td>The model side cannot write (H7)</td><td>Connect as <code>nexus1_explain</code>: <code>SELECT COUNT(*) FROM RootCause.Corpus</code> succeeds; any <code>INSERT</code> fails with Msg 229 (<code>docs/runbooks/local-explain-readonly-sql-login.md</code>).</td></tr>
+    <tr><td>Readiness tells the truth</td><td>Stop Ollama, then <code>curl …/health/ready</code> → <code>503 Unhealthy</code>; the log names <code>ollama</code>. Unload the model with <code>ollama stop nexus-dslm</code> (server still up) → readiness stays <code>200</code>: reachable is not warm (ADR-044).</td></tr>
+    <tr><td>Errors don't leak internals</td><td>With Ollama down, the diagnosis <code>503</code> body carries only a generic detail and a <code>traceId</code>; search the host log for that id to find the full exception.</td></tr>
+    <tr><td>The tests are real</td><td><code>dotnet test tests/Nexus1.RootCause.ComponentTests</code> runs against real LocalDB databases (created and dropped per test). The H9 leading-question case appears as <em>Skipped</em>, with its reason, in every run.</td></tr>
+    <tr><td>The engine ignores seeded answer keys</td><td><code>GraphWalkerDerivationTests.Walker_output_is_byte_identical_when_the_illustrative_fields_are_poisoned</code> — read it, run it, then try poisoning other fields.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================ SECTION 4 ============================ -->
+<h1 id="s4"><span class="num">4</span>Troubleshooting known setup friction</h1>
+<p class="lead">Every item here happened on the project's own machine — a Windows 10 laptop with an Intel i5-3340M, 16 GB of RAM, no GPU and no administrator rights — and is recorded in its runbooks or evidence reports.</p>
+
+<h2>4.1 SQL Server LocalDB</h2>
+<ul>
+  <li><strong>The instance name</strong> is <code>(localdb)\mssqllocaldb</code> everywhere. It is SQL Server 2016 (13.0 SP1) on this machine — which is why the project computes cosine similarity in C# instead of using SQL Server 2025's vector features (ADR-032).</li>
+  <li><strong>Migrations must run before the SQL logins are created.</strong> The login scripts do <code>USE AlarmManagementDb</code>, <code>USE RootCauseDb</code> and so on, and those databases only exist once migrations have created them. Earlier revisions of the provisioning runbook listed the logins first; it now puts migrations first, and both login runbooks state the prerequisite (§6.3).</li>
+  <li><strong>Use the Infrastructure project as the EF startup project.</strong> <code>dotnet ef … --startup-project src/Hosts/…</code> fails with <em>"doesn't reference Microsoft.EntityFrameworkCore.Design"</em>. Every <code>*.Infrastructure</code> project references the design package and carries its own design-time factory.</li>
+  <li><strong>Pending migrations make readiness 503.</strong> <code>DbContextHealthCheck&lt;T&gt;</code> checks connectivity <em>and</em> that the context's migrations are applied (ADR-018), using that context's own history table (<code>__EFMigrationsHistory_&lt;Context&gt;</code>). A "reachable but missing N migration(s)" message means migrations were not run — or, as ADR-044 found, that a context was configured with the wrong history-table name.</li>
+  <li><strong><code>sqlcmd</code> on this box:</strong> the provisioning runbook notes that <code>-i</code> needs an absolute Windows path. The developer's Windows login is sysadmin on LocalDB; use <code>-E</code> (trusted) for administration and the scoped logins only to test their permissions.</li>
+  <li><strong>Transient LocalDB command timeouts</strong> appear under heavy concurrent load. See §4.4 — the fix is less concurrency, not bigger timeouts.</li>
+</ul>
+
+<h2>4.2 RabbitMQ</h2>
+<ul>
+  <li><strong>Use Erlang/OTP 27, not the latest.</strong> RabbitMQ 4.3.4 failed to boot on OTP 29.0.5 with <code>BOOT FAILED {incompatible_feature_flags, …}</code>. The portable OTP 27.3.4.16 works, pointed at through <code>ERLANG_HOME</code> (<code>docs/runbooks/local-rabbitmq.md</code>).</li>
+  <li><strong>The management plugin is required, on port 15672.</strong> Consumers apply their dead-letter policy through the management HTTP API at startup, and the port is hard-coded (<code>RabbitMqOptions.ManagementPort = 15672</code>, not read from configuration). Enable it with <code>rabbitmq-plugins enable rabbitmq_management</code>.</li>
+  <li><strong><code>guest</code>/<code>guest</code> works only over loopback</strong> (RabbitMQ's default). That is fine locally and will fail from another machine or a container.</li>
+  <li><strong>New shells need the environment variables.</strong> <code>ERLANG_HOME</code> and <code>RABBITMQ_BASE</code> are set at user level; an already-open shell will not see them.</li>
+  <li><strong>If the broker is down, the hosts still start</strong> (ADR-044). Look for <code>RabbitMQ unreachable … retrying in …</code> in the log, and <code>Connected to RabbitMQ … on attempt N</code> once it appears. A credentials problem is logged distinctly: <em>"RabbitMQ rejected the configured credentials …"</em>. The outbox relay logs an error every 250 ms while the broker is down — known noise, not fixed.</li>
+</ul>
+
+<h2>4.3 Ollama and the 100–150 s cold start</h2>
+<ul>
+  <li><strong>A cold call takes about 93–150 s on CPU</strong> (model load plus first generation); warm calls take roughly 20–70 s. On 2026-09-25 a cold 0418 call took 105 s and a warm 0419 call 71 s.</li>
+  <li><strong>Timeouts are layered on purpose:</strong> the host's chat call allows 150 s (<code>Ollama:RequestTimeoutSeconds</code>), the BFF's hop 180 s, and the live E2E test 180 s. The host fails first, so a slow model surfaces as the host's own 503, not a BFF 502.</li>
+  <li><strong>Make cold starts rare:</strong> set <code>OLLAMA_KEEP_ALIVE</code> (e.g. <code>30m</code>, or <code>-1</code> for indefinitely) on the Ollama process. It does not remove the first cold call after Ollama restarts.</li>
+  <li><strong>Readiness <code>ollama … model(s) not installed</code></strong> means the server answers but <code>nexus-dslm</code> or <code>nomic-embed-text</code> is missing: build or pull it (§6.5). A Healthy <code>ollama</code> check does <em>not</em> mean the model is loaded.</li>
+  <li><strong>"Still missing an embedding" after provisioning</strong> means Ollama or <code>nomic-embed-text</code> was unavailable. Lexical retrieval still works, and the semantic path wakes up after you rerun <code>-- provision</code>.</li>
+  <li><strong>Ollama updates itself.</strong> ADR-033 pinned Ollama 0.34.2; this machine now runs 0.34.3. The model is pinned by its base blob digest (<code>sha256:5ee4f07c…</code>), which is what reproducibility rests on.</li>
+</ul>
+
+<h2>4.4 Memory contention on modest machines</h2>
+<p>A 3B model needs about 2 GB of contiguous RAM, and each test assembly plus LocalDB adds more. The project hit this for real:</p>
+<div class="callout warn">
+  <p><strong>The H9 slice's parallel-run incident</strong> (<code>2026-09-24-h9-evaluation-harness-core.md</code>). <code>dotnet test Nexus1.Runtime.sln</code> ran all assemblies at once: 34 passed, 3 failed. EmergencyPreparedness and ReinforcementLearning component tests hit <code>SqlException: Execution Timeout Expired</code>, and two live Ollama tests got HTTP 500 — Ollama's own <code>server.log</code> read <em>"failed to allocate CPU buffer of size 1923946496 … unable to allocate CPU buffer"</em>. Every assembly passed when rerun in isolation. The timed-out runs also left three test databases behind, which were dropped by hand.</p>
+</div>
+<ul>
+  <li><strong>Run test assemblies one at a time</strong> when the live model tier is enabled. Every slice since H9 does exactly that for its regression gate.</li>
+  <li><strong>Do not run the full E2E stack alongside a full test run.</strong> Start the stack after the tests finish.</li>
+  <li><strong>Leftover <code>*ComponentTests_&lt;guid&gt;</code> databases</strong> after an interrupted run can be listed with <code>SELECT name FROM sys.databases WHERE name LIKE '%Tests[_]%'</code> and dropped once you have confirmed they are yours.</li>
+  <li>An earlier observability campaign recorded the same class of problem: a transient LocalDB command timeout under heavy concurrent polling (<code>2026-08-16-observability-final-chain-proof.md</code>).</li>
+</ul>
+
+<h2>4.5 Observability stack</h2>
+<ul>
+  <li><strong>Prometheus 3.x keeps dotted OpenTelemetry names</strong> (<code>nexus1.diagnosis.*</code>), which Grafana 10 cannot query. <code>docs/observability/prometheus.yml</code> therefore sets <code>metric_name_validation_scheme: legacy</code>, giving the underscore names the dashboard uses. If you changed the scheme after scraping, wipe the TSDB directory.</li>
+  <li><strong>The <code>or vector(0)</code> trap:</strong> on a <em>labelled</em> metric it returns the real series and a phantom empty-label <code>0</code>, so a stat panel shows two numbers. The committed dashboard wraps these in <code>sum(… or vector(0))</code> (ADR-038 evidence).</li>
+  <li><strong>The dashboard provider path is absolute</strong> (<code>grafana/provisioning/dashboards/nexus1.yml</code>); adjust it to your checkout.</li>
+</ul>
+
+<h2>4.6 Hosts, BFF and console</h2>
+<ul>
+  <li><strong>"Missing ConnectionStrings:… configuration"</strong> at startup means that host's User Secrets are not set, or the host is not running in the Development environment (User Secrets load only there). See §6.4.</li>
+  <li><strong>The BFF returns 502 on a RootCause route</strong> when RootCause.Host is unreachable; a relayed <strong>503</strong> means the host ran but a dependency (Ollama, a database) failed. Both bodies carry a <code>traceId</code> to search for in the log.</li>
+  <li><strong>The console's calls are blocked by CORS</strong> unless the BFF runs in Development and the console is on exactly <code>http://localhost:4200</code>.</li>
+  <li><strong>Playwright cannot find <code>@playwright/test</code></strong> when launched from some shells. Setting <code>NODE_PATH</code> to <code>console/nexus-console/node_modules</code> fixed it here.</li>
+  <li><strong>The BFF's Overview endpoint</strong> resolves several contexts at once and fails as a whole if one is not composed. When using <code>BffContexts__Enabled__N</code> subsets, include the contexts the screen needs (<code>console/nexus-console/e2e/README.md</code>).</li>
+</ul>
+
+<!-- ============================ SECTION 5 ============================ -->
+<h1 id="s5"><span class="num">5</span>The honest-gap discipline, as philosophy</h1>
+<p class="lead">"Nothing claims to exist that does not. A diagram, a 'done' checkbox, or a status message is valid only when it matches the repository, the contracts, the data ownership, the tests, and the observable runtime behavior." — the project's standing rule (<code>CLAUDE.md</code>).</p>
+<p>It would be easy to read that as house style. It is closer to a load-bearing requirement, for a reason specific to what this repository is. NEXUS-1 is a public teaching reference backing a book series — cloned, in the project owner's words, by more than two hundred readers. Every one of them will lift patterns out of it: a readiness check, a retry loop, a way of wiring a local model. A reference implementation that overstates what it does teaches the overstatement along with the code. So every claim has to be checkable, and every gap has to be named where a reader will trip over it — not tucked into a backlog.</p>
+<p>Three examples from this repository's own history show what that means in practice.</p>
+
+<h3>The narration is not deterministic, and the project says so</h3>
+<p>The book's H6 control asks for determinism. Temperature 0 and a fixed seed <em>look</em> deterministic, and it would have been easy to assert that. When ADR-033 measured it, the engine's verdict was identical run after run — but the model's narration was not byte-identical, because multi-threaded float reductions on a CPU vary in order. The project recorded exactly that: the <em>decision</em> is the deterministic guarantee, the prose is not. The consequence is visible in Section 3: two runs of the same incident seal different hashes over the same verdict, and nobody is surprised, because it was never claimed otherwise.</p>
+
+<h3>Reachable is not warm</h3>
+<p>ADR-044's Ollama readiness check calls <code>/api/tags</code>. A green result means the server answers and both models are installed — and <em>nothing more</em>, because <code>/api/tags</code> never loads a model. The easy thing would have been a check named "ollama-ready" that let everyone assume the model was hot. Instead the check's own Healthy description says it is not a warmth check, and the slice proved the distinction live: with the model unloaded (<code>ollama ps</code> empty before and after), readiness stayed 200. A reader copying the pattern copies the caveat with it.</p>
+
+<h3>A detection rule that ships with a map of its blind spots</h3>
+<p>ADR-043 added a rule that makes the engine abstain when the evidence says its causal graph is incomplete. The rule is genuinely useful, and the ADR spends as much space on what it <em>cannot</em> do: a silent true cause, a spurious edge whose timing happens to fit, a missing downstream edge, and the rule's own cost — a standing alarm could trigger a false abstention. The same slice also refused an easier win: its test of the old engine "passed" by abstaining with <em>no grounding</em>, only because the fixture had no corpus. The evidence names that as accidental rather than counting it as detection.</p>
+
+<h3>Why gaps are named in the artifact itself</h3>
+<p>Naming a gap costs a sentence. Hiding one costs every reader who builds on the unstated assumption. That is why the console labels its advisory panel "not running in this build"; why EVT-2026-0420's <code>404</code> is treated as evidence rather than a bug; why the metric is called <code>grounding_hit</code> and not <code>recall</code>; and why this guide opens with the three places the brief it was written from disagreed with the repository. The discipline applies to the process too: the ADR-044 slice records two mistakes its implementer made and corrected — a timeout regression and a password printed into tool output — because leaving them out would have been the same kind of overclaim the project exists to avoid.</p>
+
+<!-- ============================ SECTION 6 ============================ -->
+<h1 id="s6"><span class="num">6</span>Installation and running guide</h1>
+<p class="lead">This consolidates the repository's runbooks (<code>docs/runbooks/</code>) into one ordered procedure, updated for the current secrets setup (User Secrets, ADR-044) and corrected where the runbooks are known to be wrong.</p>
+<div class="callout gap">
+  <p><strong>Tested scope.</strong> This procedure is proven on one machine: Windows 10, .NET SDK 8.0.425, SQL Server 2016 LocalDB, Node 22.19 / npm 10.9.3, Ollama 0.34.3, CPU-only with 16 GB of RAM, and <em>no administrator rights</em> — which is why RabbitMQ, Prometheus, Grafana and the collector run as portable binaries rather than services. Linux and macOS are untested (LocalDB is Windows-only), and there are no container images for the .NET hosts.</p>
+</div>
+
+<h2>6.1 Prerequisites</h2>
+<table>
+  <thead><tr><th>Component</th><th>Version used here</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>.NET SDK</td><td>8.0.424+ (<code>global.json</code>, latestPatch)</td><td>Also restores the local <code>dotnet-ef</code> 8.0.11 tool</td></tr>
+    <tr><td>SQL Server LocalDB</td><td>2016 SP1 (13.0.4001)</td><td>Instance <code>(localdb)\mssqllocaldb</code>; <code>sqlcmd</code> on PATH</td></tr>
+    <tr><td>Erlang/OTP</td><td>27.3.4.16 (portable zip)</td><td>Not OTP 29 (§4.2)</td></tr>
+    <tr><td>RabbitMQ</td><td>4.3.4 (portable)</td><td>With the management plugin</td></tr>
+    <tr><td>Ollama</td><td>0.34.x, user-scope install</td><td>Loopback server <code>127.0.0.1:11434</code></td></tr>
+    <tr><td>Node.js / npm</td><td>22.19 / 10.9.3</td><td>For the Angular 18 console</td></tr>
+    <tr><td>Prometheus / Grafana <em>(optional)</em></td><td>3.14.0 / 10.2.3 OSS (portable)</td><td>Diagnosis metrics only</td></tr>
+    <tr><td>OTel Collector <em>(optional)</em></td><td>otelcol-contrib 0.158.0</td><td>Tracing and messaging-metrics campaigns</td></tr>
+    <tr><td>Hardware</td><td>16 GB RAM strongly advised</td><td>A 3B model on CPU plus LocalDB and test hosts (§4.4)</td></tr>
+  </tbody>
+</table>
+
+<h2>6.2 Clone, restore, build</h2>
+<pre><code>git clone &lt;repository-url&gt; nexus1 &amp;&amp; cd nexus1
+dotnet tool restore                        <span class="c"># dotnet-ef 8.0.11 from .config/dotnet-tools.json</span>
+dotnet build Nexus1.Runtime.sln -c Debug   <span class="c"># expect: 0 Warning(s) 0 Error(s)</span></code></pre>
+
+<h2>6.3 Databases: migrations first, then the scoped logins</h2>
+<p><strong>Step 1 — apply every context's migrations</strong> with your own Windows login. Each <code>*.Infrastructure</code> project's design-time factory uses <code>Trusted_Connection=True</code> and creates its database if needed. The Infrastructure project must be both <code>--project</code> and <code>--startup-project</code> (verified on this machine: the host-as-startup form fails with "doesn't reference Microsoft.EntityFrameworkCore.Design"; this form prints "No migrations were applied. The database is already up to date." on a migrated database).</p>
+<pre><code><span class="c"># PowerShell — all 17 contexts (7 physical databases)</span>
+$contexts = "AlarmManagement","ReactorFleet","CorePlatform","Instrumentation","DigitalTwin","Maintenance",
+            "EventManagement","Robotics","RadiationMonitoring","EmergencyPreparedness","ReinforcementLearning",
+            "Security","Organization","Audit","Compliance","Reporting","RootCause"
+foreach ($c in $contexts) {
+  $p = "src/Contexts/$c/Nexus1.$c.Infrastructure"
+  dotnet ef database update --project $p --startup-project $p
+}</code></pre>
+<p>Each context records its own history in <code>dbo.__EFMigrationsHistory_&lt;Context&gt;</code>. That is how eleven contexts share <code>AlarmManagementDb</code> without colliding (ADR-006, 020–026).</p>
+<p><strong>Step 2 — create the two scoped SQL logins</strong>, as your own sysadmin Windows login, using the T-SQL in the two runbooks (save each block as a <code>.sql</code> file and pass an absolute path to <code>-i</code>):</p>
+<ul>
+  <li><code>docs/runbooks/local-scoped-sql-login.md</code> — <code>nexus1_app</code>: DML on exactly the schemas each database's contexts write, <code>SELECT</code> on <code>dbo</code> for the history tables, no DDL (ADR-028).</li>
+  <li><code>docs/runbooks/local-explain-readonly-sql-login.md</code> — <code>nexus1_explain</code>: <code>db_datareader</code> on RootCauseDb plus explicit <code>DENY</code> on every write/execute verb (H7).</li>
+</ul>
+<p>Choose your own local passwords where the runbooks show <code>&lt;your local … password&gt;</code>. They never go into a tracked file.</p>
+
+<h2>6.4 Connection strings in User Secrets</h2>
+<p>The hosts read their connection strings from each project's User Secrets store, which ASP.NET Core loads in the <strong>Development</strong> environment. The tracked <code>appsettings.json</code> files contain none, and an architecture test fails if a password is ever committed there (ADR-044).</p>
+<pre><code><span class="c"># RootCause.Host — both logins</span>
+dotnet user-secrets set "ConnectionStrings:RootCauseDb" "Server=(localdb)\mssqllocaldb;Database=RootCauseDb;User Id=nexus1_app;Password=&lt;your nexus1_app password&gt;;" --project src/Hosts/Nexus1.RootCause.Host
+dotnet user-secrets set "ConnectionStrings:RootCauseExplainDb" "Server=(localdb)\mssqllocaldb;Database=RootCauseDb;User Id=nexus1_explain;Password=&lt;your nexus1_explain password&gt;;" --project src/Hosts/Nexus1.RootCause.Host</code></pre>
+<pre><code><span class="c"># ModularRuntime and BFF — the same six keys each, all as nexus1_app</span>
+foreach ($h in "Nexus1.ModularRuntime","Nexus1.Bff") {
+  foreach ($db in "AlarmManagementDb","AuditDb","ComplianceDb","ReportingDb","SecurityDb","OrganizationDb") {
+    dotnet user-secrets set "ConnectionStrings:$db" "Server=(localdb)\mssqllocaldb;Database=$db;User Id=nexus1_app;Password=&lt;your nexus1_app password&gt;;" --project "src/Hosts/$h"
+  }
+}
+dotnet user-secrets list --project src/Hosts/Nexus1.Bff     <span class="c"># check which keys a host has</span></code></pre>
+<p class="small muted">The BFF also accepts an optional <code>ConnectionStrings:RadiationMonitoringDb</code> override; without it, RadiationMonitoring uses <code>AlarmManagementDb</code>. RabbitMQ's <code>guest</code>/<code>guest</code> development credentials remain in <code>appsettings.json</code> — out of ADR-044's scope.</p>
+<div class="callout gap"><p><strong>History note.</strong> Earlier revisions committed the local development passwords in plaintext. ADR-044 moved them out of the tracked files without rotating them, so the old values remain in git history. Use your own values; never reuse the historical ones anywhere.</p></div>
+
+<h2>6.5 Ollama: models and the pinned <code>nexus-dslm</code></h2>
+<pre><code>ollama pull qwen2.5:3b-instruct-q4_K_M     <span class="c"># base of nexus-dslm (standard Ollama command)</span>
+ollama pull nomic-embed-text               <span class="c"># embedding model</span>
+ollama create nexus-dslm -f src/Contexts/RootCause/Nexus1.RootCause.Explain/nexus-dslm.Modelfile
+ollama show nexus-dslm --modelfile         <span class="c"># record the resolved base digest</span>
+ollama list                                <span class="c"># expect nexus-dslm, nomic-embed-text</span></code></pre>
+<ul>
+  <li><strong>Pin by digest, not by tag.</strong> ADR-033's reproducibility record: base blob <code>sha256:5ee4f07cdb9beadbbb293e85803c569b01bd37ed059d2715faa7bb405f31caa6</code>; <code>nomic-embed-text</code> id <code>0a109f422b47</code>.</li>
+  <li><strong>Keep the server on loopback</strong> (<code>127.0.0.1:11434</code>, Ollama's default). Models are pulled once while online; inference needs no network. Optionally set <code>OLLAMA_KEEP_ALIVE=30m</code> before starting Ollama.</li>
+  <li><span class="tag gap">GAP</span> The strongest air-gap step — disabling the network adapter during inference — needs administrator rights and was not performed. Loopback binding plus captured zero egress is the evidence (ADR-033).</li>
+</ul>
+
+<h2>6.6 Provision RootCauseDb (seed + embeddings)</h2>
+<p>The diagnosis route never seeds on startup. It assumes the data exists. Provisioning is an explicit, idempotent command: it seeds the 0418 and 0419 grounding fixtures, fills the corpus embeddings through <code>nomic-embed-text</code>, and creates the fixed EVT-2026-0420 Inconclusive case, then exits.</p>
+<pre><code>dotnet run --project src/Hosts/Nexus1.RootCause.Host -- provision   <span class="c"># Development via launchSettings</span></code></pre>
+<p>On a fresh database, expect <code>Seed complete: 17 components, 4 corpus chunks.</code>, <code>Embedding ingest complete: 4 newly embedded, 0 still missing an embedding.</code> and <code>Provisioned EVT-2026-0420 QA-escape case as Inconclusive (AnalysisId 20260420, unit 1).</code> A re-run is a no-op: <code>0 newly embedded</code> and <code>… already provisioned</code> (verified 2026-09-25). Earlier revisions of the runbook showed <code>10 components, 2 corpus chunks</code> — the counts from before EVT-2026-0419 — and were corrected alongside this guide. The 0420 case's two integration events wait in RootCause's outbox and are published when RootCause.Host runs with the broker up.</p>
+
+<h2>6.7 RabbitMQ (portable)</h2>
+<pre><code>$env:ERLANG_HOME   = "$env:LOCALAPPDATA\erlang-otp27"
+$env:RABBITMQ_BASE = "$env:LOCALAPPDATA\rabbitmq\data"
+&amp; "$env:LOCALAPPDATA\rabbitmq\rabbitmq_server-4.3.4\sbin\rabbitmq-plugins.bat" enable rabbitmq_management   <span class="c"># once</span>
+&amp; "$env:LOCALAPPDATA\rabbitmq\rabbitmq_server-4.3.4\sbin\rabbitmq-server.bat"                              <span class="c"># run in background</span>
+&amp; "$env:LOCALAPPDATA\rabbitmq\rabbitmq_server-4.3.4\sbin\rabbitmqctl.bat" status                            <span class="c"># exit 0 = up</span></code></pre>
+<p>Management UI and API: <code>http://localhost:15672</code> (<code>guest</code>/<code>guest</code>, loopback only). Stop the broker with <code>rabbitmqctl stop</code>. There is no Windows service.</p>
+
+<h2>6.8 Start the hosts and the console</h2>
+<p>Order matters less than it used to: since ADR-044 the broker can come up before or after the hosts. The only hard dependency is that the BFF's RootCause routes need RootCause.Host.</p>
+<pre><code><span class="c"># Each in its own shell. Each host's Properties/launchSettings.json supplies its port</span>
+<span class="c"># (5102 / 5101 / 5103) and DOTNET_ENVIRONMENT=Development, so User Secrets load.</span>
+dotnet run --project src/Hosts/Nexus1.RootCause.Host
+dotnet run --project src/Hosts/Nexus1.ModularRuntime
+dotnet run --project src/Hosts/Nexus1.Bff
+<span class="c">#   (Services:RootCauseHost defaults to http://localhost:5102 in the BFF's appsettings.json)</span>
+
+cd console/nexus-console
+npm install          <span class="c"># first time</span>
+npm start            <span class="c"># → http://localhost:4200</span></code></pre>
+<pre><code><span class="c"># Health</span>
+curl http://localhost:5102/health/ready   <span class="c"># rootcause-db, rootcause-explain-db, ollama</span>
+curl http://localhost:5101/health/ready   <span class="c"># 16 context databases (+ migrations applied)</span>
+curl http://localhost:5103/health/ready   <span class="c"># the BFF's composed contexts</span></code></pre>
+<p>Then open <code>http://localhost:4200/rcgraph</code>. The graph appears at once (a plain database read), and the verdict fills in when the diagnosis finishes (20–150 s).</p>
+<p class="small muted">To compose only some contexts in the BFF (less memory, faster start), set <code>BffContexts__Enabled__0=ReactorFleet</code>, <code>__1=…</code> and so on. The E2E README uses ReactorFleet, Instrumentation, AlarmManagement and RadiationMonitoring.</p>
+
+<h2>6.9 Optional: Prometheus + Grafana (Appendix I)</h2>
+<pre><code>&amp; "$env:LOCALAPPDATA\prometheus\prometheus-3.14.0.windows-amd64\prometheus.exe" `
+  --config.file="&lt;repo&gt;\docs\observability\prometheus.yml" `
+  --storage.tsdb.path="$env:LOCALAPPDATA\prometheus\data" --web.listen-address="localhost:9090"
+
+$env:GF_PATHS_PROVISIONING = "&lt;repo&gt;\docs\observability\grafana\provisioning"
+$env:GF_AUTH_ANONYMOUS_ENABLED = "true"; $env:GF_AUTH_ANONYMOUS_ORG_ROLE = "Admin"   <span class="c"># dev only</span>
+&amp; "$env:LOCALAPPDATA\grafana\grafana-v10.2.3\bin\grafana-server.exe" --homepath "$env:LOCALAPPDATA\grafana\grafana-v10.2.3"</code></pre>
+<p>Prometheus scrapes <code>localhost:5102/metrics</code> (job <code>nexus1-rootcause</code>). Grafana at <code>:3000</code> provisions the Prometheus datasource and the "NEXUS-1 Diagnosis (Appendix I)" dashboard. Edit the absolute <code>path:</code> in <code>grafana/provisioning/dashboards/nexus1.yml</code> first. Run a few diagnoses to see data: <code>nexus1_diagnosis_abstentions</code>, <code>_validator_rejections</code>, <code>_duration</code>, <code>_grounding_hit</code> (a proxy, not recall). The OTel collector for tracing campaigns is documented separately in <code>docs/runbooks/local-otel-collector.md</code>.</p>
+
+<h2>6.10 Run the tests</h2>
+<pre><code><span class="c"># One assembly at a time is the reliable gate on a modest machine (§4.4)</span>
+Get-ChildItem tests -Directory | ForEach-Object { dotnet test $_.FullName --no-build }
+
+dotnet test tests/Nexus1.ArchitectureTests               <span class="c"># dependency law, served-model rule, secrets guard</span>
+dotnet test tests/Nexus1.RootCause.ComponentTests        <span class="c"># real LocalDB; H9 live tier skips if Ollama is absent</span>
+
+cd console/nexus-console
+npm test                                                 <span class="c"># Jest</span>
+npx playwright test --grep-invert "@slow"                <span class="c"># fast E2E: BFF + console + LocalDB</span>
+npx playwright test --grep "@slow"                       <span class="c"># live RAG E2E: full stack incl. Ollama</span></code></pre>
+<p>At this commit the regression gate is: build with 0 warnings and 0 errors; 36 test assemblies green when run in isolation; ArchitectureTests 9/9; RootCause.ComponentTests 93 tests (92 passed, 1 skipped by name); the <code>@slow</code> E2E 2/2 (ADR-044 evidence). <code>operator-session.e2e.ts</code> acknowledges a real unit-1 alarm on each run, so it is not idempotent across unlimited reruns.</p>
+
+<h2>6.11 Shut down</h2>
+<p>Stop each <code>dotnet run</code> and <code>npm start</code> with <span class="kbd">Ctrl</span>+<span class="kbd">C</span>, the broker with <code>rabbitmqctl stop</code>, and Prometheus and Grafana by the process listening on their port (<code>Get-NetTCPConnection -LocalPort 9090 -State Listen</code> → <code>Stop-Process</code>). Nothing here installs a Windows service.</p>
+
+<h2>6.12 What is not built yet — consolidated</h2>
+<div class="callout gap">
+  <ul>
+    <li>Container images for the .NET hosts; Kubernetes manifests; any non-LocalDB database target.</li>
+    <li>Authentication and authorization on the HTTP surfaces; a production secret store (only User Secrets for development).</li>
+    <li>True <code>retrieval_recall</code> (Appendix J) and a labelled evaluation set of real size; the CauseTag-vs-origin check behind the skipped H9 leading-question trap; a free-form question interface.</li>
+    <li>Audit and Compliance consumers for <code>RootCauseCaseInconclusiveV1</code> (the ADR-040 follow-on).</li>
+    <li>BFF observability and edge metrics (<code>nexus1.edge.requests</code>), <code>nexus1.projection.lag</code>, Prometheus recording rules and alerting.</li>
+    <li>Contract tests and a distributed-slice E2E test project with real tests (both projects exist but are empty).</li>
+    <li>UI wording for the post-ADR-042 weights ("Illustrative weight/confidence" labels).</li>
+  </ul>
+</div>
+
+<!-- ============================ APPENDICES ============================ -->
+<h1 id="appx">Appendices</h1>
+<h2>A · ADR index</h2>
+<table class="small">
+  <thead><tr><th style="width:14%">ADR</th><th>Decision</th></tr></thead>
+  <tbody>
+    <tr><td>001-amend</td><td>ReactorFleet included in Phase 1, in-process only</td></tr>
+    <tr><td>002-amend</td><td>ADR-002 topology stands; CQRS markers in BuildingBlocks.Application</td></tr>
+    <tr><td>003 – 005</td><td>Phase 1 domain slices: ReactorFleet, AlarmManagement (flood policy), RootCause</td></tr>
+    <tr><td>006</td><td>ReactorFleet shares AlarmManagement's database</td></tr>
+    <tr><td>007</td><td>Hosts get health-only Minimal APIs; Query BFF deferred</td></tr>
+    <tr><td>008 – 009</td><td>Messaging backbone: topology, outbox/inbox; retry, backoff, dead-letter</td></tr>
+    <tr><td>010 – 012</td><td>Fan-out subscribers: Audit, Compliance, Reporting</td></tr>
+    <tr><td>013 – 014</td><td>Observability: tracing foundation; metrics foundation</td></tr>
+    <tr><td>015 – 026</td><td>Phase 2 sectors 1–11 (CorePlatform … ReinforcementLearning); 018: health checks verify migrations</td></tr>
+    <tr><td>027</td><td>OpenTelemetry deferred for the eleven Phase 2 sectors</td></tr>
+    <tr><td>028</td><td>Scoped SQL login (<code>nexus1_app</code>)</td></tr>
+    <tr><td>029</td><td>Licensed source PDFs purged from the repo and its history</td></tr>
+    <tr><td>030 – 031</td><td>BFF walking skeleton; "latest per parent" LINQ pattern</td></tr>
+    <tr><td>032 – 044</td><td>The RootCause/RAG phase (§2.8)</td></tr>
+  </tbody>
+</table>
+<h2>B · RAG evidence reports (<code>artifacts/evidence/</code>)</h2>
+<table class="small">
+  <thead><tr><th>Report</th><th>Slice</th></tr></thead>
+  <tbody>
+    <tr><td><code>2026-09-07-rootcause-grounding-walking-skeleton.md</code></td><td>ADR-032 deterministic engine</td></tr>
+    <tr><td><code>2026-09-22-rootcause-explain-airgapped-e2e.md</code></td><td>ADR-033 Explain stage, air gap</td></tr>
+    <tr><td><code>2026-09-22-rootcause-diagnosis-query-route.md</code></td><td>ADR-034 HTTP route, audit-hash match, H7 live</td></tr>
+    <tr><td><code>2026-09-22-bff-rootcause-http-hop.md</code></td><td>ADR-035 BFF hop</td></tr>
+    <tr><td><code>2026-09-22-rootcause-host-cold-timeout-hardening.md</code></td><td>ADR-033 addendum, 150 s timeout</td></tr>
+    <tr><td><code>2026-09-23-ch29-root-cause-angular-screens.md</code></td><td>Ch. 29 screens</td></tr>
+    <tr><td><code>2026-09-23-ch24-ai-diagnostics-disclaimer-reconcile.md</code></td><td>Disclaimer correction</td></tr>
+    <tr><td><code>2026-09-23-rootcause-incident-graph-endpoint.md</code></td><td>ADR-036 graph endpoint</td></tr>
+    <tr><td><code>2026-09-24-rootcause-cross-screen-live-e2e.md</code></td><td>Ch. 33 live E2E</td></tr>
+    <tr><td><code>2026-09-24-second-fixed-incident-0419.md</code></td><td>ADR-037 EVT-2026-0419</td></tr>
+    <tr><td><code>2026-09-24-observability-prometheus-grafana.md</code></td><td>ADR-038 metrics</td></tr>
+    <tr><td><code>2026-09-24-rootcause-inconclusive-state.md</code></td><td>ADR-039 Inconclusive</td></tr>
+    <tr><td><code>2026-09-24-evt-0420-qa-escape-content.md</code></td><td>ADR-040 EVT-2026-0420</td></tr>
+    <tr><td><code>2026-09-24-h9-evaluation-harness-core.md</code></td><td>ADR-041 H9 harness (and the parallel-run incident)</td></tr>
+    <tr><td><code>2026-09-24-adr-042-candidates-from-observables.md</code></td><td>ADR-042 de-circularization</td></tr>
+    <tr><td><code>2026-09-25-adr-043-unexplained-precursor.md</code></td><td>ADR-043 model mismatch</td></tr>
+    <tr><td><code>2026-09-25-adr-044-startup-readiness-secrets.md</code></td><td>ADR-044 hardening</td></tr>
+  </tbody>
+</table>
+<h2>C · Glossary</h2>
+<table class="small">
+  <tbody>
+    <tr><td style="width:24%"><strong>Abstention</strong></td><td>A run that ends without a verdict and with a named reason. A first-class outcome (HTTP 200), sealed like a verdict.</td></tr>
+    <tr><td><strong>Attribution share</strong></td><td>A candidate's weight: the share of the flood it newly explained in the greedy ranking (ADR-042). Not a probability.</td></tr>
+    <tr><td><strong>Artefact edge</strong></td><td>An edge from a source that corrupts measurements (e.g. EMI from breaker BKR-2A) into the channels it couples into.</td></tr>
+    <tr><td><strong>Backbone edge</strong></td><td>An engineered cascade edge with a delay window; walked and corroborated.</td></tr>
+    <tr><td><strong>Coverage</strong></td><td>The share of the flood's alarms a candidate's reach explains (FV-104: 11/14).</td></tr>
+    <tr><td><strong>Fixed incident</strong></td><td>A seeded, fully known teaching incident in <code>IncidentRegistry</code> (0418, 0419).</td></tr>
+    <tr><td><strong>Onset</strong></td><td>A channel's earliest good-quality historian sample — the physical start of its disturbance, as opposed to alarm arrival time.</td></tr>
+    <tr><td><strong>One-Truth Pipeline</strong></td><td>The book's name for "the engine decides, the model explains", bounded by H1–H10.</td></tr>
+    <tr><td><strong>Unexplained precursor</strong></td><td>An alarmed component outside the origin's reach whose onset precedes the origin's (ADR-043).</td></tr>
+    <tr><td><strong>Walking skeleton</strong></td><td>A thin but complete end-to-end implementation, proven before any breadth is added.</td></tr>
+  </tbody>
+</table>
+<p class="small muted" style="margin-top:14pt">This guide describes commit <code>1fbada7</code>. When the code moves, the ADRs, runbooks and evidence reports are the source of truth; regenerate this PDF from <code>docs/guide/nexus1-programmers-guide.html</code> with <code>docs/guide/build-guide-pdf.mjs</code>.</p>
+
+</body>
+</html>

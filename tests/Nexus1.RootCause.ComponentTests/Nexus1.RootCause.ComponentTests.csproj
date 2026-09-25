@@ -32,6 +32,7 @@
     <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.RootCause.Application\Nexus1.RootCause.Application.csproj" />
     <ProjectReference Include="..\..\src\Contexts\RootCause\Nexus1.RootCause.Explain\Nexus1.RootCause.Explain.csproj" />
     <ProjectReference Include="..\..\src\BuildingBlocks\Nexus1.BuildingBlocks.Messaging\Nexus1.BuildingBlocks.Messaging.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\Nexus1.ServiceDefaults\Nexus1.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\src\Contexts\AlarmManagement\Nexus1.Contracts.AlarmManagement\Nexus1.Contracts.AlarmManagement.csproj" />
   </ItemGroup>
 

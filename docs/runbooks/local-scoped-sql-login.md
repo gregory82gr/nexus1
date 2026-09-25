@@ -18,6 +18,10 @@ uses the restricted login.
 
 ## Create the login (idempotent — safe to re-run)
 
+**Prerequisite — the databases must already exist.** Apply migrations first
+(`local-rootcause-diagnosis-provisioning.md` step 1, repeated for every context); the
+script's `USE <Database>;` lines fail with `Msg 911 … does not exist` on a fresh machine.
+
 Run once per LocalDB instance, as the developer's own (sysadmin)
 Windows-integrated connection:
 
@@ -31,7 +35,7 @@ BEGIN
 END
 GO
 
-CREATE LOGIN nexus1_app WITH PASSWORD = 'Nexus1App!Dev2026Local', CHECK_POLICY = ON;
+CREATE LOGIN nexus1_app WITH PASSWORD = '<your local nexus1_app password>', CHECK_POLICY = ON;
 GO
 
 -- AlarmManagementDb: shared by all 11 plant-operational Phase 2 contexts
@@ -152,8 +156,20 @@ context's registration to `Program.cs`.
 
 ## Password handling
 
-`Nexus1App!Dev2026Local` is committed in plaintext in `appsettings.json`,
-the same convention this project already uses for RabbitMQ's `guest`/
-`guest` dev credentials. Appropriate for a LocalDB-only development
-environment; revisit before anything beyond local development touches
-this database (a real secret store, not a checked-in connection string).
+The `nexus1_app` password is the local LocalDB development value chosen in the
+`CREATE LOGIN` above. It is **not** in any tracked file (ADR-044): each host reads its
+connection strings from its own User Secrets store, which ASP.NET Core loads in the
+Development environment every runbook uses:
+
+```bash
+dotnet user-secrets set "ConnectionStrings:RootCauseDb" "Server=(localdb)\mssqllocaldb;Database=RootCauseDb;User Id=nexus1_app;Password=<your local nexus1_app password>;" --project src/Hosts/Nexus1.RootCause.Host
+```
+
+and likewise `AlarmManagementDb`, `AuditDb`, `ComplianceDb`, `ReportingDb`, `SecurityDb`
+and `OrganizationDb` for `Nexus1.ModularRuntime` and `Nexus1.Bff`
+(`dotnet user-secrets list --project <host>` shows which keys a host has). A host with a
+missing key fails fast at startup, naming it. Earlier revisions committed the value in
+plaintext in `appsettings.json` and this runbook; those remain in git history — relocated,
+not rotated (ADR-044). RabbitMQ's `guest`/`guest` dev credentials are unchanged and still
+live in `appsettings.json`. Revisit with a real secret store before anything beyond local
+development touches this database.

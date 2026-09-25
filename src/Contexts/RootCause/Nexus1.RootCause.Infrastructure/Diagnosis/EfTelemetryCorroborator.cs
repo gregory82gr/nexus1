@@ -26,6 +26,13 @@ namespace Nexus1.RootCause.Infrastructure.Diagnosis;
 ///   of a deflection on the witnesses is the confirmation -- the exact inverse of
 ///   backbone mode's "missing data fails". A witness that moved means a real
 ///   excursion, not an artefact, and fails.
+///
+/// Then, in either mode, the UNEXPLAINED-PRECURSOR rule (ADR-043): if any alarmed
+/// component outside the origin's reach (backbone + artefact edges, the walker's own
+/// definition) has an onset strictly earlier than the origin's, corroboration fails.
+/// Causes do not run backwards: an alarm that began before the named origin and that
+/// the origin does not explain is observable evidence the causal graph is missing a
+/// coupling. Equal or missing onsets never trigger it.
 /// </summary>
 public sealed class EfTelemetryCorroborator(RootCauseDbContext db) : ITelemetryCorroborator
 {
@@ -33,10 +40,10 @@ public sealed class EfTelemetryCorroborator(RootCauseDbContext db) : ITelemetryC
     {
         // Scope to the incident's unit (ADR-037): only this incident's components,
         // edges and historian -- never another incident's rows.
-        var componentIds = (await db.Components
+        var tags = await db.Components
             .Where(c => c.UnitId == ctx.UnitId)
-            .Select(c => c.ComponentId)
-            .ToListAsync(cancellationToken)).ToHashSet();
+            .ToDictionaryAsync(c => c.ComponentId, c => c.Tag, cancellationToken);
+        var componentIds = tags.Keys.ToHashSet();
 
         var edges = await db.Edges
             .Where(e => componentIds.Contains(e.FromComponentId) && componentIds.Contains(e.ToComponentId))
@@ -52,9 +59,66 @@ public sealed class EfTelemetryCorroborator(RootCauseDbContext db) : ITelemetryC
             .ToDictionaryAsync(x => x.ChannelId, x => x.Onset, cancellationToken);
 
         var artefactEdges = edges.Where(e => e.Kind == "artefact" && e.FromComponentId == originComponentId).ToList();
-        return artefactEdges.Count > 0
+        var modeCheck = artefactEdges.Count > 0
             ? CheckArtefact(artefactEdges, edges, onsets)
             : CheckBackbone(originComponentId, edges, onsets);
+
+        return modeCheck.TimingFits
+            ? CheckNoUnexplainedPrecursor(originComponentId, ctx.AlarmedComponentIds, edges, onsets, tags) ?? modeCheck
+            : modeCheck;
+    }
+
+    /// <summary>
+    /// ADR-043: an alarmed component the origin does not reach, whose onset is strictly
+    /// earlier than the origin's, contradicts the origin hypothesis -- the graph may be
+    /// missing the coupling that explains it. Null when there is no such precursor.
+    /// </summary>
+    private static Corroboration? CheckNoUnexplainedPrecursor(
+        int originComponentId,
+        IReadOnlyList<int> alarmedComponentIds,
+        IReadOnlyList<EdgeRow> edges,
+        IReadOnlyDictionary<int, DateTime> onsets,
+        IReadOnlyDictionary<int, string> tags)
+    {
+        if (!onsets.TryGetValue(originComponentId, out var originOnset))
+        {
+            return null;
+        }
+
+        var adjacency = edges
+            .Where(e => e.Kind is "backbone" or "artefact")
+            .GroupBy(e => e.FromComponentId)
+            .ToDictionary(g => g.Key, g => g.Select(e => e.ToComponentId).ToArray());
+
+        var reach = new HashSet<int> { originComponentId };
+        var stack = new Stack<int>();
+        stack.Push(originComponentId);
+        while (stack.Count > 0)
+        {
+            if (adjacency.TryGetValue(stack.Pop(), out var next))
+            {
+                foreach (var to in next)
+                {
+                    if (reach.Add(to))
+                    {
+                        stack.Push(to);
+                    }
+                }
+            }
+        }
+
+        var precursor = alarmedComponentIds
+            .Where(id => !reach.Contains(id) && onsets.TryGetValue(id, out var onset) && onset < originOnset)
+            .OrderBy(id => onsets[id])
+            .ThenBy(id => id)
+            .Select(id => (int?)id)
+            .FirstOrDefault();
+
+        return precursor is { } id
+            ? new Corroboration(
+                false,
+                $"unexplained precursor: {tags[id]} began before origin {tags[originComponentId]} and is not explained by it -- the causal graph may be incomplete")
+            : null;
     }
 
     /// <summary>
