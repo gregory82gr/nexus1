@@ -142,6 +142,12 @@ Component tests need SQL Server LocalDB. The RootCause live-model tests need Oll
 
 ---
 
+## License
+
+The code, tests, scripts and documentation in this repository are released under the [MIT License](LICENSE). The NEXUS-1 books themselves are separate copyrighted works and are **not** covered by it — see [`NOTICE.md`](NOTICE.md).
+
+---
+
 ## The one rule
 
 > **Nothing claims to exist that does not.** A diagram, a "done" checkbox, or a status message is valid only when it matches the repository, the contracts, the data ownership, the tests, and the observable runtime behavior.
