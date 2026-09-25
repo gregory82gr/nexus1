@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nexus1.BuildingBlocks.Messaging;
 using Nexus1.BuildingBlocks.Observability;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
 namespace Nexus1.Compliance.Infrastructure.Messaging;
@@ -26,79 +27,90 @@ public sealed class ComplianceConsumerBackgroundService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var channel = connectionManager.CreateChannel();
-        NexusTopology.DeclareQuorumQueue(channel, QueueName, BindingRoutingKey);
-        NexusTopology.DeclareDeadQueue(channel, QueueName);
-
-        await new RabbitMqDeadLetterPolicyProvisioner(rabbitMqOptions)
-            .EnsureAsync("nexus-live-queue-safety-" + QueueName, QueueName, stoppingToken);
-
-        channel.BasicQos(0, prefetchCount: 10, global: false);
-
-        var consumer = new AsyncEventingBasicConsumer(channel);
-        consumer.Received += async (_, delivery) =>
+        // ADR-044: the start sequence (channel, topology, dead-letter policy, consume) runs
+        // through the shared retry helper, so a broker that is not up yet can never throw
+        // out of ExecuteAsync and stop the host; it attaches once the broker appears.
+        var consumingChannel = await ConsumerStartup.RunWithRetryAsync(connectionManager, QueueName, StartConsumingAsync, logger, stoppingToken);
+        if (consumingChannel is null)
         {
-            try
-            {
-                if (!Guid.TryParse(delivery.BasicProperties.MessageId, out var messageId))
-                {
-                    throw new InvalidOperationException($"Message has no valid MessageId property: '{delivery.BasicProperties.MessageId}'.");
-                }
-
-                var eventType = delivery.BasicProperties.Type ?? "unknown";
-                var parentContext = AmqpCarrier.Extract(delivery.BasicProperties.Headers);
-                using var activity = NexusActivitySources.MessagingSource.StartActivity(
-                    SpanNames.ForProcess(eventType),
-                    ActivityKind.Consumer,
-                    parentContext,
-                    tags: SafeTags.ForMessageProcess(messageId, eventType));
-
-                var startedAt = Stopwatch.GetTimestamp();
-                MessageHandlingOutcome outcome;
-                try
-                {
-                    outcome = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
-                    RecordProcessAttempt(metrics, startedAt, ToMetricOutcome(outcome), errorType: null);
-                }
-                catch (Exception ex)
-                {
-                    SafeError.Record(activity, ex);
-                    RecordProcessAttempt(metrics, startedAt, "FAILED", ErrorClassifier.Classify(ex));
-                    throw;
-                }
-                switch (outcome)
-                {
-                    case MessageHandlingOutcome.Ack:
-                        channel.BasicAck(delivery.DeliveryTag, multiple: false);
-                        break;
-                    case MessageHandlingOutcome.NackNoRequeue:
-                        logger.LogError(
-                            "Message {MessageId} quarantined after exhausting retries; routing to dead-letter.",
-                            delivery.BasicProperties.MessageId);
-                        channel.BasicNack(delivery.DeliveryTag, multiple: false, requeue: false);
-                        break;
-                    case MessageHandlingOutcome.NackRequeue:
-                    default:
-                        logger.LogWarning("Ambiguous inbox outcome for message {MessageId}; nacking for redelivery.", delivery.BasicProperties.MessageId);
-                        channel.BasicNack(delivery.DeliveryTag, multiple: false, requeue: true);
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to process message {MessageId}; nacking for redelivery.", delivery.BasicProperties.MessageId);
-                channel.BasicNack(delivery.DeliveryTag, multiple: false, requeue: true);
-            }
-        };
-
-        channel.BasicConsume(
-            queue: QueueName, autoAck: false, consumerTag: string.Empty, noLocal: false,
-            exclusive: false, arguments: null, consumer: consumer);
+            return; // host stopping before the consumer could start
+        }
 
         var stopped = new TaskCompletionSource();
         await using (stoppingToken.Register(() => stopped.TrySetResult()))
         {
             await stopped.Task;
+        }
+
+        async Task StartConsumingAsync(IModel channel, CancellationToken startToken)
+        {
+            NexusTopology.DeclareQuorumQueue(channel, QueueName, BindingRoutingKey);
+            NexusTopology.DeclareDeadQueue(channel, QueueName);
+
+            await new RabbitMqDeadLetterPolicyProvisioner(rabbitMqOptions)
+                .EnsureAsync("nexus-live-queue-safety-" + QueueName, QueueName, startToken);
+
+            channel.BasicQos(0, prefetchCount: 10, global: false);
+
+            var consumer = new AsyncEventingBasicConsumer(channel);
+            consumer.Received += async (_, delivery) =>
+            {
+                try
+                {
+                    if (!Guid.TryParse(delivery.BasicProperties.MessageId, out var messageId))
+                    {
+                        throw new InvalidOperationException($"Message has no valid MessageId property: '{delivery.BasicProperties.MessageId}'.");
+                    }
+
+                    var eventType = delivery.BasicProperties.Type ?? "unknown";
+                    var parentContext = AmqpCarrier.Extract(delivery.BasicProperties.Headers);
+                    using var activity = NexusActivitySources.MessagingSource.StartActivity(
+                        SpanNames.ForProcess(eventType),
+                        ActivityKind.Consumer,
+                        parentContext,
+                        tags: SafeTags.ForMessageProcess(messageId, eventType));
+
+                    var startedAt = Stopwatch.GetTimestamp();
+                    MessageHandlingOutcome outcome;
+                    try
+                    {
+                        outcome = await messageHandler.HandleAsync(messageId, delivery.Body.ToArray(), stoppingToken);
+                        RecordProcessAttempt(metrics, startedAt, ToMetricOutcome(outcome), errorType: null);
+                    }
+                    catch (Exception ex)
+                    {
+                        SafeError.Record(activity, ex);
+                        RecordProcessAttempt(metrics, startedAt, "FAILED", ErrorClassifier.Classify(ex));
+                        throw;
+                    }
+                    switch (outcome)
+                    {
+                        case MessageHandlingOutcome.Ack:
+                            channel.BasicAck(delivery.DeliveryTag, multiple: false);
+                            break;
+                        case MessageHandlingOutcome.NackNoRequeue:
+                            logger.LogError(
+                                "Message {MessageId} quarantined after exhausting retries; routing to dead-letter.",
+                                delivery.BasicProperties.MessageId);
+                            channel.BasicNack(delivery.DeliveryTag, multiple: false, requeue: false);
+                            break;
+                        case MessageHandlingOutcome.NackRequeue:
+                        default:
+                            logger.LogWarning("Ambiguous inbox outcome for message {MessageId}; nacking for redelivery.", delivery.BasicProperties.MessageId);
+                            channel.BasicNack(delivery.DeliveryTag, multiple: false, requeue: true);
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to process message {MessageId}; nacking for redelivery.", delivery.BasicProperties.MessageId);
+                    channel.BasicNack(delivery.DeliveryTag, multiple: false, requeue: true);
+                }
+            };
+
+            channel.BasicConsume(
+                queue: QueueName, autoAck: false, consumerTag: string.Empty, noLocal: false,
+                exclusive: false, arguments: null, consumer: consumer);
         }
     }
 

@@ -998,6 +998,7 @@ app.MapPost("/api/v1/root-cause/incidents/{incidentId}/diagnoses", async (
     string incidentId,
     [FromServices] IHttpClientFactory httpClientFactory,
     [FromServices] ILoggerFactory loggerFactory,
+    HttpContext httpContext,
     CancellationToken cancellationToken) =>
 {
     var client = httpClientFactory.CreateClient("RootCauseHost");
@@ -1014,11 +1015,15 @@ app.MapPost("/api/v1/root-cause/incidents/{incidentId}/diagnoses", async (
     }
     catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
     {
-        loggerFactory.CreateLogger("Bff.RootCauseProxy").LogError(ex, "RootCause.Host unreachable for {IncidentId}", incidentId);
+        // The exception (internal host:port) stays in the server log; the client gets a
+        // generic detail plus the trace id that joins the two (ADR-044).
+        var traceId = System.Diagnostics.Activity.Current?.TraceId.ToString() ?? httpContext.TraceIdentifier;
+        loggerFactory.CreateLogger("Bff.RootCauseProxy").LogError(ex, "RootCause.Host unreachable for {IncidentId} (traceId {TraceId})", incidentId, traceId);
         return Results.Problem(
             title: "RootCause.Host is unreachable",
-            detail: ex.Message,
-            statusCode: StatusCodes.Status502BadGateway);
+            detail: "The root-cause service could not be reached. The cause is recorded in the server log under this traceId.",
+            statusCode: StatusCodes.Status502BadGateway,
+            extensions: new Dictionary<string, object?> { ["traceId"] = traceId });
     }
 });
 
@@ -1029,6 +1034,7 @@ app.MapGet("/api/v1/root-cause/incidents/{incidentId}/graph", async (
     string incidentId,
     [FromServices] IHttpClientFactory httpClientFactory,
     [FromServices] ILoggerFactory loggerFactory,
+    HttpContext httpContext,
     CancellationToken cancellationToken) =>
 {
     var client = httpClientFactory.CreateClient("RootCauseHost");
@@ -1044,11 +1050,15 @@ app.MapGet("/api/v1/root-cause/incidents/{incidentId}/graph", async (
     }
     catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
     {
-        loggerFactory.CreateLogger("Bff.RootCauseGraphProxy").LogError(ex, "RootCause.Host graph unreachable for {IncidentId}", incidentId);
+        // The exception (internal host:port) stays in the server log; the client gets a
+        // generic detail plus the trace id that joins the two (ADR-044).
+        var traceId = System.Diagnostics.Activity.Current?.TraceId.ToString() ?? httpContext.TraceIdentifier;
+        loggerFactory.CreateLogger("Bff.RootCauseGraphProxy").LogError(ex, "RootCause.Host graph unreachable for {IncidentId} (traceId {TraceId})", incidentId, traceId);
         return Results.Problem(
             title: "RootCause.Host is unreachable",
-            detail: ex.Message,
-            statusCode: StatusCodes.Status502BadGateway);
+            detail: "The root-cause service could not be reached. The cause is recorded in the server log under this traceId.",
+            statusCode: StatusCodes.Status502BadGateway,
+            extensions: new Dictionary<string, object?> { ["traceId"] = traceId });
     }
 });
 

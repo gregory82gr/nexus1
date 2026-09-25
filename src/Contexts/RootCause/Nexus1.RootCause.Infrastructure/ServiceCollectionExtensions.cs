@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddRootCauseInfrastructure(this IServiceCollection services, string connectionString)
     {
         services.AddDbContext<RootCauseDbContext>(options => options.UseSqlServer(
-            connectionString, sql => sql.MigrationsHistoryTable("__EFMigrationsHistory_RootCause")));
+            connectionString, sql => sql.MigrationsHistoryTable(MigrationsHistoryTable)));
 
         services.AddScoped<IRepository<RootCauseAnalysis, RootCauseAnalysisId>, RootCauseAnalysisRepository>();
         services.AddKeyedScoped<IUnitOfWork, EfUnitOfWork>("RootCause");
@@ -63,6 +63,12 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>RootCause's own migrations-history table in RootCauseDb, shared by every runtime registration of the context.</summary>
+    private const string MigrationsHistoryTable = "__EFMigrationsHistory_RootCause";
+
+    /// <summary>The service key of the read-only (nexus1_explain) RootCauseDbContext -- also what its readiness check resolves (ADR-044).</summary>
+    public const string ReadOnlyDbContextKey = "readonly";
+
     /// <summary>
     /// Binds the grounding/retrieval seams (EfRetriever, RegistryAntiHallucinationValidator)
     /// to a READ-ONLY RootCauseDbContext built from <paramref name="readOnlyConnectionString"/>
@@ -75,15 +81,18 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddRootCauseReadOnlyRetrieval(this IServiceCollection services, string readOnlyConnectionString)
     {
-        services.AddKeyedScoped<RootCauseDbContext>("readonly", (_, _) =>
+        services.AddKeyedScoped<RootCauseDbContext>(ReadOnlyDbContextKey, (_, _) =>
             new RootCauseDbContext(new DbContextOptionsBuilder<RootCauseDbContext>()
-                .UseSqlServer(readOnlyConnectionString).Options));
+                // Same migrations-history table as the read-write context: the read-only
+                // connection points at the same database, and its readiness check reads that
+                // history (ADR-044 -- without this it saw every applied migration as pending).
+                .UseSqlServer(readOnlyConnectionString, sql => sql.MigrationsHistoryTable(MigrationsHistoryTable)).Options));
 
         services.Replace(ServiceDescriptor.Scoped<IRetriever>(sp =>
-            new EfRetriever(sp.GetRequiredKeyedService<RootCauseDbContext>("readonly"), sp.GetRequiredService<IEmbedder>())));
+            new EfRetriever(sp.GetRequiredKeyedService<RootCauseDbContext>(ReadOnlyDbContextKey), sp.GetRequiredService<IEmbedder>())));
 
         services.Replace(ServiceDescriptor.Scoped<IAntiHallucinationValidator>(sp =>
-            new RegistryAntiHallucinationValidator(sp.GetRequiredKeyedService<RootCauseDbContext>("readonly"))));
+            new RegistryAntiHallucinationValidator(sp.GetRequiredKeyedService<RootCauseDbContext>(ReadOnlyDbContextKey))));
 
         return services;
     }

@@ -57,7 +57,7 @@ retrieval still works).
 ## 4. Verify
 
 ```bash
-sqlcmd -S "(localdb)\mssqllocaldb" -d RootCauseDb -U nexus1_explain -P "Nexus1Explain!Dev2026Local" -Q "SELECT COUNT(*) AS corpus, SUM(CASE WHEN EmbeddingJson IS NULL THEN 0 ELSE 1 END) AS embedded FROM RootCause.Corpus;"
+sqlcmd -S "(localdb)\mssqllocaldb" -d RootCauseDb -U nexus1_explain -P "<your local nexus1_explain password>" -Q "SELECT COUNT(*) AS corpus, SUM(CASE WHEN EmbeddingJson IS NULL THEN 0 ELSE 1 END) AS embedded FROM RootCause.Corpus;"
 ```
 
 Then start the host normally (`dotnet run --project src/Hosts/Nexus1.RootCause.Host`)

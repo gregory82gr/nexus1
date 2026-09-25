@@ -49,9 +49,15 @@ var rootCauseExplainConnectionString = builder.Configuration.GetConnectionString
     ?? throw new InvalidOperationException("Missing ConnectionStrings:RootCauseExplainDb configuration (the read-only nexus1_explain login, ADR-034).");
 builder.Services.AddRootCauseReadOnlyRetrieval(rootCauseExplainConnectionString);
 
+// Readiness covers every dependency the diagnosis route needs (ADR-044): the read-write
+// database, the read-only nexus1_explain connection (the keyed context retrieval and the
+// validator use -- a plain AddCheck would re-check nexus1_app), and Ollama reachability +
+// model presence (NOT warmth). The broker is deliberately absent: no HTTP route uses it.
 builder.Services
     .AddHealthChecks()
-    .AddCheck<DbContextHealthCheck<RootCauseDbContext>>("rootcause-db");
+    .AddCheck<DbContextHealthCheck<RootCauseDbContext>>("rootcause-db")
+    .AddKeyedDbContextCheck<RootCauseDbContext>("rootcause-explain-db", Nexus1.RootCause.Infrastructure.ServiceCollectionExtensions.ReadOnlyDbContextKey, TimeSpan.FromSeconds(5))
+    .AddOllamaReachabilityCheck(ollamaOptions);
 
 var app = builder.Build();
 
@@ -68,7 +74,7 @@ if (args.Contains("provision", StringComparer.OrdinalIgnoreCase))
 // Liveness: process is up, no dependency checks (ADR-007).
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 
-// Readiness: can this host actually reach its database.
+// Readiness: can this host serve a diagnosis -- both databases and Ollama (ADR-044).
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = _ => true });
 
 // Prometheus scrape endpoint (Appendix I; ADR-038) -> /metrics. Only this host maps
@@ -85,6 +91,7 @@ app.MapPost("/api/v1/root-cause/incidents/{incidentId}/diagnoses", async (
     string incidentId,
     [FromServices] RunFixedIncidentDiagnosisCommandHandler handler,
     [FromServices] ILoggerFactory loggerFactory,
+    HttpContext httpContext,
     CancellationToken cancellationToken) =>
 {
     try
@@ -96,11 +103,15 @@ app.MapPost("/api/v1/root-cause/incidents/{incidentId}/diagnoses", async (
     }
     catch (Exception ex)
     {
-        loggerFactory.CreateLogger("RootCause.Diagnosis").LogError(ex, "Diagnosis pipeline failed for {IncidentId}", incidentId);
+        // The exception (SQL errors, internal host:port) stays in the server log; the client
+        // gets a generic detail plus the trace id that joins the two (ADR-044).
+        var traceId = System.Diagnostics.Activity.Current?.TraceId.ToString() ?? httpContext.TraceIdentifier;
+        loggerFactory.CreateLogger("RootCause.Diagnosis").LogError(ex, "Diagnosis pipeline failed for {IncidentId} (traceId {TraceId})", incidentId, traceId);
         return Results.Problem(
             title: "Diagnosis pipeline could not run",
-            detail: ex.Message,
-            statusCode: StatusCodes.Status503ServiceUnavailable);
+            detail: "A dependency of the diagnosis pipeline is unavailable. The cause is recorded in the server log under this traceId.",
+            statusCode: StatusCodes.Status503ServiceUnavailable,
+            extensions: new Dictionary<string, object?> { ["traceId"] = traceId });
     }
 });
 

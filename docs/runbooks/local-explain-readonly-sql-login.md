@@ -30,7 +30,7 @@ BEGIN
 END
 GO
 
-CREATE LOGIN nexus1_explain WITH PASSWORD = 'Nexus1Explain!Dev2026Local', CHECK_POLICY = ON;
+CREATE LOGIN nexus1_explain WITH PASSWORD = '<your local nexus1_explain password>', CHECK_POLICY = ON;
 GO
 
 USE RootCauseDb;
@@ -83,12 +83,15 @@ INSERT INTO RootCause.Corpus (DocId, TrustTier, Body, SourceLabel)
 
 ## Connection string
 
-`appsettings` key `ConnectionStrings:RootCauseExplainDb`:
+User Secrets key `ConnectionStrings:RootCauseExplainDb` on `Nexus1.RootCause.Host` — never
+the tracked `appsettings.json` (ADR-044):
 
-```
-Server=(localdb)\mssqllocaldb;Database=RootCauseDb;User Id=nexus1_explain;Password=Nexus1Explain!Dev2026Local;
+```bash
+dotnet user-secrets set "ConnectionStrings:RootCauseExplainDb" "Server=(localdb)\mssqllocaldb;Database=RootCauseDb;User Id=nexus1_explain;Password=<your local nexus1_explain password>;" --project src/Hosts/Nexus1.RootCause.Host
 ```
 
-`Nexus1Explain!Dev2026Local` is committed in plaintext, the same LocalDB-only dev
-convention as `nexus1_app` (ADR-028). Revisit before anything beyond local
-development.
+The password is the local LocalDB development value chosen in the `CREATE LOGIN` above; it
+lives only there and in the developer's User Secrets store, which ASP.NET Core loads in the
+Development environment. Earlier revisions of this runbook and of `appsettings.json`
+committed it in plaintext; those values remain in git history — relocated, not rotated
+(ADR-044). Revisit with a real secret store before anything beyond local development.
