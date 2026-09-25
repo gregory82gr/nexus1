@@ -36,16 +36,14 @@ public sealed class Component
     public int AlarmCount { get; init; }
 
     /// <summary>
-    /// The console's illustrative causal weight for this fixed incident
-    /// (FV-104 = 0.66, ...). Illustrative, derived from edge weights -- NOT a
-    /// probability identified from plant data (the book's own repeated
-    /// caveat). The walk carries it onto each candidate unchanged; only
-    /// coverage and the origin verdict are computed. In a general multi-incident
-    /// system this would be a per-run input, not on the registry -- a
-    /// deliberate skeleton simplification (ADR-032).
+    /// The book figure's illustrative causal weight for this fixed incident
+    /// (FV-104 = 0.66, ...) -- NOT a probability identified from plant data (the
+    /// book's own repeated caveat). PRESENTATION-ONLY (ADR-042): served to the
+    /// console's graph figure by the graph reader, never read by the graph walker,
+    /// whose candidate weights are derived attribution shares.
     /// </summary>
     public double? IllustrativeWeight { get; init; }
 
-    /// <summary>Console's role label for this fixed incident (proximate | parallel | contributing | ruled-out); the origin is computed, not read from here.</summary>
+    /// <summary>The book figure's role label (proximate | parallel | contributing | ruled-out | witness). PRESENTATION-ONLY (ADR-042): never read by the graph walker, which derives roles structurally.</summary>
     public string? IllustrativeRole { get; init; }
 }

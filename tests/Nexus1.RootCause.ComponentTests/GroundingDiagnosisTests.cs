@@ -36,10 +36,12 @@ public class GroundingDiagnosisTests : RootCauseComponentTestDatabase
         // Coverage is the share of the flood; 11 of 14 must fall out of the data.
         Assert.Equal(11, (int)Math.Round(origin.Coverage * 14));
 
-        // The loud bearing outranks nothing above it: it is a proximate symptom,
-        // not the origin, and covers fewer alarms than FV-104.
+        // The loud bearing is a symptom FV-104 already explains: structurally downstream of
+        // the origin, with no attribution of its own (ADR-042 -- the book's "proximate" label
+        // has no honest derivation, so the engine does not claim it).
         var bearing = Assert.Single(result.Ranked, c => c.Tag == "PB-2A");
-        Assert.Equal("proximate", bearing.Role);
+        Assert.Equal("downstream", bearing.Role);
+        Assert.Equal(0d, bearing.Weight);
         Assert.True(bearing.Coverage < origin.Coverage);
 
         // The ruled-out candidate is present, not discarded.

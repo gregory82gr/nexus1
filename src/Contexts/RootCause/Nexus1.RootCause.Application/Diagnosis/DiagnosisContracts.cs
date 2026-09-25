@@ -23,7 +23,7 @@ public sealed record IncidentContext(
     string QueryText,
     string CorpusVersion);
 
-/// <summary>One node-test result: role, illustrative weight, and coverage (share of the flood explained).</summary>
+/// <summary>One node-test result: derived role, attribution-share weight, and coverage (share of the flood explained) -- ADR-042.</summary>
 public sealed record RankedCandidate(int ComponentId, string Tag, string Role, double Weight, double Coverage);
 
 /// <summary>Ranked candidates, origin first. The origin is the highest-coverage node with a clean timing fit.</summary>

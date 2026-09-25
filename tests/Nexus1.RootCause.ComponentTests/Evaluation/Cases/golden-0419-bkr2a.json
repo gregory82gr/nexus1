@@ -8,9 +8,11 @@
   "expect": "verdict",
   "expectVerdict": "BKR-2A",
   "expectCandidates": [
-    { "tag": "BKR-2A", "role": "origin", "weight": 0.70 },
-    { "tag": "FT-9", "role": "proximate", "weight": 0.16 },
-    { "tag": "LOF-1", "role": "ruled-out", "weight": 0.10 }
+    { "tag": "BKR-2A", "role": "origin", "weight": 1.00 },
+    { "tag": "FT-9", "role": "downstream", "weight": 0.00 },
+    { "tag": "LT-3", "role": "downstream", "weight": 0.00 },
+    { "tag": "PT-7", "role": "downstream", "weight": 0.00 },
+    { "tag": "LOF-1", "role": "ruled-out", "weight": 0.00 }
   ],
   "expectOriginCoverage": "10/10",
   "mustNotAssert": ["FT-9", "LOF-1", "FV-104"],

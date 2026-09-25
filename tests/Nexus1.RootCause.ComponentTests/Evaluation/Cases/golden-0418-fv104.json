@@ -8,11 +8,16 @@
   "expect": "verdict",
   "expectVerdict": "FV-104",
   "expectCandidates": [
-    { "tag": "FV-104", "role": "origin", "weight": 0.66 },
-    { "tag": "PB-2A", "role": "proximate", "weight": 0.20 },
-    { "tag": "RCP-1B", "role": "parallel", "weight": 0.07 },
-    { "tag": "BUS-2A", "role": "contributing", "weight": 0.05 },
-    { "tag": "FT-7", "role": "ruled-out", "weight": 0.02 }
+    { "tag": "FV-104", "role": "origin", "weight": 0.79 },
+    { "tag": "RCP-1B", "role": "parallel", "weight": 0.14 },
+    { "tag": "BUS-2A", "role": "contributing", "weight": 0.07 },
+    { "tag": "SG-1", "role": "downstream", "weight": 0.00 },
+    { "tag": "FWP-2A", "role": "downstream", "weight": 0.00 },
+    { "tag": "PB-2A", "role": "downstream", "weight": 0.00 },
+    { "tag": "LF-1", "role": "downstream", "weight": 0.00 },
+    { "tag": "CT-1", "role": "downstream", "weight": 0.00 },
+    { "tag": "RT-1", "role": "downstream", "weight": 0.00 },
+    { "tag": "FT-7", "role": "ruled-out", "weight": 0.00 }
   ],
   "expectOriginCoverage": "11/14",
   "mustNotAssert": ["PB-2A", "FT-7"],
