@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "nexus-console",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start", "--prefix", "console/nexus-console"],
+      "port": 4200
+    }
+  ]
+}
